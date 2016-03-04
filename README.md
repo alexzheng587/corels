@@ -1,6 +1,14 @@
 # bbcache
 Branch-and-bound algorithm, with caching, for decision lists.
 
+dependencies
+------------
+
+    Python 2.7x
+    numpy
+    pylab
+    tabular
+
 tic-tac-toe training dataset
 ----------------------------
 

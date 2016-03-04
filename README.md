@@ -23,7 +23,7 @@ outputs a list that only achieves an accuracy of 0.912 on the training set.
 This is fine for us, since we are only using the greedy algorithm to find a
 reasonable warm start rule list.
 
-greedily constructed prefix = (153, 372, 176, 178, 134, 51, 121, 125)
+    greedily constructed prefix = (153, 372, 176, 178, 134, 51, 121, 125)
 
 Note that if we initialize the greedy algorithm with a rule for 'x' winning, it
 will find a perfect rule list.  Furthermore, the rules in this rule list
@@ -57,21 +57,21 @@ accuracy -- we simply set max_accuracy to the desired level.  For the
 tic-tac-toe dataset, we know that a perfect rule list can be generated from the
 given rules.
 
-        warm=0.999  warm=0.99   warm=0.91   maximum
-len=0   1           1           1           1
-len=1   14          26          351         377
-len=2   171         592         97309       141752
-len=3   1856        12563       ?           53157000
-len=4   20061       259766      ?           19880718000
-len=5   243503      ?           ?           7415507814000
+            warm=0.999  warm=0.99   warm=0.91   maximum
+    len=0   1           1           1           1
+    len=1   14          26          351         377
+    len=2   171         592         97309       141752
+    len=3   1856        12563       ?           53157000
+    len=4   20061       259766      ?           19880718000
+    len=5   243503      ?           ?           7415507814000
 
-        warm=0.99   warm=0.91   maximum
-len=0   1           1           1
-len=1   14          351         377
-len=2   x13         x278        x376
-len=3   x11         ?           x375
-len=4   x11         ?           x374
-len=5   x12         ?           x373
+            warm=0.99   warm=0.91   maximum
+    len=0   1           1           1
+    len=1   14          351         377
+    len=2   x13         x278        x376
+    len=3   x11         ?           x375
+    len=4   x11         ?           x374
+    len=5   x12         ?           x373
 
 thoughts
 ========

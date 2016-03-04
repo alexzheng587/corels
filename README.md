@@ -12,9 +12,8 @@ dependencies
 tic-tac-toe training dataset
 ----------------------------
 
-data/tdata_R.out :  set of rules
-
-data/tdata_R.labels :  labels
+    data/tdata_R.out :  set of rules
+    data/tdata_R.labels :  labels
 
 Note that the labeled training data is biased in the sense that 63.8% (408/639)
 have label 1.  We thus expect short rule lists to predict 1 by default.

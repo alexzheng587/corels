@@ -6,8 +6,8 @@ dependencies
 
     Python 2.7x
     numpy
-    pylab
     tabular
+    matplotlib
 
 tic-tac-toe training dataset
 ----------------------------

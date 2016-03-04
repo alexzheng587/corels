@@ -5,6 +5,7 @@ tic-tac-toe training dataset
 ----------------------------
 
 data/tdata_R.out :  set of rules
+
 data/tdata_R.labels :  labels
 
 Note that the labeled training data is biased in the sense that 63.8% (408/639)
@@ -65,13 +66,13 @@ given rules.
     len=4   20061       259766      ?           19880718000
     len=5   243503      ?           ?           7415507814000
 
-            warm=0.99   warm=0.91   maximum
-    len=0   1           1           1
-    len=1   14          351         377
-    len=2   x13         x278        x376
-    len=3   x11         ?           x375
-    len=4   x11         ?           x374
-    len=5   x12         ?           x373
+            warm=0.999  warm=0.99   warm=0.91   maximum
+    len=0   1           1           1           1
+    len=1   14          26          351         377
+    len=2   x13         x23         x278        x376
+    len=3   x11         x22         ?           x375
+    len=4   x11         x21         ?           x374
+    len=5   x12         ?           ?           x373
 
 thoughts
 ========

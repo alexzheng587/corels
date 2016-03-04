@@ -1,8 +1,8 @@
 # bbcache
-Branch-and-bound algorithm, with caching, for decision lists
+Branch-and-bound algorithm, with caching, for decision lists.
 
 tic-tac-toe training dataset
-============================
+----------------------------
 
 data/tdata_R.out :  set of rules
 data/tdata_R.labels :  labels
@@ -30,13 +30,13 @@ will find a perfect rule list.  Furthermore, the rules in this rule list
 perfectly partition the dataset.
 
 code/branch_bound.py
-====================
+--------------------
 
 This module contains functions and data structures used by variants of the
 branch-and-bound algorithm, including an object for a cache element.
 
 code/serial.py
-==============
+--------------
 
 This module contains a serial implementation of the branch-and-bound algorithm,
 with a cache to support incremental computation.  Prefixes are added to the
@@ -44,7 +44,7 @@ queue greedily, which causes the queue to grow exponentially fast.  It's here
 because it's a bit easier to understand.
 
 code/serial_lazy.py
-===================
+-------------------
 
 This module contains a serial implementation of the branch-and-bound algorithm,
 with a cache to support incremental computation and a queue that grows lazily.

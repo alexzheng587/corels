@@ -65,6 +65,7 @@ accuracy -- we simply set max_accuracy to the desired level.  For the
 tic-tac-toe dataset, we know that a perfect rule list can be generated from the
 given rules.
 
+<!-- These are somewhat wrong
             warm=0.999  warm=0.99   warm=0.91   maximum
     len=0   1           1           1           1
     len=1   14          26          351         377
@@ -80,6 +81,7 @@ given rules.
     len=3   x11         x22         ?           x375
     len=4   x11         x21         ?           x374
     len=5   x12         ?           ?           x373
+ -->
 
 thoughts
 ========

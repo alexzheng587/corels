@@ -93,8 +93,6 @@ code/serial_gc.py
     cache size: [1, 14, 92, 416, 1746, 8431]
     equivalent count: [0, 0, 78, 583, 2740, 13246]
     seconds: [0.0, 0.02, 0.21, 1.5, 7.31, 43.84]
-    round time: [0.0, 0.02, 0.21, 1.49, 7.29, 43.72]
-    gc time: [0.0, 0.0, 0.0, 0.0, 0.02, 0.12]
 
     if {c1=o,c5=o,c9=o} then predict 0
     else if {c2=o,c5=o,c8=o} then predict 0

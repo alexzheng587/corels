@@ -98,29 +98,46 @@ has the highest accuracy within the group.
 
     warm_start = True
     max_accuracy = 0.999
+    max_prefix_length = 6
     garbage_collection = True
 
-    cache size: [1, 14, 92, 416, 1746, 8431]
-    equivalent count: [0, 0, 78, 583, 2740, 13246]
-    seconds: [0.0, 0.02, 0.21, 1.5, 7.31, 43.84]
+    cache size: [1, 14, 92, 416, 1746, 8431, 49474]
+    gc size: [0, 0, 78, 583, 2740, 13246, 83004]
+    seconds: [0.0, 0.01, 0.15, 1.13, 5.32, 29.25, 780.46]
 
-    if {c1=o,c5=o,c9=o} then predict 0
+    if {c1=o,c4=o,c7=o} then predict 0
     else if {c2=o,c5=o,c8=o} then predict 0
     else if {c3=o,c5=o,c7=o} then predict 0
     else if {c4=o,c5=o,c6=o} then predict 0
+    else if {c1=o,c5=o,c9=o} then predict 0
     else if {c3=o,c6=o,c9=o} then predict 0
     else predict 1
 
 
     warm_start = True
     max_accuracy = 0.999
+    max_prefix_length = 4
     garbage_collection = False
 
     cache size: [1, 14, 170, 1842, 19890]
-    seconds: [0.0, 0.04, 0.21, 2.84, 29.69]
+    seconds: [0.0, 0.02, 0.15, 2.07, 21.1]
 
     if {c3=o,c5=o,c7=o} then predict 0
     else if {c1=o,c5=o,c9=o} then predict 0
     else if {c3=o,c6=o,c9=o} then predict 0
     else if {c4=o,c5=o,c6=o} then predict 0
     else predict 1
+
+thoughts
+--------
+
+We currently do garbage collection at the end of each round, but we could do it as we're
+adding prefixes to the cache.  As prefixes grow in length, so does the number of prefixes
+in each group of equivalent prefixes.
+
+We might want to explore notions of approximate equivalence.
+
+todo
+----
+
+Fix the greedy algorithm to stop early based on evaluating the default rule.

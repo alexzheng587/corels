@@ -86,6 +86,16 @@ given rules.
 code/serial_gc.py
 -----------------
 
+This module contains a serial implementation of the branch-and-bound algorithm,
+with a cache to support incremental computation, a queue that grows lazily, and
+garbage collection.  The queue's length is bounded by the total number of rules.
+This will replace serial_lazy.py, as includes introduces garbage collection in a
+modular and optional fashion.
+
+Each round, we track groups of prefixes that are equivalent up to permutation.
+Since the prefixes in such a group capture the same data, we only keep one that
+has the highest accuracy within the group.
+
     warm_start = True
     max_accuracy = 0.999
     garbage_collection = True
@@ -107,7 +117,6 @@ code/serial_gc.py
     garbage_collection = False
 
     cache size: [1, 14, 170, 1842, 19890]
-    equivalent count: [0, 0, 0, 0, 0]
     seconds: [0.0, 0.04, 0.21, 2.84, 29.69]
 
     if {c3=o,c5=o,c7=o} then predict 0

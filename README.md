@@ -83,10 +83,37 @@ given rules.
     len=5   x12         ?           ?           x373
  -->
 
-thoughts
-========
+code/serial_gc.py
+-----------------
 
-We've been ignoring symmetries so far, and perhaps it's time to start thinking
-about them.  If two prefixes are similar in the sense that they capture
-approximately the same data and have approximately the same accuracy, then it
-doesn't really make sense to pursue both of them.
+    warm_start = True
+    max_accuracy = 0.999
+    garbage_collection = True
+
+    cache size: [1, 14, 92, 416, 1746, 8431]
+    equivalent count: [0, 0, 78, 583, 2740, 13246]
+    seconds: [0.0, 0.02, 0.21, 1.5, 7.31, 43.84]
+    round time: [0.0, 0.02, 0.21, 1.49, 7.29, 43.72]
+    gc time: [0.0, 0.0, 0.0, 0.0, 0.02, 0.12]
+
+    if {c1=o,c5=o,c9=o} then predict 0
+    else if {c2=o,c5=o,c8=o} then predict 0
+    else if {c3=o,c5=o,c7=o} then predict 0
+    else if {c4=o,c5=o,c6=o} then predict 0
+    else if {c3=o,c6=o,c9=o} then predict 0
+    else predict 1
+
+
+    warm_start = True
+    max_accuracy = 0.999
+    garbage_collection = False
+
+    cache size: [1, 14, 170, 1842, 19890]
+    equivalent count: [0, 0, 0, 0, 0]
+    seconds: [0.0, 0.04, 0.21, 2.84, 29.69]
+
+    if {c3=o,c5=o,c7=o} then predict 0
+    else if {c1=o,c5=o,c9=o} then predict 0
+    else if {c3=o,c6=o,c9=o} then predict 0
+    else if {c4=o,c5=o,c6=o} then predict 0
+    else predict 1

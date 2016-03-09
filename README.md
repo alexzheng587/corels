@@ -113,6 +113,14 @@ has the highest accuracy within the group.
     else if {c3=o,c6=o,c9=o} then predict 0
     else predict 1
 
+    prefix: (372, 153, 51, 178, 134, 176)
+    prediction: (0, 0, 0, 0, 0, 0)
+    accuracy: 0.912
+    upper_bound: 1.000
+    num_captured: 175
+    num_captured_correct: 175
+    sum(not_captured): 464
+
 
     warm_start = True
     max_accuracy = 0.999

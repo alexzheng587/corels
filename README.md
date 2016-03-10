@@ -99,7 +99,7 @@ has the highest accuracy within the group.
     warm_start = True
     max_accuracy = 0.999
     max_prefix_length = 6
-    garbage_collection = True
+    garbage_collect = True
 
     cache size: [1, 14, 92, 416, 1746, 8431, 49474]
     gc size: [0, 0, 78, 583, 2740, 13246, 83004]
@@ -125,7 +125,7 @@ has the highest accuracy within the group.
     warm_start = True
     max_accuracy = 0.999
     max_prefix_length = 4
-    garbage_collection = False
+    garbage_collect = False
 
     cache size: [1, 14, 170, 1842, 19890]
     seconds: [0.0, 0.02, 0.15, 2.07, 21.1]

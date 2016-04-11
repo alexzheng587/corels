@@ -1,13 +1,22 @@
 # bbcache
 Branch-and-bound algorithm, with caching, for decision lists.
 
-dependencies
-------------
+Python dependencies
+-------------------
 
     Python 2.7x
     numpy
     tabular
     matplotlib
+    gmpy2
+
+Dependencies of gmpy2
+---------------------
+
+These can be installed on Mac OS X with `brew install`.
+
+    mpfr
+    libmpc
 
 tic-tac-toe training dataset
 ----------------------------

@@ -105,6 +105,9 @@ Each round, we track groups of prefixes that are equivalent up to permutation.
 Since the prefixes in such a group capture the same data, we only keep one that
 has the highest accuracy within the group.
 
+    cache_size[i] + captured_zero[i] + dead_prefix[i] + inferior[i]
+    = (nrules - i + 1) * (cache_size[i-1] - dead_prefix_start[i] - stunted_prefix[i])
+
     ############################################################################
     froot = 'tdata_R'
     warm_start = True

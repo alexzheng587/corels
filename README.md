@@ -105,32 +105,36 @@ Each round, we track groups of prefixes that are equivalent up to permutation.
 Since the prefixes in such a group capture the same data, we only keep one that
 has the highest accuracy within the group.
 
+    froot = 'tdata_R'
     warm_start = True
     max_accuracy = 0.999
-    max_prefix_length = 6
+    max_prefix_length = 8
     garbage_collect = True
 
-    cache size: [1, 14, 92, 416, 1746, 8431, 49474]
-    gc size: [0, 0, 78, 583, 2740, 13246, 83004]
-    seconds: [0.0, 0.01, 0.15, 1.13, 5.32, 29.25, 780.46]
+    cache size: [1, 14, 92, 416, 1746, 8431, 49459, 361698, 520176]
+    gc size: [0, 0, 78, 583, 2740, 12990, 99944, 798329, 33948]
+    seconds: [0.0, 0.64, 0.1, 0.67, 2.98, 14.05, 57.75, 288.19, 1931.9]
 
-    if {c1=o,c4=o,c7=o} then predict 0
-    else if {c2=o,c5=o,c8=o} then predict 0
-    else if {c3=o,c5=o,c7=o} then predict 0
-    else if {c4=o,c5=o,c6=o} then predict 0
-    else if {c1=o,c5=o,c9=o} then predict 0
-    else if {c3=o,c6=o,c9=o} then predict 0
-    else predict 1
-
-    prefix: (372, 153, 51, 178, 134, 176)
-    prediction: (0, 0, 0, 0, 0, 0)
-    accuracy: 0.912
+    if {c4=x,c5=x,c6=x} then predict 1
+    else if {c7=x,c8=x,c9=x} then predict 1
+    else if {c1=x,c2=x,c3=x} then predict 1
+    else if {c2=x,c5=x,c8=x} then predict 1
+    else if {c3=x,c6=x,c9=x} then predict 1
+    else if {c1=x,c4=x,c7=x} then predict 1
+    else if {c3=x,c5=x,c7=x} then predict 1
+    else if {c1=x,c5=x,c9=x} then predict 1
+    else predict 0
+    prefix: (53, 304, 19, 314, 281, 110, 333, 29)
+    prediction: (1, 1, 1, 1, 1, 1, 1, 1)
+    accuracy: 1.000
     upper_bound: 1.000
-    num_captured: 175
-    num_captured_correct: 175
-    sum(not_captured): 464
+    num_captured: 408
+    num_captured_correct: 408
+    sum(not_captured): 231
+    curiosity: 0.000
 
 
+    froot = 'tdata_R'
     warm_start = True
     max_accuracy = 0.999
     max_prefix_length = 4
@@ -144,6 +148,35 @@ has the highest accuracy within the group.
     else if {c3=o,c6=o,c9=o} then predict 0
     else if {c4=o,c5=o,c6=o} then predict 0
     else predict 1
+
+
+    froot = 'adult_R'
+    warm_start = True
+    froot = 'adult_R'
+    max_accuracy = 0.82
+    max_prefix_length = 3
+    garbage_collect = True
+    seed = 0
+    sample = 0.1
+
+    cache size: [1, 263, 33467, 2655628]
+    gc size: [0, 0, 32439, 5074264]
+    seconds: [0.0, 0.26, 23.59, 317.88]
+
+    if {capital.gain=7298LessThancapital-gain,capital.loss=capital-lossEQ0} then predict 0
+    else if {marital.status=Married,occupation=Prof-specialty} then predict 0
+    else if {marital.status=Married,occupation=Exec-managerial} then predict 0
+    else predict 1
+
+    prefix: (168, 106, 199)
+    prediction: (0, 0, 0)
+    accuracy: 0.829
+    upper_bound: 0.955
+    num_captured: 519
+    num_captured_correct: 385
+    sum(not_captured): 2489
+    curiosity: 0.258
+
 
 thoughts
 --------

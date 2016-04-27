@@ -105,6 +105,7 @@ Each round, we track groups of prefixes that are equivalent up to permutation.
 Since the prefixes in such a group capture the same data, we only keep one that
 has the highest accuracy within the group.
 
+    ############################################################################
     froot = 'tdata_R'
     warm_start = True
     max_accuracy = 0.999
@@ -133,7 +134,7 @@ has the highest accuracy within the group.
     sum(not_captured): 231
     curiosity: 0.000
 
-
+    ############################################################################
     froot = 'tdata_R'
     warm_start = True
     max_accuracy = 0.999
@@ -149,25 +150,28 @@ has the highest accuracy within the group.
     else if {c4=o,c5=o,c6=o} then predict 0
     else predict 1
 
-
+    ############################################################################
     froot = 'adult_R'
     warm_start = True
     froot = 'adult_R'
-    max_accuracy = 0.82
+    max_accuracy = 0.834
     max_prefix_length = 3
     garbage_collect = True
     seed = 0
     sample = 0.1
 
-    cache size: [1, 263, 33467, 2655628]
-    gc size: [0, 0, 32439, 5074264]
-    seconds: [0.0, 0.26, 23.59, 317.88]
+    cache size: [1, 257, 32217, 2584429]
+    dead prefix start: [0, 0, 0, 0]
+    caputed zero: [0, 0, 581, 143107]
+    stunted prefix: [0, 0, 1, 257]
+    dead prefix: [0, 27, 8515, 1387416]
+    inferior: [0, 0, 31417, 4969985]
+    seconds: [0.0, 0.02, 1.13, 166.67]
 
     if {capital.gain=7298LessThancapital-gain,capital.loss=capital-lossEQ0} then predict 0
     else if {marital.status=Married,occupation=Prof-specialty} then predict 0
     else if {marital.status=Married,occupation=Exec-managerial} then predict 0
     else predict 1
-
     prefix: (168, 106, 199)
     prediction: (0, 0, 0)
     accuracy: 0.829
@@ -196,6 +200,4 @@ We probably want a similar stopping condition in the branch-and-bound algorithm?
 
 Think about useful heuristics to cut down on the size of the search space.
 
-Margo's note:  if (accuracy == upper bound), then don't continue
-
-Cynthia's optimization
+Cynthia's optimization.

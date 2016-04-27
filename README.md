@@ -161,20 +161,21 @@ has the highest accuracy within the group.
     max_prefix_length = 3
     garbage_collect = True
     seed = 0
-    sample = 0.1
+    sample = 0.1    # 10% of the dataset
 
     cache size: [1, 257, 32217, 2584429]
     dead prefix start: [0, 0, 0, 0]
     caputed zero: [0, 0, 581, 143107]
-    stunted prefix: [0, 0, 1, 257]
-    dead prefix: [0, 27, 8515, 1387416]
+    stunted prefix: [0, 0, 0, 0]
+    dead prefix: [0, 27, 8516, 1387673]
     inferior: [0, 0, 31417, 4969985]
-    seconds: [0.0, 0.02, 1.13, 166.67]
+    seconds: [0.0, 0.0, 1.22, 163.95]
 
     if {capital.gain=7298LessThancapital-gain,capital.loss=capital-lossEQ0} then predict 0
     else if {marital.status=Married,occupation=Prof-specialty} then predict 0
     else if {marital.status=Married,occupation=Exec-managerial} then predict 0
     else predict 1
+
     prefix: (168, 106, 199)
     prediction: (0, 0, 0)
     accuracy: 0.829
@@ -183,6 +184,33 @@ has the highest accuracy within the group.
     num_captured_correct: 385
     sum(not_captured): 2489
     curiosity: 0.258
+
+
+    ############################################################################
+    froot = 'adult_R'
+    warm_start = True
+    froot = 'adult_R'
+    max_accuracy = 0.834
+    max_prefix_length = 3
+    garbage_collect = True
+    # full dataset
+
+    cache size: [1, 258, 32232, 2594146]
+    dead prefix start: [0, 0, 0, 0]
+    caputed zero: [0, 0, 577, 140941]
+    stunted prefix: [0, 0, 0, 0]
+    dead prefix: [0, 26, 8736, 1348177]
+    inferior: [0, 0, 31469, 5006160]
+    seconds: [0.0, 4.91, 4.16, 640.08]
+
+    prefix: (168, 106, 199)
+    prediction: (0, 0, 0)
+    accuracy: 0.826
+    upper_bound: 0.953
+    num_captured: 5028
+    num_captured_correct: 3622
+    sum(not_captured): 25053
+    curiosity: 0.280
 
 
 thoughts
@@ -204,3 +232,5 @@ We probably want a similar stopping condition in the branch-and-bound algorithm?
 Think about useful heuristics to cut down on the size of the search space.
 
 Cynthia's optimization.
+
+Cynthia suggested using a regularized upper bound, since this will be tighter.

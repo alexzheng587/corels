@@ -195,3 +195,7 @@ Fix the greedy algorithm to stop early based on evaluating the default rule.
 We probably want a similar stopping condition in the branch-and-bound algorithm?
 
 Think about useful heuristics to cut down on the size of the search space.
+
+Margo's note:  if (accuracy == upper bound), then don't continue
+
+Cynthia's optimization

@@ -161,19 +161,21 @@ has the highest accuracy within the group.
     froot = 'adult_R'
     warm_start = True
     froot = 'adult_R'
-    max_accuracy = 0.834
+    max_accuracy = 0.835
     max_prefix_length = 3
     garbage_collect = True
     seed = 0
     sample = 0.1    # 10% of the dataset
 
-    cache size: [1, 257, 32217, 2584429]
+    cache size: [1, 257, 32129, 2571505]
     dead prefix start: [0, 0, 0, 0]
-    caputed zero: [0, 0, 581, 143107]
+    caputed zero: [0, 0, 326, 72215]
     stunted prefix: [0, 0, 0, 0]
-    dead prefix: [0, 27, 8516, 1387673]
-    inferior: [0, 0, 31417, 4969985]
-    seconds: [0.0, 0.0, 1.22, 163.95]
+    commutes: [0, 0, 7232, 963103]
+    dead prefix: [0, 27, 8041, 1313416]
+    inferior: [0, 0, 25003, 4140139]
+    seconds: [0.0, 0.01, 1.31, 148.49]
+    growth: [257, 125, 80]
 
     if {capital.gain=7298LessThancapital-gain,capital.loss=capital-lossEQ0} then predict 0
     else if {marital.status=Married,occupation=Prof-specialty} then predict 0

@@ -252,6 +252,10 @@ We might want to explore notions of approximate equivalence.
 todo
 ----
 
+Need a priority queue to utilize curiosity.
+
+Add notes about commuting pairs.
+
 Fix the greedy algorithm to stop early based on evaluating the default rule.
 
 We probably want a similar stopping condition in the branch-and-bound algorithm?

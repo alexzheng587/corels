@@ -108,12 +108,49 @@ has the highest accuracy within the group.
     cache_size[i] + captured_zero[i] + dead_prefix[i] + inferior[i]
     = (nrules - i + 1) * (cache_size[i-1] - dead_prefix_start[i] - stunted_prefix[i])
 
-    ############################################################################
+
+tdata with commuting
+--------------------
+
     froot = 'tdata_R'
-    warm_start = True
-    max_accuracy = 0.999
+    min_objective = 1.
+    c = 0.
     max_prefix_length = 8
     garbage_collect = True
+
+    cache size: [1, 14, 92, 416, 1746, 8431, 49474, 361820, 983133]
+    dead prefix start: [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    caputed zero: [0, 0, 0, 0, 27, 478, 4743, 55155, 901311]
+    stunted prefix: [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    commutes: [0, 0, 1366, 11025, 51660, 208056, 913480, 4870817, 32341564]
+    dead prefix: [0, 363, 3791, 22925, 101220, 427543, 2111344, 12507000, 99515029]
+    inferior: [0, 0, 15, 134, 931, 6750, 57291, 560062, 132363]
+    seconds: [0.0, 0.0, 0.04, 0.18, 0.74, 3.06, 15.74, 104.71, 718.27]
+    growth: [14.0, 6.57, 4.52, 4.2, 4.83, 5.87, 7.31, 2.72]
+
+    if {c7=x,c8=x,c9=x} then predict 1
+    else if {c1=x,c4=x,c7=x} then predict 1
+    else if {c4=x,c5=x,c6=x} then predict 1
+    else if {c1=x,c5=x,c9=x} then predict 1
+    else if {c3=x,c6=x,c9=x} then predict 1
+    else if {c3=x,c5=x,c7=x} then predict 1
+    else if {c1=x,c2=x,c3=x} then predict 1
+    else if {c2=x,c5=x,c8=x} then predict 1
+    else predict 0
+
+    prefix: (359, 64, 264, 73, 219, 211, 47, 147)
+    prediction: (1, 1, 1, 1, 1, 1, 1, 1)
+    accuracy: 1.0000000000
+    upper_bound: 1.0000000000
+    objective: 0.0000000000
+    lower_bound: 0.0000000000
+    num_captured: 408
+    num_captured_correct: 408
+    sum(not_captured): 231
+    curiosity: 0.000
+
+tdata w/o commuting
+-------------------
 
     cache size: [1, 14, 92, 416, 1746, 8431, 49459, 361698, 520176]
     dead prefix start: [0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -123,29 +160,9 @@ has the highest accuracy within the group.
     inferior: [0, 0, 78, 583, 2740, 12990, 99944, 798329, 33948]
     seconds: [0.0, 0.01, 0.04, 0.34, 1.3, 5.56, 20.83, 112.93, 702.97]
 
-    if {c4=x,c5=x,c6=x} then predict 1
-    else if {c7=x,c8=x,c9=x} then predict 1
-    else if {c1=x,c2=x,c3=x} then predict 1
-    else if {c2=x,c5=x,c8=x} then predict 1
-    else if {c3=x,c6=x,c9=x} then predict 1
-    else if {c1=x,c4=x,c7=x} then predict 1
-    else if {c3=x,c5=x,c7=x} then predict 1
-    else if {c1=x,c5=x,c9=x} then predict 1
-    else predict 0
-    prefix: (53, 304, 19, 314, 281, 110, 333, 29)
-    prediction: (1, 1, 1, 1, 1, 1, 1, 1)
-    accuracy: 1.000
-    upper_bound: 1.000
-    num_captured: 408
-    num_captured_correct: 408
-    sum(not_captured): 231
-    curiosity: 0.000
+tdata w/o garbage collection
+----------------------------
 
-    ############################################################################
-    froot = 'tdata_R'
-    warm_start = True
-    max_accuracy = 0.999
-    max_prefix_length = 4
     garbage_collect = False
 
     cache size: [1, 14, 170, 1842, 19890]
@@ -157,7 +174,9 @@ has the highest accuracy within the group.
     else if {c4=o,c5=o,c6=o} then predict 0
     else predict 1
 
-    ############################################################################
+adult w/10% of dataset
+----------------------
+
     froot = 'adult_R'
     warm_start = True
     froot = 'adult_R'
@@ -192,7 +211,9 @@ has the highest accuracy within the group.
     curiosity: 0.258
 
 
-    ############################################################################
+adult w/full dataset is similar
+-------------------------------
+
     froot = 'adult_R'
     warm_start = True
     froot = 'adult_R'
@@ -239,7 +260,7 @@ Think about useful heuristics to cut down on the size of the search space.
 
 Cynthia's optimization.
 
-Cynthia suggested using a regularized upper bound, since this will be tighter.
+Cynthia suggested using a regularized bound, since this will be tighter.
 
 from Hongyu
 -----------

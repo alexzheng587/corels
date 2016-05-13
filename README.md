@@ -252,7 +252,7 @@ We might want to explore notions of approximate equivalence.
 todo
 ----
 
-Need a priority queue to utilize curiosity.
+Remove prefix from cache entry (it's already the corresponding key).
 
 Add notes about commuting pairs.
 

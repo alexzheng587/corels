@@ -307,7 +307,7 @@ adult w/objective-based prioritization
     sum(not_captured): 2
     curiosity: 0.155
 
-    Evaluated on the full dataset:
+    Prefix evaluated on the full dataset:
     prediction: (0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1)
     accuracy: 0.8327515708
     upper_bound: 0.8328513015
@@ -317,6 +317,64 @@ adult w/objective-based prioritization
     num_captured_correct: 25036
     sum(not_captured): 17
     curiosity: 0.167
+
+    method = 'objective'
+    max_cache_size = 3000000
+    froot = 'adult_R'
+    max_accuracy = None
+    min_objective = None
+    c = 0.
+    max_prefix_length = 70  # not an actual constraint
+    seed = 0
+    sample = 0.1
+
+    if {capital.gain=7298LessThancapital-gain,capital.loss=capital-lossEQ0} then predict 0
+    else if {education=Bachelors,marital.status=Married} then predict 0
+    else if {marital.status=Married,occupation=Prof-specialty} then predict 0
+    else if {marital.status=Married,occupation=Exec-managerial} then predict 0
+    else if {education=Grad-school,marital.status=Married} then predict 0
+    else if {age=Middle-aged,capital.gain=capital-gainEQ0} then predict 1
+    else if {education=Assoc-degree,relationship=Husband} then predict 0
+    else if {age=Middle-aged,capital.loss=capital-lossEQ0} then predict 1
+    else if {capital.gain=capital-gainEQ0,capital.loss=capital-lossEQ0} then predict 1
+    else if {education=Some-college,marital.status=Married} then predict 0
+    else if {age=Senior,capital.gain=capital-gainEQ0} then predict 1
+    else if {education=Grad-school,capital.gain=capital-gainEQ0} then predict 0
+    else if {age=Senior,capital.loss=capital-lossEQ0} then predict 1
+    else if {capital.gain=capital-gainEQ0,hours.per.week=Full-time} then predict 1
+    else if {age=Young,capital.gain=capital-gainEQ0} then predict 1
+    else if {age=Young,capital.loss=capital-lossEQ0} then predict 1
+    else if {occupation=Exec-managerial,hours.per.week=Over-time} then predict 0
+    else if {capital.gain=capital-gainEQ0,hours.per.week=Over-time} then predict 1
+    else if {capital.gain=capital-gainEQ0,native.country=N-America} then predict 1
+    else if {workclass=Private,occupation=Exec-managerial} then predict 0
+    else if {capital.gain=capital-gainEQ0,hours.per.week=Part-time} then predict 1
+    else if {capital.loss=capital-lossEQ0,hours.per.week=Part-time} then predict 1
+    else if {education=Assoc-degree,capital.loss=capital-lossEQ0} then predict 1
+    else if {marital.status=Married,occupation=Craft-repair} then predict 1
+    else if {education=Bachelors,capital.loss=capital-lossEQ0} then predict 1
+    else if {marital.status=Married,occupation=Sales} then predict 1
+    else if {occupation=Sales,race=White} then predict 0
+    else if {education=Grad-school,capital.loss=capital-lossEQ0} then predict 1
+    else if {marital.status=Never-married,capital.loss=capital-lossEQ0} then predict 1
+    else if {education=HS-grad,capital.loss=capital-lossEQ0} then predict 1
+    else if {workclass=Private,marital.status=Married} then predict 0
+    else if {capital.loss=capital-lossEQ0,hours.per.week=Over-time} then predict 1
+    else if {education=Some-college,capital.loss=capital-lossEQ0} then predict 1
+    else if {marital.status=Not-married-anymore,capital.loss=capital-lossEQ0} then predict 1
+    else if {workclass=Gov,capital.loss=capital-lossEQ0} then predict 1
+    else if {capital.loss=capital-lossEQ0,hours.per.week=Full-time} then predict 0
+    else predict 1
+    prefix: (43, 69, 122, 121, 77, 0, 62, 1, 46, 97, 20, 75, 21, 47, 32, 33, 162, 48, 50, 266, 49, 54, 58, 120, 66, 123, 185, 76, 129, 84, 260, 53, 95, 139, 244, 52)
+    prediction: (0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0)
+    accuracy: 0.8343140188
+    upper_bound: 0.8343140188
+    objective: 4984.0000000000
+    lower_bound: 4984.0000000000
+    num_captured: 30080
+    num_captured_correct: 25096
+    sum(not_captured): 1
+    curiosity: 0.166
 
 thoughts
 --------

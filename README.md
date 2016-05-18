@@ -390,8 +390,6 @@ todo
 
 Rename `max_accuracy` to `best_prefix_accuracy`.
 
-Add to logs -- max accuracy, min objective, best prefix.
-
 Remove prefix from cache entry (it's already the corresponding key).
 
 Add notes about commuting pairs.

@@ -388,6 +388,8 @@ We might want to explore notions of approximate equivalence.
 todo
 ----
 
+Add random priority queue.
+
 Rename `max_accuracy` to `best_prefix_accuracy`.
 
 Remove prefix from cache entry (it's already the corresponding key).

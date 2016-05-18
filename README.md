@@ -388,7 +388,9 @@ We might want to explore notions of approximate equivalence.
 todo
 ----
 
-Add to logs -- max accuracy, min objective, best prefix
+Rename `max_accuracy` to `best_prefix_accuracy`.
+
+Add to logs -- max accuracy, min objective, best prefix.
 
 Remove prefix from cache entry (it's already the corresponding key).
 

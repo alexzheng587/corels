@@ -388,6 +388,10 @@ We might want to explore notions of approximate equivalence.
 todo
 ----
 
+Restrict search to sub-tree.  (Could be implemented by thresholding `rules`.)
+
+Implement back-off.
+
 An actual pruning routine.
 
 If prefix P is optimal, is breadth-first the best way to certify?

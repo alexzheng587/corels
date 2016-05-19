@@ -242,6 +242,49 @@ adult w/full dataset is similar
 code/serial_priority.py
 -----------------------
 
+    adult, method=curiosity, sample=0.1
+    c=0.01
+    min_cap=0.003
+    min_objective=0.08
+    -> inconclusive, > 3,000,000 prefixes w/ lower bound < 0.08
+    adult_R-serial_priority-c=0.01000-min_cap=0.003-min_objective=0.080-method=curiosity-max_cache_size=3000000-sample=0.10-cache
+
+    adult, method=curiosity, sample=0.1
+    c=0.01
+    min_cap=0.003
+    min_objective=0.05
+    -> certified zero prefixes w/ objective < 0.05
+    -> 156,603 prefixes w/ lower bound < 0.05, max prefix length = 4
+    adult_R-serial_priority-c=0.01000-min_cap=0.003-min_objective=0.050-method=curiosity-max_cache_size=3000000-sample=0.10-max_length=4
+
+    adult, method=curiosity, sample=0.1
+    c=0.01
+    min_cap=0.003
+    min_objective=0.1
+    -> inconclusive, > 3,000,000 prefixes w/ lower bound < 0.1
+        adult_R-serial_priority-c=0.01000-min_cap=0.003-min_objective=0.100-method=curiosity-max_cache_size=3000000-sample=0.10-cache
+
+    adult, method=curiosity, sample=0.1
+    c=0.003
+    min_cap=0.003
+    min_objective=0.05
+    -> inconclusive, > 3,000,000 prefixes w/ lower bound < 0.05
+    adult_R-serial_priority-c=0.00300-min_cap=0.003-min_objective=0.050-method=curiosity-max_cache_size=3000000-sample=0.10-max_length=7
+
+    adult, method=curiosity, sample=0.1
+    c=0.0
+    min_cap=0.003
+    min_objective=0.01
+    -> inconclusive, > 3,000,000 prefixes w/ lower bound < 0.01
+    adult_R-serial_priority-c=0.00000-min_cap=0.003-min_objective=0.010-method=curiosity-max_cache_size=3000000-sample=0.10-max_length=13
+
+    adult, method=curiosity, sample=0.1
+    c=0.0
+    min_cap=0.003
+    min_objective=0.005
+    -> certified zero prefixes w/ objective < 0.005
+    -> 166,313 prefixes w/ lower bound < 0.005, max prefix length = 11
+        adult_R-serial_priority-c=0.00000-min_cap=0.003-min_objective=0.005-method=curiosity-max_cache_size=3000000-sample=0.10-cache
 
 adult w/objective-based prioritization
 --------------------------------------

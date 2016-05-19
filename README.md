@@ -388,6 +388,8 @@ We might want to explore notions of approximate equivalence.
 todo
 ----
 
+An actual pruning routine.
+
 If prefix P is optimal, is breadth-first the best way to certify?
 
 Rename `max_accuracy` to `best_prefix_accuracy`.

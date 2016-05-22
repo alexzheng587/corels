@@ -1,8 +1,9 @@
 # bbcache
 Branch-and-bound algorithm, with caching, for decision lists.
 
-Python dependencies
--------------------
+## Dependencies
+
+### Python dependencies
 
     Python 2.7x
     numpy
@@ -10,19 +11,19 @@ Python dependencies
     matplotlib
     gmpy2
 
-Dependencies of gmpy2
----------------------
+### Dependencies of gmpy2
 
 These can be installed on Mac OS X with `brew install`.
 
     mpfr
     libmpc
 
-tic-tac-toe training dataset
-----------------------------
+## data/
 
-    data/tdata_R.out :  set of rules
-    data/tdata_R.labels :  labels
+### tic-tac-toe training dataset
+
+    tdata_R.out :  set of rules
+    tdata_R.labels :  labels
 
 Note that the labeled training data is biased in the sense that 63.8% (408/639)
 have label 1.  We thus expect short rule lists to predict 1 by default.
@@ -46,22 +47,26 @@ Note that if we initialize the greedy algorithm with a rule for 'x' winning, it
 will find a perfect rule list.  Furthermore, the rules in this rule list
 perfectly partition the dataset.
 
-code/branch_bound.py
---------------------
+### adult dataset
+
+    adult_R.out :  set of rules
+    adult_R.labels :  labels
+
+## code/
+
+### branch_bound.py
 
 This module contains functions and data structures used by variants of the
 branch-and-bound algorithm, including an object for a cache element.
 
-code/serial.py
---------------
+### serial.py
 
 This module contains a serial implementation of the branch-and-bound algorithm,
 with a cache to support incremental computation.  Prefixes are added to the
 queue greedily, which causes the queue to grow exponentially fast.  It's here
 because it's a bit easier to understand.
 
-code/serial_lazy.py
--------------------
+### serial_lazy.py
 
 This module contains a serial implementation of the branch-and-bound algorithm,
 with a cache to support incremental computation and a queue that grows lazily.
@@ -74,26 +79,7 @@ accuracy -- we simply set max_accuracy to the desired level.  For the
 tic-tac-toe dataset, we know that a perfect rule list can be generated from the
 given rules.
 
-<!-- These are somewhat wrong
-            warm=0.999  warm=0.99   warm=0.91   maximum
-    len=0   1           1           1           1
-    len=1   14          26          351         377
-    len=2   171         592         97309       141752
-    len=3   1856        12563       ?           53157000
-    len=4   20061       259766      ?           19880718000
-    len=5   243503      ?           ?           7415507814000
-
-            warm=0.999  warm=0.99   warm=0.91   maximum
-    len=0   1           1           1           1
-    len=1   14          26          351         377
-    len=2   x13         x23         x278        x376
-    len=3   x11         x22         ?           x375
-    len=4   x11         x21         ?           x374
-    len=5   x12         ?           ?           x373
- -->
-
-code/serial_gc.py
------------------
+### serial_gc.py
 
 This module contains a serial implementation of the branch-and-bound algorithm,
 with a cache to support incremental computation, a queue that grows lazily, and
@@ -108,328 +94,112 @@ has the highest accuracy within the group.
     cache_size[i] + captured_zero[i] + dead_prefix[i] + inferior[i]
     = (nrules - i + 1) * (cache_size[i-1] - dead_prefix_start[i] - stunted_prefix[i])
 
+Update: additional symmetry-based pruning based on (all sets of) rules that commute.
 
-tdata with commuting
---------------------
+### serial_priority.py
 
-    froot = 'tdata_R'
-    min_objective = 1.
-    c = 0.
-    max_prefix_length = 8
-    garbage_collect = True
+* A cache to support incremental computation.
 
-    cache size: [1, 14, 92, 416, 1746, 8431, 49474, 361820, 983133]
-    dead prefix start: [0, 0, 0, 0, 0, 0, 0, 0, 0]
-    caputed zero: [0, 0, 0, 0, 27, 478, 4743, 55155, 901311]
-    stunted prefix: [0, 0, 0, 0, 0, 0, 0, 0, 0]
-    commutes: [0, 0, 1366, 11025, 51660, 208056, 913480, 4870817, 32341564]
-    dead prefix: [0, 363, 3791, 22925, 101220, 427543, 2111344, 12507000, 99515029]
-    inferior: [0, 0, 15, 134, 931, 6750, 57291, 560062, 132363]
-    seconds: [0.0, 0.0, 0.04, 0.18, 0.74, 3.06, 15.74, 104.71, 718.27]
-    growth: [14.0, 6.57, 4.52, 4.2, 4.83, 5.87, 7.31, 2.72]
+* A priority queue to manage different scheduling policies (implemented using
+Python's `heapq` module).
 
-    if {c7=x,c8=x,c9=x} then predict 1
-    else if {c1=x,c4=x,c7=x} then predict 1
-    else if {c4=x,c5=x,c6=x} then predict 1
-    else if {c1=x,c5=x,c9=x} then predict 1
-    else if {c3=x,c6=x,c9=x} then predict 1
-    else if {c3=x,c5=x,c7=x} then predict 1
-    else if {c1=x,c2=x,c3=x} then predict 1
-    else if {c2=x,c5=x,c8=x} then predict 1
-    else predict 0
+* Symmetry-aware garbage collection for sets of prefixes that are equivalent up
+to permutation -- only keep the best.
 
-    prefix: (359, 64, 264, 73, 219, 211, 47, 147)
-    prediction: (1, 1, 1, 1, 1, 1, 1, 1)
-    accuracy: 1.0000000000
-    upper_bound: 1.0000000000
-    objective: 0.0000000000
-    lower_bound: 0.0000000000
-    num_captured: 408
-    num_captured_correct: 408
-    sum(not_captured): 231
-    curiosity: 0.000
+* Symmetry-aware pruning for equivalence classes of prefixes that contain
+(possibly multiple) adjacent pairs of commuting rules -- only need to evaluate one.
 
-tdata w/o commuting
--------------------
+#### Prioritization metrics
 
-    cache size: [1, 14, 92, 416, 1746, 8431, 49459, 361698, 520176]
-    dead prefix start: [0, 0, 0, 0, 0, 0, 0, 0, 0]
-    caputed zero: [0, 0, 13, 158, 1000, 6038, 36048, 261984, 2664696]
-    stunted prefix: [0, 0, 0, 0, 0, 0, 0, 0, 0]
-    dead prefix: [0, 363, 5081, 33343, 150098, 623799, 2950881, 16927278, 130609440]
-    inferior: [0, 0, 78, 583, 2740, 12990, 99944, 798329, 33948]
-    seconds: [0.0, 0.01, 0.04, 0.34, 1.3, 5.56, 20.83, 112.93, 702.97]
+Each is a function that maps a prefix to a value (bounded below by zero,
+corresponding to the highest priority).
 
-tdata w/o garbage collection
-----------------------------
+**Prefix length** : Implements breadth-first search
 
-    garbage_collect = False
+**Objective lower bound** : The lower bound on the objective is the sum of the
+lower bound on the number of mistakes and the regularization term.
 
-    cache size: [1, 14, 170, 1842, 19890]
-    seconds: [0.0, 0.02, 0.15, 2.07, 21.1]
+    priority = (# captured and incorrect) / (# data) + c * (prefix length)
 
-    if {c3=o,c5=o,c7=o} then predict 0
-    else if {c1=o,c5=o,c9=o} then predict 0
-    else if {c3=o,c6=o,c9=o} then predict 0
-    else if {c4=o,c5=o,c6=o} then predict 0
-    else predict 1
+**Curiosity** : Expected objective if all data are captured.
 
-adult w/10% of dataset
-----------------------
+    priority = (prefix misclassification) + c * (expected prefix length)
 
-    froot = 'adult_R'
-    warm_start = True
-    froot = 'adult_R'
-    max_accuracy = 0.835
-    max_prefix_length = 3
-    garbage_collect = True
-    seed = 0
-    sample = 0.1    # 10% of the dataset
+Where
 
-    cache size: [1, 257, 32129, 2571505]
-    dead prefix start: [0, 0, 0, 0]
-    caputed zero: [0, 0, 326, 72215]
-    stunted prefix: [0, 0, 0, 0]
-    commutes: [0, 0, 7232, 963103]
-    dead prefix: [0, 27, 8041, 1313416]
-    inferior: [0, 0, 25003, 4140139]
-    seconds: [0.0, 0.01, 1.31, 148.49]
-    growth: [257, 125, 80]
+    prefix misclassification = (# captured and incorrect) / (# captured)
 
-    if {capital.gain=7298LessThancapital-gain,capital.loss=capital-lossEQ0} then predict 0
-    else if {marital.status=Married,occupation=Prof-specialty} then predict 0
-    else if {marital.status=Married,occupation=Exec-managerial} then predict 0
-    else predict 1
+and
 
-    prefix: (168, 106, 199)
-    prediction: (0, 0, 0)
-    accuracy: 0.829
-    upper_bound: 0.955
-    num_captured: 519
-    num_captured_correct: 385
-    sum(not_captured): 2489
-    curiosity: 0.258
+    expected prefix length = (prefix length) * (# data) / (# captured)
 
+**Objective** : The objective is the sum of the fraction of mistakes and a
+regularization term.
+ 
+    priority = (# incorrect) / (# data) + c * (prefix length)
 
-adult w/full dataset is similar
--------------------------------
+## tic-tac-toe results
 
-    froot = 'adult_R'
-    warm_start = True
-    froot = 'adult_R'
-    max_accuracy = 0.834
-    max_prefix_length = 3
-    garbage_collect = True
-    # full dataset
+### tdata, breadth-first, no regularization (c = 0.)
 
-    cache size: [1, 258, 32232, 2594146]
-    dead prefix start: [0, 0, 0, 0]
-    caputed zero: [0, 0, 577, 140941]
-    stunted prefix: [0, 0, 0, 0]
-    dead prefix: [0, 26, 8736, 1348177]
-    inferior: [0, 0, 31469, 5006160]
-    seconds: [0.0, 4.91, 4.16, 640.08]
+* Aggressive "optimistic (lying) warm start" (initialize min_objective = 0.001)
+* Finds a minimum length (8) perfect prefix (~200 sec)
 
-    prefix: (168, 106, 199)
-    prediction: (0, 0, 0)
-    accuracy: 0.826
-    upper_bound: 0.953
-    num_captured: 5028
-    num_captured_correct: 3622
-    sum(not_captured): 25053
-    curiosity: 0.280
+### tdata, curiosity, no regularization (c = 0.)
 
-code/serial_priority.py
------------------------
+* Cold start, quickly (< 1 sec) finds a perfect prefix that is very long (82)
 
-    adult, method=curiosity, sample=0.1
-    c=0.01
-    min_cap=0.003
-    min_objective=0.08
-    -> inconclusive, > 3,000,000 prefixes w/ lower bound < 0.08
-    adult_R-serial_priority-c=0.01000-min_cap=0.003-min_objective=0.080-method=curiosity-max_cache_size=3000000-sample=0.10-cache
+### tdata, curiosity, regularization (c = 0.001)
 
-    adult, method=curiosity, sample=0.1
-    c=0.01
-    min_cap=0.003
-    min_objective=0.05
-    -> certified zero prefixes w/ objective < 0.05
-    -> 156,603 prefixes w/ lower bound < 0.05, max prefix length = 4
-    adult_R-serial_priority-c=0.01000-min_cap=0.003-min_objective=0.050-method=curiosity-max_cache_size=3000000-sample=0.10-max_length=4
+* Cold start, quickly finds a perfect prefix of length 10
+* Then certifies that the best (perfect) prefix has length 8 (~600 sec -- check this number)
 
-    adult, method=curiosity, sample=0.1
-    c=0.01
-    min_cap=0.003
-    min_objective=0.1
-    -> inconclusive, > 3,000,000 prefixes w/ lower bound < 0.1
-        adult_R-serial_priority-c=0.01000-min_cap=0.003-min_objective=0.100-method=curiosity-max_cache_size=3000000-sample=0.10-cache
+## adult results (sampling 10% of data unless noted otherwise)
 
-    adult, method=curiosity, sample=0.1
-    c=0.003
-    min_cap=0.003
-    min_objective=0.05
-    -> inconclusive, > 3,000,000 prefixes w/ lower bound < 0.05
-    adult_R-serial_priority-c=0.00300-min_cap=0.003-min_objective=0.050-method=curiosity-max_cache_size=3000000-sample=0.10-max_length=7
+### adult, curiosity, no regularization (c = 0.)
 
-    adult, method=curiosity, sample=0.1
-    c=0.0
-    min_cap=0.003
-    min_objective=0.01
-    -> inconclusive, > 3,000,000 prefixes w/ lower bound < 0.01
-    adult_R-serial_priority-c=0.00000-min_cap=0.003-min_objective=0.010-method=curiosity-max_cache_size=3000000-sample=0.10-max_length=13
+* Certifies there are no prefixes with objective < 0.005
+* Up to symmetries, ~170,000 prefixes have lower bound < 0.005 (length <= 11)
 
-    adult, method=curiosity, sample=0.1
-    c=0.0
-    min_cap=0.003
-    min_objective=0.005
-    -> certified zero prefixes w/ objective < 0.005
-    -> 166,313 prefixes w/ lower bound < 0.005, max prefix length = 11
-        adult_R-serial_priority-c=0.00000-min_cap=0.003-min_objective=0.005-method=curiosity-max_cache_size=3000000-sample=0.10-cache
+* Initialize min_objective = 0.01
+* Inconclusive, > 3,000,000 prefixes have lower bound < 0.01
 
-adult w/objective-based prioritization
---------------------------------------
+### adult, curiosity, regularization (c = 0.003)
 
-    method = 'objective'
-    max_cache_size = 3000000
-    froot = 'adult_R'
-    max_accuracy = None
-    min_objective = None
-    c = 0.
-    max_prefix_length = 70  # not an actual constraint
-    seed = 0
-    sample = 0.1
+* Initialize min_objective = 0.01
+* Quickly certifies (< 2 sec) that there are no prefixes with objective < 0.01
+* Up to symmetries, 471 prefixes have lower bound < 0.01
 
-    if {capital.gain=7298LessThancapital-gain,capital.loss=capital-lossEQ0} then predict 0
-    else if {education=Bachelors,marital.status=Married} then predict 0
-    else if {marital.status=Married,occupation=Prof-specialty} then predict 0
-    else if {marital.status=Married,occupation=Exec-managerial} then predict 0
-    else if {age=Middle-aged,capital.gain=capital-gainEQ0} then predict 1
-    else if {relationship=Husband,hours.per.week=Over-time} then predict 0
-    else if {education=Grad-school,marital.status=Married} then predict 0
-    else if {age=Middle-aged,capital.loss=capital-lossEQ0} then predict 1
-    else if {education=Grad-school,sex=Male} then predict 0
-    else if {age=Senior,capital.gain=capital-gainEQ0} then predict 1
-    else if {age=Senior,occupation=Exec-managerial} then predict 1
-    else if {capital.gain=capital-gainEQ0,hours.per.week=Part-time} then predict 1
-    else if {age=Young,relationship=Own-child} then predict 1
-    else if {marital.status=Never-married,relationship=Own-child} then predict 0
-    else if {capital.loss=capital-lossEQ0,hours.per.week=Part-time} then predict 1
-    else if {education=Assoc-degree,capital.gain=capital-gainEQ0} then predict 1
-    else if {education=Assoc-degree,capital.loss=capital-lossEQ0} then predict 1
-    else if {marital.status=Never-married,hours.per.week=Full-time} then predict 1
-    else if {education=Grad-school,capital.gain=capital-gainEQ0} then predict 1
-    else if {marital.status=Never-married,sex=Male} then predict 1
-    else if {occupation=Exec-managerial,capital.gain=capital-gainEQ0} then predict 0
-    else if {education=Bachelors,sex=Male} then predict 0
-    else if {sex=Male,hours.per.week=Over-time} then predict 0
-    else if {education=Bachelors,hours.per.week=Full-time} then predict 1
-    else if {marital.status=Not-married-anymore,capital.gain=capital-gainEQ0} then predict 1
-    else if {relationship=Not-in-family,sex=Male} then predict 0
-    else if {education=HS-grad,marital.status=Never-married} then predict 1
-    else if {education=HS-grad,sex=Female} then predict 1
-    else if {race=Black,capital.gain=capital-gainEQ0} then predict 0
-    else if {age=Young,hours.per.week=Full-time} then predict 1
-    else if {workclass=Gov,capital.gain=capital-gainEQ0} then predict 0
-    else if {age=Young,marital.status=Never-married} then predict 1
-    else if {capital.gain=capital-gainEQ0,hours.per.week=Full-time} then predict 1
-    else if {marital.status=Not-married-anymore,hours.per.week=Full-time} then predict 1
-    else if {age=Senior,workclass=Private} then predict 0
-    else if {education=Grad-school,capital.loss=capital-lossEQ0} then predict 0
-    else if {occupation=Craft-repair,capital.gain=capital-gainEQ0} then predict 0
-    else if {age=Senior,capital.loss=capital-lossEQ0} then predict 1
-    else if {workclass=Private,capital.loss=capital-lossEQ0} then predict 1
-    else predict 0
-    prefix: (43, 69, 122, 121, 0, 206, 77, 1, 81, 20, 26, 49, 38, 134, 54, 57, 58, 130, 75, 136, 160, 73, 240, 67, 138, 217, 87, 91, 189, 34, 243, 35, 47, 140, 30, 76, 153, 21, 253)
-    prediction: (0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1)
-    accuracy: 0.8447473404
-    upper_bound: 0.8447473404
-    objective: 467.0000000000
-    lower_bound: 467.0000000000
-    num_captured: 3006
-    num_captured_correct: 2539
-    sum(not_captured): 2
-    curiosity: 0.155
+* Inconclusive for objective < 0.05
+* Up to symmetries, > 3,000,000 prefixes have lower bound < 0.05
 
-    Prefix evaluated on the full dataset:
-    prediction: (0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1)
-    accuracy: 0.8327515708
-    upper_bound: 0.8328513015
-    objective: 5031.0000000000
-    lower_bound: 5028.0000000000
-    num_captured: 30064
-    num_captured_correct: 25036
-    sum(not_captured): 17
-    curiosity: 0.167
+### adult, curiosity, regularization (c = 0.01)
 
-    method = 'objective'
-    max_cache_size = 3000000
-    froot = 'adult_R'
-    max_accuracy = None
-    min_objective = None
-    c = 0.
-    max_prefix_length = 70  # not an actual constraint
-    seed = 0
-    sample = 0.1
+* Certifies (< 380 sec) that there are no prefixes with objective < 0.05
+* Up to symmetries, ~150,000 prefixes have lower bound < 0.05 (length <= 4)
 
-    if {capital.gain=7298LessThancapital-gain,capital.loss=capital-lossEQ0} then predict 0
-    else if {education=Bachelors,marital.status=Married} then predict 0
-    else if {marital.status=Married,occupation=Prof-specialty} then predict 0
-    else if {marital.status=Married,occupation=Exec-managerial} then predict 0
-    else if {education=Grad-school,marital.status=Married} then predict 0
-    else if {age=Middle-aged,capital.gain=capital-gainEQ0} then predict 1
-    else if {education=Assoc-degree,relationship=Husband} then predict 0
-    else if {age=Middle-aged,capital.loss=capital-lossEQ0} then predict 1
-    else if {capital.gain=capital-gainEQ0,capital.loss=capital-lossEQ0} then predict 1
-    else if {education=Some-college,marital.status=Married} then predict 0
-    else if {age=Senior,capital.gain=capital-gainEQ0} then predict 1
-    else if {education=Grad-school,capital.gain=capital-gainEQ0} then predict 0
-    else if {age=Senior,capital.loss=capital-lossEQ0} then predict 1
-    else if {capital.gain=capital-gainEQ0,hours.per.week=Full-time} then predict 1
-    else if {age=Young,capital.gain=capital-gainEQ0} then predict 1
-    else if {age=Young,capital.loss=capital-lossEQ0} then predict 1
-    else if {occupation=Exec-managerial,hours.per.week=Over-time} then predict 0
-    else if {capital.gain=capital-gainEQ0,hours.per.week=Over-time} then predict 1
-    else if {capital.gain=capital-gainEQ0,native.country=N-America} then predict 1
-    else if {workclass=Private,occupation=Exec-managerial} then predict 0
-    else if {capital.gain=capital-gainEQ0,hours.per.week=Part-time} then predict 1
-    else if {capital.loss=capital-lossEQ0,hours.per.week=Part-time} then predict 1
-    else if {education=Assoc-degree,capital.loss=capital-lossEQ0} then predict 1
-    else if {marital.status=Married,occupation=Craft-repair} then predict 1
-    else if {education=Bachelors,capital.loss=capital-lossEQ0} then predict 1
-    else if {marital.status=Married,occupation=Sales} then predict 1
-    else if {occupation=Sales,race=White} then predict 0
-    else if {education=Grad-school,capital.loss=capital-lossEQ0} then predict 1
-    else if {marital.status=Never-married,capital.loss=capital-lossEQ0} then predict 1
-    else if {education=HS-grad,capital.loss=capital-lossEQ0} then predict 1
-    else if {workclass=Private,marital.status=Married} then predict 0
-    else if {capital.loss=capital-lossEQ0,hours.per.week=Over-time} then predict 1
-    else if {education=Some-college,capital.loss=capital-lossEQ0} then predict 1
-    else if {marital.status=Not-married-anymore,capital.loss=capital-lossEQ0} then predict 1
-    else if {workclass=Gov,capital.loss=capital-lossEQ0} then predict 1
-    else if {capital.loss=capital-lossEQ0,hours.per.week=Full-time} then predict 0
-    else predict 1
-    prefix: (43, 69, 122, 121, 77, 0, 62, 1, 46, 97, 20, 75, 21, 47, 32, 33, 162, 48, 50, 266, 49, 54, 58, 120, 66, 123, 185, 76, 129, 84, 260, 53, 95, 139, 244, 52)
-    prediction: (0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0)
-    accuracy: 0.8343140188
-    upper_bound: 0.8343140188
-    objective: 4984.0000000000
-    lower_bound: 4984.0000000000
-    num_captured: 30080
-    num_captured_correct: 25096
-    sum(not_captured): 1
-    curiosity: 0.166
+* Certifies (< 18,000 sec) that there are no prefixes with objective < 0.06
+* Up to symmetries, ~1,000,000 prefixes have lower bound < 0.06 (length <= 5)
 
-thoughts
---------
+* Inconclusive for objective < 0.08
+* Up to symmetries, > 3,000,000 prefixes have lower bound < 0.08
 
-We currently do garbage collection at the end of each round, but we could do it as we're
-adding prefixes to the cache.  As prefixes grow in length, so does the number of prefixes
-in each group of equivalent prefixes.
+### adult, objective, no regularization (c = 0.)
 
-We might want to explore notions of approximate equivalence.
+* Full dataset
+* Quickly (< 0.1 sec) finds a good prefix (accuracy = 0.83328, length = 10)
+* (43, 69, 122, 121, 77, 0, 62, 1, 46, 24)
+* Slight improvement after ~200 sec (accuracy = 0.83338, length = 15)
+* (43, 69, 122, 121, 77, 0, 62, 1, 46, 24, 22, 237, 39, 145, 56)
+* Slight improvement at ~630 sec (accuracy = 0.83342, length = 15)
+* (43, 69, 122, 121, 77, 0, 62, 1, 46, 24, 113, 129, 233, 145, 242)
+* Slight improvement at ~1,800 sec (accuracy = 0.83345, length = 15)
+* (43, 69, 122, 121, 77, 0, 62, 1, 46, 28, 113, 237, 144, 130, 56)
+* Cache remains very small (< 2,500 entries)
 
-todo
-----
+## todo
+
+Combine objective-based priority with restriction (prevent excessive exploration of a single subtree).
 
 Restrict search to sub-tree.  (Could be implemented by thresholding `rules`.)
 
@@ -451,68 +221,4 @@ Think about useful heuristics to cut down on the size of the search space.
 
 Cynthia's optimization.
 
-from Hongyu
------------
-
-A rule list from the latest `sbrl` R pkg :
-
-    sbrl_model <- sbrl(data, iters=20000, pos_sign="1", neg_sign="0", rule_minlen=1, rule_maxlen=2, minsupport_pos=0.10, minsupport_neg=0.10, lambda=20.0, eta=1.0, nchain=25)
-    print(sbrl_model)
-
-The rules list is :
-
-    If      {capital.gain=7298LessThancapital-gain} (rule[46]) then positive probability = 0.01617922
-    else if {education=Grad-school,marital.status=Married} (rule[76]) then positive probability = 0.24616368
-    else if {age=Young,marital.status=Never-married} (rule[36]) then positive probability = 0.99606078
-    else if {age=Young,capital.loss=capital-lossEQ0} (rule[34]) then positive probability = 0.92338388
-    else if {education=Bachelors,marital.status=Married} (rule[68]) then positive probability = 0.33762434
-    else if {marital.status=Married,occupation=Exec-managerial} (rule[123]) then positive probability = 0.46758105
-    else if {education=HS-grad,marital.status=Married} (rule[85]) then positive probability = 0.70224325
-    else if {education=Some-college,marital.status=Married} (rule[98]) then positive probability = 0.58744545
-    else if {relationship=Own-child,hours.per.week=Full-time} (rule[224]) then positive probability = 0.98528471
-    else if {marital.status=Married,occupation=Prof-specialty} (rule[124]) then positive probability = 0.27289720
-    else if {education=Assoc-degree,marital.status=Married} (rule[59]) then positive probability = 0.57581069
-    else if {capital.loss=capital-lossEQ0,hours.per.week=Part-time} (rule[55]) then positive probability = 0.98307380
-    else if {occupation=Other-service,capital.loss=capital-lossEQ0} (rule[172]) then positive probability = 0.97980381
-    else if {occupation=Prof-specialty,sex=Male} (rule[183]) then positive probability = 0.73821990
-    else if {occupation=Adm-clerical,sex=Female} (rule[154]) then positive probability = 0.98090186
-    else if {occupation=Prof-specialty} (rule[184]) then positive probability = 0.86271186
-    else if {age=Middle-aged,education=HS-grad} (rule[4]) then positive probability = 0.96911197
-    else if {education=Grad-school} (rule[81]) then positive probability = 0.61656442
-    else if {age=Middle-aged,hours.per.week=Full-time} (rule[6]) then positive probability = 0.94713161
-    else if {education=Bachelors,native.country=N-America} (rule[69]) then positive probability = 0.73352034
-    else if {sex=Male,native.country=N-America} (rule[244]) then positive probability = 0.86269540
-    else  (default rule)  then positive probability = 0.94477711
-
-Elaine seems to have a slightly different rule list, without a rule for `{occupation=Adm-clerical,sex=Female}` :
-
-    line numbers: (46, 78, 36, 34, 70, 122, 87, 98, 222, 123, 60, 55, 170, 181, ???, 182, ...)
-
-    zero-indexed: (45, 77, 35, 33, 69, 121, 86, 97, 221, 122, 59, 54, 169, 180)
-
-
-There is another example rule list in our earlier paper http://arxiv.org/pdf/1602.08610v1.pdf on page 3:
-
-    if capital-gain>$7298.00 then probability to make over 50K = 0.986
-    else if Young,Never-married, then probability to make over 50K = 0.003
-    else if Grad-school,Married, then probability to make over 50K = 0.748
-    else if Young,capital-loss=0, then probability to make over 50K = 0.072
-    else if Own-child,Never-married, then probability to make over 50K = 0.015
-    else if Bachelors,Married, then probability to make over 50K = 0.655
-    else if Bachelors,Over-time, then probability to make over 50K = 0.255
-    else if Exec-managerial,Married, then probability to make over 50K = 0.531
-    else if Married,HS-grad, then probability to make over 50K = 0.300
-    else if Grad-school, then probability to make over 50K = 0.266
-    else if Some-college,Married, then probability to make over 50K = 0.410
-    else if Prof-specialty,Married, then probability to make over 50K = 0.713
-    else if Assoc-degree,Married, then probability to make over 50K = 0.420
-    else if Part-time, then probability to make over 50K = 0.013
-    else if Husband, then probability to make over 50K = 0.126
-    else if Prof-specialty, then probability to make over 50K = 0.148
-    else if Exec-managerial,Male, then probability to make over 50K = 0.193
-    else if Full-time,Private, then probability to make over 50K = 0.026
-    else (default rule) then probability to make over 50K = 0.066
-
-    line numbers: (46, 36, 78, 34, 135, 70, 69, 122, 87, 83, 98, 123, 60, 114, 211, 182, 167, 258)
-
-    zero-indexed: (45, 35, 77, 33, 134, 69, 68, 121, 86, 82, 97, 122, 59, 113, 210, 181, 166, 257)
+We might want to explore notions of approximate equivalence.

@@ -113,78 +113,94 @@ to permutation -- only keep the best.
 
 #### Breadth-first branch-and-bound algorithm with cache
 
-    inputs: nrules, ndata, rules, labels
 
     def incremental(prefix, rules, labels, min_objective, *cache):
         ...
         return objective
 
-    initialize queue (with () for cold start)
-    initialize cache (empty for cold start)
-    initialize min_objective (inf for cold start)
+    def branch_and_bound(rules, labels):
+        initialize queue (with () for cold start)
+        initialize cache (empty for cold start)
+        initialize min_objective (inf for cold start)
+        done = False
 
-    done = False
-    while(queue and not done):
-        prefix_start = pop(queue)
-        rule_list = [r for r in range(nrules) if r not in prefix_start]
+        while(queue and not done):
+            prefix_start = pop(queue)
+            rule_list = [r for r in range(len(rules)) if r not in prefix_start]
 
-        for r in rule_list:
-            prefix = prefix_start + (r,)
-            (objective, lower_bound) = incremental(prefix, rules, labels, min_objective, *cache)
+            for r in rule_list:
+                prefix = prefix_start + (r,)
+                (objective, lower_bound) = incremental(prefix, rules, labels, min_objective, *cache)
 
-            if (lower_bound < min_objective):
-                push(queue, prefix)
+                if (lower_bound < min_objective):
+                    push(queue, prefix)
 
-            if (objective < min_objective):
-                (min_objective, best_prefix) = (objective, prefix)
+                if (objective < min_objective):
+                    (min_objective, best_prefix) = (objective, prefix)
 
-                if (objective is optimal):
-                    done
+                    if (objective is optimal for its length):
+                        done = True
+
+        return (min_objective, best_prefix)
 
 #### Branch-and-bound algorithm with priority queue, cache, and garbage collection
 
-    inputs: nrules, ndata, rules, labels, policy
+    def incremental(prefix, rules, labels, min_objective, *cache):
+        set min_correct = minimum number of data new rule must capture and predict correctly
 
-    def incremental(prefix, cached_prefix, rules, labels, min_objective, *cache):
+        num_captured = calculate_captures(prefix, rules, *cache)
+        if (num_captured == 0):
+            return None    # the last rule doesn't capture any new data points
+        if (num_captured < min_correct):
+            return None    # last rule doesn't capture enough new data
+
+        num_captured_correct = calculate_correct(prefix, labels, *cache)
+        if (num_captured_correct < min_correct):
+            return None    # last rule doesn't correctly predict enough new data
         ...
         return objective
 
-    initialize priority_queue (with () for cold start)
-    initialize cache (empty for cold start)
-    initialize min_objective (inf for cold start)
+    def branch_and_bound(rules, labels, policy):
+        initialize priority_queue (with () for cold start)
+        initialize cache (empty for cold start)
+        initialize min_objective (inf for cold start)
+        done = False
 
-    done = False
-    while(priority_queue and not done):
-        prefix_start = pop(priority_queue)
-        if prefix_start not in cache:    # we garbage collect cache but not priority_queue
-            continue
-        cached_prefix = cache[prefix_start]
-        if (cached_prefix.lower_bound > min_objective):    # dead prefix start
-            continue
+        while(priority_queue and not done):
+            prefix_start = pop(priority_queue)
+            if prefix_start not in cache:    # we garbage collect cache but not priority_queue
+                continue
+            cached_prefix = cache[prefix_start]
+            if (cached_prefix.lower_bound > min_objective):    # dead prefix start
+                continue
 
-        rule_list = [r for r in range(nrules) if r not in prefix_start]
-        pruned_rule_list = prune_rules(prefix, rule_list, rules)    # symmetry-aware pruning
+            rule_list = [r for r in range(len(rules)) if r not in prefix_start]
+            pruned_rule_list = prune_rules(prefix, rule_list, rules)    # symmetry-aware pruning
 
-        for r in pruned_rule_list:
-            prefix = prefix_start + (r,)
-            objective = incremental(prefix, rules, labels, min_objective, *cache)
+            for r in pruned_rule_list:
+                prefix = prefix_start + (r,)
+                objective = incremental(prefix, rules, labels, min_objective, *cache)
+                if (objective is None):    # prefix is useless
+                    continue
 
-            if (objective < min_objective):
-                (min_objective, best_prefix) = (objective, prefix)
-                garbage_collect(min_objective, *cache)    # eject entries with lower_bound > min_objective
+                if (objective < min_objective):
+                    (min_objective, best_prefix) = (objective, prefix)
+                    garbage_collect(min_objective, *cache)    # eject entries with lower_bound > min_objective
 
-            if (prefix is optimal for its length):
-                if (policy is breadth-first):    # found an optimal prefix
-                    done = True
-                else:                            # switch to certification mode
-                    policy = breadth first
-                    priority_queue = reprioritize(priority_queue, policy)
-            else:
-                push(priority_queue, policy, prefix)
+                if (prefix is optimal for its length):
+                    if (policy is breadth-first):    # found an optimal prefix
+                        done = True
+                    else:                            # switch to certification mode
+                        policy = breadth first
+                        priority_queue = reprioritize(priority_queue, policy)
+                else:
+                    push(priority_queue, policy, prefix)
 
-        if (policy is not breadth-first):
-            if (prefix_start is a dead end):    # prefix_start has no useful children
-                prune_up(prefix_start, *cache)  # remove prefix_start and dead end ancestors
+            if (policy is not breadth-first):
+                if (prefix_start is a dead end):    # prefix_start has no useful children
+                    prune_up(prefix_start, *cache)  # remove prefix_start and dead end ancestors
+
+        return (min_objective, best_prefix)
 
 #### Symmetry-aware pruning
 

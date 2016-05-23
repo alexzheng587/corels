@@ -154,7 +154,9 @@ regularization term.
 * Cold start, quickly finds a perfect prefix of length 10
 * Then certifies that the best (perfect) prefix has length 8 (~600 sec -- check this number)
 
-## adult results (sampling 10% of data unless noted otherwise)
+## adult results
+
+Subsampling 10% of dataset unless otherwise noted.
 
 ### adult, curiosity, no regularization (c = 0.)
 

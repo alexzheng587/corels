@@ -348,15 +348,25 @@ Subsampling 10% of dataset unless otherwise noted.
 * (43, 69, 122, 121, 77, 0, 62, 1, 46, 28, 113, 237, 144, 130, 56)
 * Cache remains very small (< 2,500 entries)
 
+## implemented but not explained
+
+Commuting pairs.
+
+If `c > 0`, don't add prefix to priority queue or cache if
+`c * (len(prefix) + 1) >= min_objective`.
+
+If a rule captures insufficient data when appended to a prefix, then it will be
+insufficient for any rule list that starts with that prefix.  Keep track of such
+rules in the cache.
+
+If prefix P is optimal, breadth-first is the best way to certify.
+
 ## todo
 
 May want to completely remove dependence of incremental on cache.
 
 Should we skip symmetry-based garbage collection (via `pdict`) when
 `len(prefix) == max_prefix_len_check`?
-
-If `c > 0`, don't add prefix to priority queue or cache if
-`c * (len(prefix) + 1) >= min_objective`.  Also don't do pdict lookup.
 
 Some of the metrics (`commutes` and `captured_zero`) currently include other
 recently added savings -- separate these out properly.
@@ -370,10 +380,6 @@ Not properly updating `num_children` in cache entries or `metrics.cache_size`.
 Should we maintain a (lazily / partially materialized?) priority queue ordered
 by lower bound (to facilitate garbage collection when the min_objective
 decreases)?
-
-If a rule captures insufficient data when appended to a prefix, then it will be
-insufficient for any rule list that starts with that prefix.  Keep track of such
-rules in the cache.
 
 More efficient way to encode lists of integers (currently tuples of integers).
 
@@ -389,13 +395,9 @@ increase the lying/optimistic `min_objective`.)
 
 An actual pruning routine.
 
-If prefix P is optimal, is breadth-first the best way to certify?
-
 Rename `max_accuracy` to `best_prefix_accuracy`.
 
 Remove prefix from cache entry (it's already the corresponding key).
-
-Add notes about commuting pairs.
 
 Fix the greedy algorithm to stop early based on evaluating the default rule.
 

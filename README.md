@@ -328,6 +328,13 @@ Subsampling 10% of dataset unless otherwise noted.
 * Inconclusive for objective < 0.08
 * Up to symmetries, > 3,000,000 prefixes have lower bound < 0.08
 
+### adult, curiosity, regularization (c = 0.02)
+
+* Certifies (< 110 sec) there are no prefixes with objective < 0.08
+* Certifies (< 480 sec) there are no prefixes with objective < 0.09
+* Certifies (< 1400 sec) there are no prefixes with objective < 0.10
+* Certifies (< 5500 sec) there are no prefixes with objective < 0.11
+
 ### adult, objective, no regularization (c = 0.)
 
 * Full dataset
@@ -343,13 +350,42 @@ Subsampling 10% of dataset unless otherwise noted.
 
 ## todo
 
-Combine objective-based priority with restriction (prevent excessive exploration of a single subtree).
+May want to completely remove dependence of incremental on cache.
+
+Should we skip symmetry-based garbage collection (via `pdict`) when
+`len(prefix) == max_prefix_len_check`?
+
+If `c > 0`, don't add prefix to priority queue or cache if
+`c * (len(prefix) + 1) >= min_objective`.  Also don't do pdict lookup.
+
+Some of the metrics (`commutes` and `captured_zero`) currently include other
+recently added savings -- separate these out properly.
+
+Could track children explicitly as a cache entry attribute.  This would
+facilitate proper garbage collection. (Currently, finding ancestors is easy, but
+finding children is dumb.)
+
+Not properly updating `num_children` in cache entries or `metrics.cache_size`.
+
+Should we maintain a (lazily / partially materialized?) priority queue ordered
+by lower bound (to facilitate garbage collection when the min_objective
+decreases)?
+
+If a rule captures insufficient data when appended to a prefix, then it will be
+insufficient for any rule list that starts with that prefix.  Keep track of such
+rules in the cache.
+
+More efficient way to encode lists of integers (currently tuples of integers).
+
+Combine objective-based priority with restriction (prevent excessive exploration
+of a single subtree).
 
 Restrict search to sub-tree.  (Could be implemented by thresholding `rules`.
 May want this as a subroutine to enable smaller cache entries, and perhaps as
 part of a parallel scheme.)
 
-Implement back-off.
+Implement back-off. (Something like put the cache entries back on the queue and
+increase the lying/optimistic `min_objective`.)
 
 An actual pruning routine.
 

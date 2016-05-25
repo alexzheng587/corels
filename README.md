@@ -293,8 +293,8 @@ regularization term.
 
 ### tdata, curiosity, regularization (c = 0.001)
 
-* Cold start, quickly finds a perfect prefix of length 10
-* Then certifies that the best (perfect) prefix has length 8
+* Cold start, quickly (< 2 sec) finds a perfect prefix of length 10
+* Then certifies that the best (perfect) prefix has length 8 (~225 sec)
 
 ## adult results
 
@@ -358,8 +358,6 @@ If `c > 0`, don't add prefix to priority queue or cache if
 If a rule captures insufficient data when appended to a prefix, then it will be
 insufficient for any rule list that starts with that prefix.  Keep track of such
 rules in the cache.
-
-If prefix P is optimal, breadth-first is the best way to certify.
 
 ## todo
 

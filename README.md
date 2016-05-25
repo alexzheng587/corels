@@ -285,16 +285,16 @@ regularization term.
 ### tdata, breadth-first, no regularization (c = 0.)
 
 * Aggressive "optimistic (lying) warm start" (initialize min_objective = 0.001)
-* Finds a minimum length (8 rules) perfect prefix (< 200 sec)
+* Finds a minimum length (8 rules) perfect prefix (< 180 sec)
 
 ### tdata, curiosity, no regularization (c = 0.)
 
-* Cold start, quickly (< 1 sec) finds a perfect prefix that is very long (82 rules)
+* Cold start, quickly (< 2 sec) finds a perfect prefix that is very long (68 rules)
 
 ### tdata, curiosity, regularization (c = 0.001)
 
 * Cold start, quickly finds a perfect prefix of length 10
-* Then certifies that the best (perfect) prefix has length 8 (< 200 sec)
+* Then certifies that the best (perfect) prefix has length 8
 
 ## adult results
 
@@ -311,7 +311,7 @@ Subsampling 10% of dataset unless otherwise noted.
 ### adult, curiosity, regularization (c = 0.003)
 
 * Initialize min_objective = 0.01
-* Quickly certifies (< 2 sec) that there are no prefixes with objective < 0.01
+* Quickly certifies (< 1 sec) that there are no prefixes with objective < 0.01
 * Up to symmetries, 471 prefixes have lower bound < 0.01
 
 * Inconclusive for objective < 0.05
@@ -330,10 +330,10 @@ Subsampling 10% of dataset unless otherwise noted.
 
 ### adult, curiosity, regularization (c = 0.02)
 
-* Certifies (< 110 sec) there are no prefixes with objective < 0.08
-* Certifies (< 480 sec) there are no prefixes with objective < 0.09
-* Certifies (< 1400 sec) there are no prefixes with objective < 0.10
-* Certifies (< 5500 sec) there are no prefixes with objective < 0.11
+* Certifies (< 95 sec) there are no prefixes with objective < 0.08
+* Certifies (< 240 sec) there are no prefixes with objective < 0.09
+<!--* Certifies (< 1400 sec) there are no prefixes with objective < 0.10
+* Certifies (< 5500 sec) there are no prefixes with objective < 0.11-->
 
 ### adult, objective, no regularization (c = 0.)
 

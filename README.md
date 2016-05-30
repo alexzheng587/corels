@@ -294,11 +294,13 @@ regularization term.
 ### tdata, curiosity, regularization (c = 0.001)
 
 * Cold start, quickly (< 2 sec) finds a perfect prefix of length 10
-* Then certifies that the best (perfect) prefix has length 8 (~225 sec)
+* Then certifies that the best (perfect) prefix has length 8 (~250 sec)
+* Final cache contains 1776 entries with lower bound < 0.008
 
 ## adult results
 
-Subsampling 10% of dataset unless otherwise noted.
+Subsampling 10% of dataset and `min_captured_correct = max(c, 0.003)` unless
+otherwise noted.
 
 ### adult, curiosity, no regularization (c = 0.)
 
@@ -335,6 +337,15 @@ Subsampling 10% of dataset unless otherwise noted.
 <!--* Certifies (< 1400 sec) there are no prefixes with objective < 0.10
 * Certifies (< 5500 sec) there are no prefixes with objective < 0.11-->
 
+### adult, curiosity, aggressive regularization
+
+* (c = 0.1) Certifies (< 3 sec) the best prefix is (51,)
+* (c = 0.09) Certifies (< 8 sec) the best prefix is (118,)
+* (c = 0.08) Certifies (< 13 sec) the best prefix is (118,)
+* (c = 0.07) Certifies (< 30 sec) the best prefix is (118,)
+* (c = 0.06) Certifies (< 260 sec) the best prefix is (69,)
+* (c = 0.05) Certifies (< 3120 sec) the best prefix is (69,) on small laptop
+
 ### adult, objective, no regularization (c = 0.)
 
 * Full dataset
@@ -360,6 +371,8 @@ insufficient for any rule list that starts with that prefix.  Keep track of such
 rules in the cache.
 
 ## todo
+
+Garbage collection for pdict?
 
 May want to completely remove dependence of incremental on cache.
 

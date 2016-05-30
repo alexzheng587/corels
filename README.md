@@ -337,7 +337,7 @@ otherwise noted.
 <!--* Certifies (< 1400 sec) there are no prefixes with objective < 0.10
 * Certifies (< 5500 sec) there are no prefixes with objective < 0.11-->
 
-### adult, curiosity, aggressive regularization
+### adult, curiosity, aggressive regularization (min_captured_correct = c)
 
 * (c = 0.1) Certifies (< 3 sec) the best prefix is (51,)
 * (c = 0.09) Certifies (< 8 sec) the best prefix is (118,)

@@ -372,7 +372,8 @@ rules in the cache.
 
 ## todo
 
-Garbage collection for pdict?
+Insertions and deletions into pdict (and priority_queue?) should happen in
+parallel with analogous cache operations.
 
 May want to completely remove dependence of incremental on cache.
 

@@ -52,6 +52,15 @@ perfectly partition the dataset.
     adult_R.out :  set of rules
     adult_R.labels :  labels
 
+    nrules : 284
+    ndata : 30081
+
+    sum(ones) : 22645
+    bias : 0.7528
+
+    total pairs : 40186
+    commuting pairs : 7235
+
 ## code/
 
 ### branch_bound.py
@@ -98,21 +107,53 @@ Update: additional symmetry-based pruning based on (all sets of) rules that comm
 
 ### serial_priority.py
 
-* A cache to support incremental computation.
+This module contains a serial implementation of the branch-and-bound algorithm,
+with:
+
+* A cache that supports incremental computation.  The cache data structure is a
+hash map (Python `dict`) with keys encoding prefixes and also has a tree
+structure reflecting relationships among prefixes.
 
 * A priority queue to manage different scheduling policies (implemented using
 Python's `heapq` module).
 
 * Symmetry-aware garbage collection for sets of prefixes that are equivalent up
-to permutation -- only keep the best.
+to permutation -- we only keep the best.
 
 * Symmetry-aware pruning for equivalence classes of prefixes that contain
-(possibly multiple) adjacent pairs of commuting rules -- only need to evaluate one.
+(possibly multiple) adjacent pairs of commuting rules -- we only evaluate one.
 
 #### Cache
 
-The cache is currently a dictionary with keys encoding prefixes.
-Each key maps to a cache entry with the following attributes:
+The cache data structure is a hash map that also encodes a tree.
+The keys of the hash map encode prefixes; retrieving a cache entry for a given
+prefix is thus an O(1) operation.
+The tree structure reflects relationships among prefixes, and these
+relationships enable incremental computation in our branch-and-bound algorithm.
+
+Each node of the tree is indexed by a prefix.
+The root node is the empty prefix and nodes at depth `d` (below) the root
+correspond to prefixes of length `d`.
+The children of a node indexed by `prefix` are prefixes starting with `prefix`
+and longer by one rule (not in `prefix`).
+The parent of a node indexed by `prefix` of length `k > 0` is therefore indexed
+by `trim(prefix)`, where this operation returns a prefix whose rules are given
+by the first `k - 1` rules of `prefix`.
+It is thus efficient to find the parent and other ancestors of a given prefix,
+i.e., to traverse the tree up towards the root.
+To support efficient traversals in the direction of descendents, a node must
+also keep track of its children; our implementation is detailed below, in our
+description of cache entry attributes.
+
+The cache's tree structure also encodes the state of computation and contains
+two kinds of nodes, `used` and `unused`.
+When a cache entry is first inserted, it is `unused` in the sense that it has
+not yet been (completely) used in incremental computations related to its children.
+If it is ever used for such computations, we call it `used`.
+Our `prune_up` routine enforces that that all `used` cache entries are interior
+nodes in the tree and all `unused` cache entries are leaves.
+
+An `unused` cache entry has the following attributes:
 
 * **prefix** : n-tuple of integers corresponding to rules (redundant w.r.t. key)
 
@@ -136,120 +177,47 @@ Each key maps to a cache entry with the following attributes:
 
 * **curiosity** : curiosity (not necessary for cache but can be used by priority queue)
 
-* **num_children** : number of children, i.e., prefixes in the cache that start with prefix and are one rule longer
+* **children** : set of integers encoding child nodes
 
-#### Breadth-first branch-and-bound algorithm with cache
+* **num_children** : number of children
 
+* **reject_list** : tuple of integers encoding rejected rules that should never be appended to `prefix` (if a rule captures insufficient data when appended to a prefix, then it will be insufficient for any rule list that starts with that prefix)
 
-    def incremental(prefix, rules, labels, min_objective, *cache):
-        ...
-        return objective
+If an `unused` cache entry becomes `used`, then we delete these attributes used
+in the computation because they will not be used again:
 
-    def branch_and_bound(rules, labels):
-        initialize queue (with () for cold start)
-        initialize cache (empty for cold start)
-        initialize min_objective (inf for cold start)
-        done = False
+    prefix, prediction, default_rule, accuracy, objective,
+    num_captured, num_captured_correct, not_captured, curiosity
 
-        while(queue and not done):
-            prefix_start = pop(queue)
-            rule_list = [r for r in range(len(rules)) if r not in prefix_start]
+A `used` cache entry thus retains four attributes:
 
-            for r in rule_list:
-                prefix = prefix_start + (r,)
-                (objective, lower_bound) = incremental(prefix, rules, labels, min_objective, *cache)
+* **lower_bound** : the lower bounds of interior nodes are used to prune the cache when the minimum observed objective decreases (via the `garbage_collect` routine)
 
-                if (lower_bound < min_objective):
-                    push(queue, prefix)
+* **children** : this attribute encodes the tree structure
 
-                if (objective < min_objective):
-                    (min_objective, best_prefix) = (objective, prefix)
+* **num_children** : if `num_children` reaches zero, the `used` cache entry is a `dead end` and we delete it (via the `prune_up` routine, which also removes `dead end` ancestors)
 
-                    if (objective is optimal for its length):
-                        done = True
+* **reject_list** : when an `unused` cache entry is retrieved, this attribute is lazily initialized by copying its parent's `reject_list`
 
-        return (min_objective, best_prefix)
+##### Elementary cache operations
 
-#### Branch-and-bound algorithm with priority queue, cache, and garbage collection
+* **insert(prefix, cache_entry)** : insert an `unused` cache entry for `prefix`
+(and update its parent)
 
-    def incremental(prefix, rules, labels, min_objective, *cache):
+* **delete(prefix)** : delete `prefix` and all of its descendents (and update
+its parent, calling `prune_up` if relevant)
 
-        min_correct = minimum number of data each rule in a rule list must capture and predict correctly
+##### Cache garbage collection routines
 
-        num_captured = calculate_captures(prefix, rules, *cache)
-        if (num_captured == 0):
-            return None    # the last rule doesn't capture any new data points
-        if (num_captured < min_correct):
-            return None    # last rule doesn't capture enough new data
+* **insert(prefix, cache_entry)** : symmetry-aware garbage collection happens on cache entry insertion; we discuss this below
 
-        (num_captured_correct, not_captured) = calculate_correct(prefix, labels, *cache)
-        if (num_captured_correct < min_correct):
-            return None    # last rule doesn't correctly predict enough new data
+* **prune_up(prefix)** : if `prefix` corresponds to a `dead end`, i.e., a `used`
+cache entry with no children, then remove cache entries for `prefix` as well as
+any `dead end` ancestors
 
-        calculate default_rule, objective, lower_bound
+* **garbage_collect(min_objective)** : delete all prefixes with `lower_bound > min_objective)`; called when `min_objective` decreases
 
-        if (lower_bound > min_objective):
-            return None    # dead prefix
-
-        if (cache contains permutation of prefix with better objective):
-            return None    # symmetry-aware garbage collection
-
-        cache the prefix and associated computation
-        return objective
-
-    def branch_and_bound(rules, labels, policy):
-        initialize priority_queue (with () for cold start)
-        initialize cache (empty for cold start)
-        initialize min_objective (inf for cold start)
-        done = False
-
-        while(priority_queue and not done):
-            prefix_start = pop(priority_queue)
-            if prefix_start not in cache:    # we garbage collect cache but not priority_queue
-                continue
-            cached_prefix = cache[prefix_start]
-            if (cached_prefix.lower_bound > min_objective):    # dead prefix start
-                continue
-
-            rule_list = [r for r in range(len(rules)) if r not in prefix_start]
-            pruned_rule_list = prune_rules(prefix, rule_list, rules)    # symmetry-aware pruning
-
-            for r in pruned_rule_list:
-                prefix = prefix_start + (r,)
-                objective = incremental(prefix, rules, labels, min_objective, *cache)
-                if (objective is None):    # prefix is useless
-                    continue
-
-                if (objective < min_objective):
-                    (min_objective, best_prefix) = (objective, prefix)
-                    garbage_collect(min_objective, *cache)    # eject entries with lower_bound > min_objective
-
-                if (prefix is optimal for its length):
-                    if (policy is breadth-first):    # found an optimal prefix
-                        done = True
-                    else:                            # switch to certification mode
-                        policy = breadth first
-                        priority_queue = reprioritize(priority_queue, policy)
-                else:
-                    push(priority_queue, policy, prefix)
-
-            if (policy is not breadth-first):
-                if (prefix_start is a dead end):    # prefix_start has no useful children
-                    prune_up(prefix_start, *cache)  # remove prefix_start and dead end ancestors
-
-        return (min_objective, best_prefix)
-
-#### Symmetry-aware pruning
-
-Two rules A and B commute if they capture non-intersecting subsets of data.
-If rules A and B commute, then a rule list where A and B are adjacent is
-equivalent to another rule list where A and B swap positions.
-More generally, a rule list containing possibly multiple, possibly overlapping,
-pairs of commuting rules is equivalent to any other rule list that can be
-generated by swapping one or more such pairs of rules.
-We avoid evaluating multiple such equivalent rule lists by eliminating all but one.
-
-#### Symmetry-aware garbage collection
+### Priority queue
 
 #### Prioritization metrics
 
@@ -279,6 +247,51 @@ and
 regularization term.
  
     priority = (# incorrect) / (# data) + c * (prefix length)
+
+#### Symmetry-aware pruning
+
+Two rules A and B commute if they capture non-intersecting subsets of data.
+If rules A and B commute, then a rule list where A and B are adjacent is
+equivalent to another rule list where A and B swap positions.
+More generally, a rule list containing possibly multiple, possibly overlapping,
+pairs of commuting rules is equivalent to any other rule list that can be
+generated by swapping one or more such pairs of rules.
+We avoid evaluating multiple such equivalent rule lists by eliminating all but one.
+
+#### Symmetry-aware garbage collection
+
+If two prefixes P and Q are composed of the same rules and equivalent up to a
+permutation, then they also capture the same data.
+The two corresponding rule lists need not yield the same objective, since the
+objective depends on rule order.
+Obtain a rule list P' by appending P with some ordered list of unique rules not
+contained in P, and Q' by appending Q with the same ordered list.
+The performance of P' compared to P will be the same as that of Q' compared to Q, e.g.,
+
+    objective(P') - objective(P) = objective(Q') - objective (Q).
+
+Thus, we can delete whichever of P or Q performs worse than the other.
+We call this symmetry-aware garbage collection.
+Since a prefix of length `k` belongs to an equivalence class of `k!` prefixes
+equivalent up to permutation, this garbage collection dramatically prunes the
+search space.
+
+(More generally, when two prefixes capture the same data, we only need to keep
+the better of the two; we have not investigated the utility of this idea.)
+
+We perform symmetry-aware garbage collection on cache insertion, which enforces
+that the cache never contains multiple prefixes equivalent up to permutation.
+We support this via a hash map data structure (Python `dict`) that we call the
+**inverse canonical map** (ICM).
+A set of all prefixes equivalent up to permutation is represented by any member
+of the set; we choose the prefix with rules ordered from least to greatest to
+represent this set, and call this prefix **canonical**.
+The ICM maps canonical prefixes to cached prefixes (and for convenience,
+their objectives) and contains one entry for each cache entry, and lets us
+quickly check whether a prefix is equivalent to a cached prefix up to
+permutation, and if so, determine which is better.
+We couple ICM and cache updates:  cache insertions and deletions trigger
+corresponding ICM operations.
 
 ## tic-tac-toe results
 
@@ -339,12 +352,13 @@ otherwise noted.
 
 ### adult, curiosity, aggressive regularization (min_captured_correct = c)
 
-* (c = 0.1) Certifies (< 3 sec) the best prefix is (51,)
-* (c = 0.09) Certifies (< 8 sec) the best prefix is (118,)
-* (c = 0.08) Certifies (< 13 sec) the best prefix is (118,)
-* (c = 0.07) Certifies (< 30 sec) the best prefix is (118,)
-* (c = 0.06) Certifies (< 260 sec) the best prefix is (69,)
-* (c = 0.05) Certifies (< 3120 sec) the best prefix is (69,) on small laptop
+* (c = 0.1) Certifies (< 1.5 sec) the best prefix is (51,) on school laptop
+* (c = 0.09) Certifies (< 5 sec) the best prefix is (118,)
+* (c = 0.08) Certifies (< 10 sec) the best prefix is (118,)
+* (c = 0.07) Certifies (< 23 sec) the best prefix is (118,)
+* (c = 0.06) Certifies (< 280 sec) the best prefix is (69,)
+* (c = 0.05) Certifies (< 1760 sec) the best prefix is (69,)
+* (c = 0.04) (> 18000 sec)
 
 ### adult, objective, no regularization (c = 0.)
 
@@ -361,14 +375,8 @@ otherwise noted.
 
 ## implemented but not explained
 
-Commuting pairs.
-
 If `c > 0`, don't add prefix to priority queue or cache if
 `c * (len(prefix) + 1) >= min_objective`.
-
-If a rule captures insufficient data when appended to a prefix, then it will be
-insufficient for any rule list that starts with that prefix.  Keep track of such
-rules in the cache.
 
 ## todo
 

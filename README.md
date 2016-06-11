@@ -215,7 +215,7 @@ its parent, calling `prune_up` if relevant)
 cache entry with no children, then remove cache entries for `prefix` as well as
 any `dead end` ancestors
 
-* **garbage_collect(min_objective)** : delete all prefixes with `lower_bound > min_objective)`; called when `min_objective` decreases
+* **garbage_collect(min_objective)** : delete all prefixes with `lower_bound > min_objective`; called when `min_objective` decreases
 
 ### Priority queue
 
@@ -355,8 +355,8 @@ otherwise noted.
 * (c = 0.1) Certifies (< 1.5 sec) the best prefix is (51,) on school laptop
 * (c = 0.09) Certifies (< 5 sec) the best prefix is (118,)
 * (c = 0.08) Certifies (< 10 sec) the best prefix is (118,)
-* (c = 0.07) Certifies (< 23 sec) the best prefix is (118,)
-* (c = 0.06) Certifies (< 280 sec) the best prefix is (69,)
+* (c = 0.07) Certifies (< 25 sec) the best prefix is (118,)
+* (c = 0.06) Certifies (< 210 sec) the best prefix is (69,)
 * (c = 0.05) Certifies (< 1760 sec) the best prefix is (69,)
 * (c = 0.04) (> 18000 sec)
 

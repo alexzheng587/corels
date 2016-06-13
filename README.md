@@ -156,8 +156,6 @@ two kinds of nodes, `used` and `unused`.
 When a cache entry is first inserted, it is `unused` in the sense that it has
 not yet been (completely) used in incremental computations related to its children.
 If it is ever used for such computations, we call it `used`.
-Our `prune_up` routine enforces that that all `used` cache entries are interior
-nodes in the tree and all `unused` cache entries are leaves.
 
 An `unused` cache entry has the following attributes:
 

@@ -379,10 +379,6 @@ otherwise noted.
 
 * Certifies (< 95 sec) there are no prefixes with objective < 0.08
 * Certifies (< 240 sec) there are no prefixes with objective < 0.09
-<!---
-* Certifies (< 1400 sec) there are no prefixes with objective < 0.10
-* Certifies (< 5500 sec) there are no prefixes with objective < 0.11
--->
 
 ### adult, curiosity, aggressive regularization (min_captured_correct = c)
 

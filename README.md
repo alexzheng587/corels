@@ -322,6 +322,328 @@ permutation, and if so, determine which is better.
 We couple ICM and cache updates:  cache insertions and deletions trigger
 corresponding ICM operations.
 
+## small datasets (with varying amounts of regularization)
+
+### bcancer (c = 0.01, min_captured_correct = 0.01)
+
+    nrules: 27
+    ndata: 683
+
+    seconds: 29.18559
+
+    if {a6>7} then predict 1
+    else if {a2<5} then predict 0
+    else predict 1
+
+    accuracy: 0.9516837482
+    objective: 0.0683162518
+    seconds: 1.14501
+
+### bcancer (c = 0.003, min_captured_correct = 0.)
+
+    seconds: 44.94337
+
+    if {a1>7} then predict 1
+    else if {a8>7} then predict 1
+    else if {a6>7} then predict 1
+    else if {a2<5} then predict 0
+    else predict 1
+
+    accuracy: 0.9648609078
+    objective: 0.0471390922
+
+### bcancer (c = 0.001, min_captured_correct = 0.)
+
+    seconds: 119.64070
+
+    if {a7>7} then predict 1
+    else if {a2.5-7} then predict 1
+    else if {a4>7} then predict 1
+    else if {a6>7} then predict 1
+    else if {a1<5} then predict 0
+    else if {a9.5-7} then predict 1
+    else if {a8>7} then predict 1
+    else if {a6.5-7} then predict 1
+    else if {a1.5-7} then predict 0
+    else if {a7.5-7} then predict 1
+    else if {a9<5} then predict 0
+    else predict 1
+
+    accuracy: 0.9765739385
+    objective: 0.0344260615
+
+### bcancer (c = 0., min_captured_correct = 0.)
+
+    seconds: 1009.41659
+
+    if {a7>7} then predict 1
+    else if {a2.5-7} then predict 1
+    else if {a4>7} then predict 1
+    else if {a6>7} then predict 1
+    else if {a1<5} then predict 0
+    else if {a9>7} then predict 1
+    else if {a9.5-7} then predict 1
+    else if {a8>7} then predict 1
+    else if {a5>7} then predict 0
+    else if {a6.5-7} then predict 1
+    else if {a3>7} then predict 0
+    else if {a2>7} then predict 1
+    else if {a8.5-7} then predict 1
+    else if {a5<5} then predict 0
+    else if {a7.5-7} then predict 1
+    else if {a1.5-7} then predict 1
+    else predict 0
+
+    accuracy: 0.9780380673
+    objective: 0.0219619327
+
+### cars (c = 0.01, min_captured_correct = 0.01)
+
+    nrules: 21
+    ndata: 1728
+
+    seconds: 0.21441
+
+    if {persons=2} then predict 0
+    else if {safety=low} then predict 0
+    else if {buying=low} then predict 1
+    else if {buying=med} then predict 1
+    else if {maint=vhigh} then predict 0
+    else if {safety=high} then predict 1
+    else if {lug-boot=small} then predict 0
+    else predict 1
+
+    accuracy: 0.9386574074
+    objective: 0.1313425926
+
+###  cars (c = 0.003, min_captured_correct = 0.)
+
+    seconds: 0.17232
+
+    if {persons=2} then predict 0
+    else if {safety=low} then predict 0
+    else if {buying=low} then predict 1
+    else if {buying=med} then predict 1
+    else if {maint=vhigh} then predict 0
+    else if {buying=high} then predict 1
+    else if {maint=high} then predict 0
+    else if {safety=high} then predict 1
+    else if {lug-boot=small} then predict 0
+    else predict 1
+
+    accuracy: 0.9479166667
+    objective: 0.0790833333
+
+###  cars (c = 0.001, min_captured_correct = 0.)
+
+    seconds: 0.08900
+
+    if {persons=2} then predict 0
+    else if {safety=low} then predict 0
+    else if {buying=low} then predict 1
+    else if {buying=med} then predict 1
+    else if {maint=vhigh} then predict 0
+    else if {buying=high} then predict 1
+    else if {maint=high} then predict 0
+    else if {lug-boot=big} then predict 1
+    else if {safety=high} then predict 1
+    else if {lug-boot=small} then predict 0
+    else if {doors=2} then predict 0
+    else predict 1
+
+    accuracy: 0.9502314815
+    objective: 0.0607685185
+
+###  cars (c = 0., min_captured_correct = 0.)
+
+    seconds: 0.04759
+
+    if {persons=2} then predict 0
+    else if {safety=low} then predict 0
+    else if {buying=low} then predict 1
+    else if {buying=med} then predict 1
+    else if {maint=vhigh} then predict 0
+    else if {safety=high} then predict 1
+    else if {lug-boot=small} then predict 0
+    else if {buying=high} then predict 1
+    else if {maint=high} then predict 0
+    else if {lug-boot=big} then predict 1
+    else if {doors=2} then predict 0
+    else if {persons=more} then predict 1
+    else if {doors=3} then predict 0
+    else predict 1
+
+    accuracy: 0.9513888889
+    objective: 0.0486111111
+
+### haberman (c = 0.01, min_captured_correct = 0.01)
+
+    nrules: 15
+    ndata: 306
+
+    seconds: 4.09679
+
+    if {age<40} then predict 1
+    else if {nodes10-19} then predict 0
+    else predict 1
+
+    accuracy: 0.7614379085
+    objective: 0.2585620915
+
+### haberman (c = 0.003, min_captured_correct = 0.)
+
+    seconds: 35.42373
+
+    if {age<40} then predict 1
+    else if {nodes0} then predict 1
+    else if {year>65} then predict 1
+    else if {nodes10-19} then predict 0
+    else if {age>69} then predict 0
+    else if {nodes1-9} then predict 1
+    else if {year62-63} then predict 0
+    else if {age60-69} then predict 1
+    else predict 0
+
+    accuracy: 0.7941176471
+    objective: 0.2298823529
+
+### haberman (c = 0.001, min_captured_correct = 0.)
+
+    seconds: 46.61386
+
+    same solution as above
+
+### haberman (c = 0., min_captured_correct = 0.)
+
+    ~same as above
+
+### monks1 (c = 0.01, min_captured_correct = 0.01)
+
+    nrules: 17
+    ndata: 432
+
+    seconds: 0.06728
+
+    if {a5=1} then predict 1
+    else if {a1=2} then predict 0
+    else if {a1=1} then predict 0
+    else if {a2=3} then predict 1
+    else predict 0
+
+    accuracy: 0.8333333333
+    objective: 0.2066666667
+
+### monks1 (c = 0.003, 0.001, 0., min_captured_correct = 0.)
+
+    ~same as above
+
+###  monks2 (c = 0.01, min_captured_correct = 0.01)
+
+    nrules: 17
+    ndata: 432
+
+    seconds: 5.79060
+
+    if {a1=1} then predict 0
+    else if {a3=2} then predict 0
+    else if {a2=1} then predict 0
+    else if {a4=1} then predict 0
+    else if {a6=1} then predict 1
+    else if {a5=1} then predict 1
+    else predict 0
+
+    accuracy: 0.7268518519
+    upper_bound: 0.7268518519
+
+### monks2 (c = 0.003, 0.001, 0., min_captured_correct = 0.)
+
+    ~same as above
+
+### monks3 (c = 0.01, min_captured_correct = 0.01)
+
+    nrules: 17
+    ndata: 432
+
+    seconds: 0.01394
+
+    if {a5=4} then predict 0
+    else if {a2=3} then predict 0
+    else predict 1
+
+    accuracy: 0.9722222222
+    objective: 0.0477777778
+
+### monks3 (c = 0.003, min_captured_correct = 0.)
+
+    seconds: 0.00667
+
+    if {a5=4} then predict 0
+    else if {a2=2} then predict 1
+    else if {a2=1} then predict 1
+    else if {a4=3} then predict 0
+    else if {a4=2} then predict 0
+    else if {a5=3} then predict 1
+    else predict 0
+
+    accuracy: 1.0000000000
+    objective: 0.0180000000
+
+### monks3 (c = 0.001, min_captured_correct = 0.)
+
+    seconds: 0.00750
+
+    if {a5=4} then predict 0
+    else if {a2=2} then predict 1
+    else if {a2=1} then predict 1
+    else if {a4=3} then predict 0
+    else if {a4=2} then predict 0
+    else if {a5=3} then predict 1
+    else predict 0
+
+    accuracy: 1.0000000000
+    objective: 0.0060000000
+
+### monks3 (c = 0., min_captured_correct = 0.)
+
+    ~same as above
+
+### votes (c = 0.01, min_captured_correct = 0.01)
+
+    nrules: 16
+    ndata: 435
+
+    if {V4} then predict 0
+    else predict 1
+
+    accuracy: 0.9563218391
+    objective: 0.0536781609
+    seconds: 0.00188
+
+### votes (c = 0.003, min_captured_correct = 0.)
+
+    ~same as above
+
+### votes (c = 0.001, min_captured_correct = 0.)
+
+    seconds: 0.38524
+
+    if {V4} then predict 0
+    else if {V3} then predict 1
+    else if {V15} then predict 1
+    else if {V5} then predict 1
+    else if {V11} then predict 1
+    else if {V1} then predict 0
+    else if {V12} then predict 0
+    else if {V9} then predict 1
+    else predict 0
+
+    accuracy: 0.9655172414
+    objective: 0.0424827586
+
+### votes (c = 0., min_captured_correct = 0.)
+
+    ~same as above
+
 ## tic-tac-toe results
 
 ### tdata, breadth-first, no regularization (c = 0.)
@@ -380,11 +702,11 @@ otherwise noted.
 
 ### adult, curiosity, aggressive regularization (min_captured_correct = c)
 
-* (c = 0.1) Certifies (< 1.5 sec) the best prefix is (51,) on school laptop
-* (c = 0.09) Certifies (< 5 sec) the best prefix is (118,)
-* (c = 0.08) Certifies (< 10 sec) the best prefix is (118,)
-* (c = 0.07) Certifies (< 25 sec) the best prefix is (118,)
-* (c = 0.06) Certifies (< 210 sec) the best prefix is (69,)
+* (c = 0.1) Certifies (< 1.5 sec) the best prefix is (51,) -> 1.2 sec
+* (c = 0.09) Certifies (< 5 sec) the best prefix is (118,) -> 5.3 sec
+* (c = 0.08) Certifies (< 10 sec) the best prefix is (118,) -> 9.6 sec
+* (c = 0.07) Certifies (< 25 sec) the best prefix is (118,) -> 23 sec
+* (c = 0.06) Certifies (< 210 sec) the best prefix is (69,) -> 292 sec
 * (c = 0.05) Certifies (< 1,060 sec) the best prefix is (69,)
 * (c = 0.04) (< 40,000 sec) the best prefix is (69,)
 
@@ -392,29 +714,42 @@ otherwise noted.
 * (c = 0.02) (cache reaches 3 x 10^6 entries in 131 sec)
 
 * (c = 0.01) (cache reaches 3 x 10^6 entries in 136 sec)
-(0,)    0.26432 0.74568
-(11,)   0.26199 0.74801
-(23,)   0.25601 0.75399
-(43,)   0.22742 0.78258
-(128, 43, 69)   0.22282 0.80718
-(33, 43, 69)    0.22182 0.80818
-(41, 43, 69)    0.22149 0.80851
+
+    (0,)    0.26432 0.74568
+    (11,)   0.26199 0.74801
+    (23,)   0.25601 0.75399
+    (43,)   0.22742 0.78258
+    (128, 43, 69)   0.22282 0.80718
+    (33, 43, 69)    0.22182 0.80818
+    (41, 43, 69)    0.22149 0.80851
 
 * (c = 0.0) (cache reaches 3 x 10^6 entries in 102 sec)
 * `lower_bound` priority metric performs similarly
-(0,)    0.25432 0.74568
-(11,)   0.25199 0.74801
-(23,)   0.24601 0.75399
-(43,)   0.21742 0.78258
-(114, 59)   0.21676 0.78324
-(114, 69)   0.20180 0.79820
-(114, 38, 69)   0.20146 0.79854
-(114, 236, 69)  0.19648 0.80352
-(114, 236, 38, 69)  0.19614 0.80386
-(114, 236, 38, 87, 43, 69)  0.19249 0.80751
-(114, 236, 38, 87, 43, 267, 69) 0.19149 0.80851
-(114, 236, 38, 87, 43, 34, 69)  0.19116 0.80884
-(43, 38, 87, 267, 34, 69)   0.19016 0.80984
+
+    (0,)    0.25432 0.74568
+    (11,)   0.25199 0.74801
+    (23,)   0.24601 0.75399
+    (43,)   0.21742 0.78258
+    (114, 59)   0.21676 0.78324
+    (114, 69)   0.20180 0.79820
+    (114, 38, 69)   0.20146 0.79854
+    (114, 236, 69)  0.19648 0.80352
+    (114, 236, 38, 69)  0.19614 0.80386
+    (114, 236, 38, 87, 43, 69)  0.19249 0.80751
+    (114, 236, 38, 87, 43, 267, 69) 0.19149 0.80851
+    (114, 236, 38, 87, 43, 34, 69)  0.19116 0.80884
+    (43, 38, 87, 267, 34, 69)   0.19016 0.80984
+
+* (c = 0.01)
+
+  * Certifies (< 12 sec) that there are no prefixes with objective < 0.04
+  * Up to symmetries, 0 prefixes have lower bound < 0.04
+
+  * Certifies (< 60 sec) that there are no prefixes with objective < 0.05
+  * Up to symmetries, 42 prefixes have lower bound < 0.05 (length <= 2)
+
+  * Certifies (< 650 sec) that there are no prefixes with objective < 0.06
+  * Up to symmetries, 569 prefixes have lower bound < 0.06 (length <= 3)
 
 ### adult, objective
 

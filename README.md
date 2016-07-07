@@ -802,9 +802,6 @@ If `c > 0`, don't add prefix to priority queue or cache if
 
 ## todo
 
-Tighten bound in `garbage_collect` by `c` since what's relevant is whether the
-children are worth evaluating.
-
 Insertions and deletions into `pdict` (and `priority_queue`?) should happen in
 parallel with analogous cache operations.
 

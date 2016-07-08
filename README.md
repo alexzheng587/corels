@@ -802,6 +802,10 @@ If `c > 0`, don't add prefix to priority queue or cache if
 
 ## todo
 
+Conditional commutativity?
+
+Symmetry wrt not_captured?
+
 Insertions and deletions into `pdict` (and `priority_queue`?) should happen in
 parallel with analogous cache operations.
 

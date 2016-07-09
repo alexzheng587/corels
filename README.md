@@ -267,7 +267,11 @@ as informed by a hash map `cdict` that maps each rule `R_i` to a set of rules
 When growing a prefix that ends with rule `R_i`, we only append a rule `R_j` if
 it is **not** in `S_i`.
 
-For `adult`, `cdict` maps each rule to a set that on average has 25 rules.
+For `tdata`, `cdict` maps each rule to a set that on average has 59 rules
+(15% of 377 total).
+
+For `adult`, `cdict` maps each rule to a set that on average has 25 rules
+(8% of 284 total).
 
 #### Relation-aware pruning
 
@@ -285,6 +289,7 @@ Notice that the intersection of `S_i` and `T_i` is the empty set, thus the
 mappings represented by `cdict` and `rdict` can easily be combined into a single
 mapping.
 
+For `tdata`, `rdict` maps each rule to a set that on average has 3 rules.
 For `adult`, `rdict` maps each rule to a set that on average has 2 rules.
 
 #### Symmetry-aware garbage collection
@@ -801,6 +806,10 @@ If `c > 0`, don't add prefix to priority queue or cache if
 `c * (len(prefix) + 1) >= min_objective`.
 
 ## todo
+
+Curiosity doesn't seem to be helping `adult` with `c = 0.01` find the best
+prefix of length 3, compared to `objective` and `breadth_first`.
+Run `breadth_first` on all prefixes of at least length 4.
 
 Conditional commutativity?
 

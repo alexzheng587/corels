@@ -705,13 +705,53 @@ otherwise noted.
 * Certifies (< 95 sec) there are no prefixes with objective < 0.08
 * Certifies (< 240 sec) there are no prefixes with objective < 0.09
 
+### adult, breadth-first, aggressive regularization (min_captured_correct = c)
+
+Reporting cache entries by prefix length (for certified runs, these are entries with lower bound less than the best objective).  Also reporting "growth rate."
+
+* (c = 0.06) Certifies (~180 sec) the best prefix is (69,), max cache size ~130,000, max length checked = 3
+
+    [1, 204, 13513, 114479] -> [204, 66.2, 8.47]
+
+* (c = 0.05) Certifies (~900 sec) the best prefix is (69,), max cache size ~580,000, max length checked = 4
+
+    [1, 220, 18561, 455669, 104964] -> [220, 84.3, 24.5, 0.23]
+
+* (c = 0.04) (>1,000 sec) the best known prefix is (69,), max cache size >5,000,000, max length checked >= 4 (certified there are no prefixes of length 2 or 3 that are better)
+
+    [1, 236, 22893, 957038, >4019841] -> [236, 97.0, 41.8, ...]
+
+* (c = 0.01) the best known prefix (43, 122, 121), objective = 0.20088, max cache size >3,000,000 max length checked >=4 (certified this is the best prefix of length 3)
+
+    [1, 263, 32400, 2478819, >488533 ...] -> [263, 123, 76.5, ...]
+
+### adult, (min_captured_correct = c = 0.01), max cache size = 2,600,000
+
+Reporting number of cache leaves by prefix length (things in priority queue) starting at 1
+
+* breadth-first: 0.20088, completed depth = 3
+
+    [0, 0, 2476944, 88552]
+
+* curiosity: 0.22148, explores too deep too fast, e.g., many prefixes of length 1 unexplored, including (43,)
+
+    [237, 7272, 238092, 1449381, 891552]
+
+* lower bound: 0.20420, explores up to depth 4
+
+    [126, 21855, 512618, 2052639]
+
+* objective: 0.20088, explores up to depth 6
+
+    [262, 228, 1137, 4851, 197921, 2366233]
+
 ### adult, curiosity, aggressive regularization (min_captured_correct = c)
 
 * (c = 0.1) Certifies (< 1.5 sec) the best prefix is (51,) -> 1.2 sec
 * (c = 0.09) Certifies (< 5 sec) the best prefix is (118,) -> 5.3 sec
 * (c = 0.08) Certifies (< 10 sec) the best prefix is (118,) -> 9.6 sec
 * (c = 0.07) Certifies (< 25 sec) the best prefix is (118,) -> 23 sec
-* (c = 0.06) Certifies (< 210 sec) the best prefix is (69,) -> 292 sec
+* (c = 0.06) Certifies (< 210 sec) the best prefix is (69,)
 * (c = 0.05) Certifies (< 1,060 sec) the best prefix is (69,)
 * (c = 0.04) (< 40,000 sec) the best prefix is (69,)
 

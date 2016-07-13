@@ -327,7 +327,7 @@ permutation, and if so, determine which is better.
 We couple ICM and cache updates:  cache insertions and deletions trigger
 corresponding ICM operations.
 
-## small datasets with rule expansion (max cardinality = 2, min/max support = 10/90%)
+## small datasets with rule expansion (max cardinality = 2, min support = 10%)
 
 | dataset | # data | # 0 | # 1 | f. 0 | f. 1 | # dim | # rules |
 | --- | --- | --- | --- | --- | --- | --- | --- |

@@ -329,15 +329,15 @@ corresponding ICM operations.
 
 ## small datasets with rule expansion (max cardinality = 2, min/max support = 10/90%)
 
-| dataset | # data | # dim | # rules |
-| --- | --- | --- | --- |
-| bcancer | 683 | 28 | 1343 |
-| cars | 1728 | 22 | 993 |
-| haberman | 306 | 16 | 340 |
-| monks1 | 432 | 18 | 612 |
-| monks2 | 432 | 18 | 621 |
-| monks3 | 432 | 18 | 665 |
-| votes | 435 | 17 | 645 |
+| dataset | # data | # 0, # 1 | 0, 1 | # dim | # rules |
+| --- | --- | --- | --- | --- | --- |
+| bcancer | 683 | 444, 239 | 0.65, 0.35 | 28 | 1343 |
+| cars | 1728 | 1210, 518 | 0.70, 0.30 | 22 | 993 |
+| haberman | 306 | 81, 225 | 0.26, 0.74 | 16 | 340 |
+| monks1 | 432 | 216, 216 | 0.5, 0.5 | 18 | 612 |
+| monks2 | 432 | 290, 142 | 0.67, 0.33 | 18 | 621 |
+| monks3 | 432 | 204, 228 | 0.47, 0.53 | 18 | 665 |
+| votes | 435 | 168, 267 | 0.39, 0.61 | 17 | 645 |
 
 ## small datasets without rule expansion (with varying amounts of regularization)
 

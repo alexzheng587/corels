@@ -327,17 +327,19 @@ permutation, and if so, determine which is better.
 We couple ICM and cache updates:  cache insertions and deletions trigger
 corresponding ICM operations.
 
-## small datasets with rule expansion (max cardinality = 2, min support = 10%)
+## small datasets with rule expansion (min support = 10%)
 
-| dataset | # data | # 0 | # 1 | f. 0 | f. 1 | # dim | # rules |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| bcancer | 683 | 444 | 239 | 0.65 | 0.35 | 28 | 1343 |
-| cars | 1728 | 1210 | 518 | 0.70 | 0.30 | 22 | 993 |
-| haberman | 306 | 81 | 225 | 0.26 | 0.74 | 16 | 340 |
-| monks1 | 432 | 216 | 216 | 0.5 | 0.5 | 18 | 612 |
-| monks2 | 432 | 290 | 142 | 0.67 | 0.33 | 18 | 621 |
-| monks3 | 432 | 204 | 228 | 0.47 | 0.53 | 18 | 665 |
-| votes | 435 | 168 | 267 | 0.39 | 0.61 | 17 | 645 |
+For max cardinality = 2, 3
+
+| dataset | # data | # 0 | # 1 | f. 0 | f. 1 | # dim | # rules, 2 | # rules, 3|
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| bcancer | 683 | 444 | 239 | 0.65 | 0.35 | 28 | 1,343 | 16,366 |
+| cars | 1,728 | 1,210 | 518 | 0.70 | 0.30 | 22 | 993 | 11,196 |
+| haberman | 306 | 81 | 225 | 0.26 | 0.74 | 16 | 340 | 2,390 |
+| monks1 | 432 | 216 | 216 | 0.5 | 0.5 | 18 | 612 | 5,770 |
+| monks2 | 432 | 290 | 142 | 0.67 | 0.33 | 18 | 621 | 5,611 |
+| monks3 | 432 | 204 | 228 | 0.47 | 0.53 | 18 | 665 | 6,292 |
+| votes | 435 | 168 | 267 | 0.39 | 0.61 | 17 | 645 | 4,261 |
 
 ## small datasets without rule expansion (with varying amounts of regularization)
 

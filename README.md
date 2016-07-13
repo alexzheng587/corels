@@ -327,7 +327,19 @@ permutation, and if so, determine which is better.
 We couple ICM and cache updates:  cache insertions and deletions trigger
 corresponding ICM operations.
 
-## small datasets (with varying amounts of regularization)
+## small datasets with rule expansion (max cardinality = 2, min/max support = 10/90%)
+
+| dataset | # data | # dim | # rules |
+| --- | --- | --- | --- |
+| bcancer | 683 | 28 | 1343 |
+| cars | 1728 | 22 | 993 |
+| haberman | 306 | 16 | 340 |
+| monks1 | 432 | 18 | 612 |
+| monks2 | 432 | 18 | 621 |
+| monks3 | 432 | 18 | 665 |
+| votes | 435 | 17 | 645 |
+
+## small datasets without rule expansion (with varying amounts of regularization)
 
 ### bcancer (c = 0.01, min_captured_correct = 0.01)
 

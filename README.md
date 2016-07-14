@@ -861,9 +861,15 @@ If `c > 0`, don't add prefix to priority queue or cache if
 
 ## todo
 
+Implemented but not explained -- improved propagation of `reject_list`
+
+Can reject rules that capture too much -- analogous to not enough.  A related fact that can be generalized:  if a rule defined by clause A is added to a prefix, then it will never make sense to later add the clause (not A) below; furthermore, a rule of the form (B and not A) is equivalent to the rule given by clause A.
+
 Curiosity doesn't seem to be helping `adult` with `c = 0.01` find the best
 prefix of length 3, compared to `objective` and `breadth_first`.
 Run `breadth_first` on all prefixes of at least length 4.
+
+Does the FP growth code have ideas that would be useful to us?
 
 Conditional commutativity?
 

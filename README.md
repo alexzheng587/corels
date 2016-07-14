@@ -861,6 +861,12 @@ If `c > 0`, don't add prefix to priority queue or cache if
 
 ## todo
 
+Semantics should buy us more than we're already achieving.  Let's optimize the crap out of tic-tac-toe!
+
+2 rules also commute if they predict the same way on the same data!
+
+Compute commutes as rule is added!
+
 Implemented but not explained -- improved propagation of `reject_list`
 
 Can reject rules that capture too much -- analogous to not enough.  A related fact that can be generalized:  if a rule defined by clause A is added to a prefix, then it will never make sense to later add the clause (not A) below; furthermore, a rule of the form (B and not A) is equivalent to the rule given by clause A.

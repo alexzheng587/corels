@@ -863,7 +863,7 @@ If `c > 0`, don't add prefix to priority queue or cache if
 
 Semantics should buy us more than we're already achieving.  Let's optimize the crap out of tic-tac-toe!
 
-2 rules also commute if they predict the same way on the same data!
+From Cynthia:  If the rules make the same prediction on all of their overlapping points, then they commute.
 
 Compute commutes as rule is added!
 

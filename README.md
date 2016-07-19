@@ -201,7 +201,7 @@ A `used` cache entry thus retains four attributes:
 
 * **num_children** : if `num_children` reaches zero, the `used` cache entry is a `dead end` and we delete it (via the `prune_up` routine, which also removes `dead end` ancestors)
 
-* **reject_list** : when an `unused` cache entry is retrieved, this attribute is lazily initialized by copying its parent's `reject_list`
+* **reject_list** : when an `unused` cache entry for prefix P of length L is retrieved, this attribute is lazily initialized by taking the union of `reject_list` elements from any cached prefix in S, where S is the set of prefixes formed by taking subsets of (L-1) rules from P; this is efficient due to our symmetry-aware garbage collection and an associated data structure.
 
 ##### Elementary cache operations
 
@@ -861,13 +861,15 @@ If `c > 0`, don't add prefix to priority queue or cache if
 
 ## todo
 
+If adding a rule R captures all uncaptured data, this can't be better than the parent prefix, and R should be added to the reject list.
+
+If, given a prefix, two rules capture the same data, only one should be pursued; the other should be added to the reject list.
+
 Semantics should buy us more than we're already achieving.  Let's optimize the crap out of tic-tac-toe!
 
 From Cynthia:  If the rules make the same prediction on all of their overlapping points, then they commute.
 
 Compute commutes as rule is added!
-
-Implemented but not explained -- improved propagation of `reject_list`
 
 Can reject rules that capture too much -- analogous to not enough.  A related fact that can be generalized:  if a rule defined by clause A is added to a prefix, then it will never make sense to later add the clause (not A) below; furthermore, a rule of the form (B and not A) is equivalent to the rule given by clause A.
 

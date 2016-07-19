@@ -871,8 +871,6 @@ If `c > 0`, don't add prefix to priority queue or cache if
 
 ## todo
 
-If, given a prefix, two rules capture the same data, only one should be pursued; the other should be added to the reject list.
-
 Semantics should buy us more than we're already achieving.  Let's optimize the crap out of tic-tac-toe!
 
 From Cynthia:  If the rules make the same prediction on all of their overlapping points, then they commute.

@@ -877,8 +877,6 @@ From Cynthia:  If the rules make the same prediction on all of their overlapping
 
 Compute commutes as rule is added!
 
-Can reject rules that capture too much -- analogous to not enough.  A related fact that can be generalized:  if a rule defined by clause A is added to a prefix, then it will never make sense to later add the clause (not A) below; furthermore, a rule of the form (B and not A) is equivalent to the rule given by clause A.
-
 Curiosity doesn't seem to be helping `adult` with `c = 0.01` find the best
 prefix of length 3, compared to `objective` and `breadth_first`.
 Run `breadth_first` on all prefixes of at least length 4.
@@ -887,8 +885,6 @@ Does the FP growth code have ideas that would be useful to us?
 
 Conditional commutativity?
 
-Symmetry wrt not_captured?
-
 Insertions and deletions into `pdict` (and `priority_queue`?) should happen in
 parallel with analogous cache operations.
 
@@ -896,13 +892,6 @@ May want to completely remove dependence of incremental on cache.
 
 Should we skip symmetry-based garbage collection (via `pdict`) when
 `len(prefix) == max_prefix_len_check`?
-
-Some of the metrics (`commutes` and `captured_zero`) currently include other
-recently added savings -- separate these out properly.
-
-Could track children explicitly as a cache entry attribute.  This would
-facilitate proper garbage collection. (Currently, finding ancestors is easy, but
-finding children is dumb.)
 
 Not properly updating `num_children` in cache entries or `metrics.cache_size`.
 

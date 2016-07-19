@@ -871,8 +871,6 @@ If `c > 0`, don't add prefix to priority queue or cache if
 
 ## todo
 
-If adding a rule R captures all uncaptured data, this can't be better than the parent prefix, and R should be added to the reject list.
-
 If, given a prefix, two rules capture the same data, only one should be pursued; the other should be added to the reject list.
 
 Semantics should buy us more than we're already achieving.  Let's optimize the crap out of tic-tac-toe!

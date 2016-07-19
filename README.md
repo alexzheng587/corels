@@ -252,9 +252,10 @@ regularization term.
  
     priority = (# incorrect) / (# data) + c * (prefix length)
 
-#### Symmetry-aware pruning
+#### Symmetry-aware pruning I
 
-Two rules A and B **commute** if they capture non-intersecting subsets of data.
+If two rules A and B capture non-intersecting subsets of data, they
+**commute globally (type I)**.
 If rules A and B commute, then a rule list where A and B are adjacent is
 equivalent to another rule list where A and B swap positions.
 More generally, a rule list containing possibly multiple, possibly overlapping,
@@ -272,6 +273,15 @@ For `tdata`, `cdict` maps each rule to a set that on average has 59 rules
 
 For `adult`, `cdict` maps each rule to a set that on average has 25 rules
 (8% of 284 total).
+
+Note that we could also define a local version of (type I) commuting.
+
+#### Symmetry-aware pruning II
+
+If two rules A and B are adjacent in a rule list and the both predict "the same
+way" (i.e., both predict "0" or both predict "1" for captured data), then they
+**commute locally (II)**.
+The way we handle this currently could be made more efficient.
 
 #### Relation-aware pruning
 

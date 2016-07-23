@@ -1,6 +1,10 @@
 # bbcache
 Branch-and-bound algorithm, with caching, for decision lists.
 
+The main function is `bbound` in [`code/serial_priority.py`](https://github.com/elaine84/bbcache/blob/heapq/code/serial_priority.py)
+
+and the work in the inner loop is done by `incremental` in [`code/branch_bound.py`](https://github.com/elaine84/bbcache/blob/heapq/code/branch_bound.py)
+
 ## Dependencies
 
 ### Python dependencies

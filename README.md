@@ -133,6 +133,109 @@ to permutation -- we only keep the best.
 * Symmetry-aware pruning for equivalence classes of prefixes that contain
 (possibly multiple) adjacent pairs of commuting rules -- we only evaluate one.
 
+#### Overview, sort of
+
+A small amount of work is done once upfront to compute pairs of rules that
+**commute globally** due to zero overlap, and to compute pairs of rules where
+one **dominates** another, i.e., A dominates B if A captures all the data that
+B captures.
+
+Note that the **maximum length prefix** we have to check is
+
+    M = (best observed objective) / c < 1 / c.
+
+Furthermore, if we ever encounter a perfect prefix of length L, then we can set
+
+    M = L - 1.
+
+(If the policy is breadth first, we can just stop.  Otherwise, the algorithm
+stops when the queue is empty.)
+
+Suppose we take prefix P of length K off the queue.  That means we've already
+evaluated P and placed it in the cache.
+
+First we check whether P is still in the cache (it could have been garbage
+collected, e.g., because we found a new objective smaller than its lower bound,
+or because we found a permutation with lower objective).  You could say that we
+garbage collect the queue lazily.  If P is not in the cache, we stop (and
+continue to the next prefix in the queue).
+
+Next we construct the list of new rules to consider.  Naively, this would be all
+rules not in the prefix.  Let R be the last rule in P.  We eliminate the
+following rules from consideration:
+
+* rules that have zero overlap with R and have a larger index
+
+* rules that are dominated by (any rule in) P
+
+* rules that we already know would be rejected by P
+
+A rule is rejected by a prefix if it doesn't correctly capture enough data (it
+must correctly capture `>= c * ndata`).  Let Q be P's parent.  If Q rejects a
+rule, then P will also reject that rule.  This **inheritance** of rejected rules
+only depends on which data are captured by Q, and doesn't actually depend on the
+order of rules in Q.  Let S be the set of rules formed from (K-1) rules of P,
+in any order.  P inherits rejected rules from any elements of S.  Because of our
+symmetry-based garbage collection of prefixes equivalent up to a permutation,
+there are at most K elements of S in the cache; we can identify these via the
+**inverse canonical map (ICM)** that maps an ordered prefix to its permutation
+in the cache.
+
+    Aside:  We thus initialize the list of P's rejected rules lazily.  This
+    depends on finding elements of S, which depends on what's in the cache.
+    When is a prefix not in the cache?  Either it hasn't yet been evaluated,
+    or it has been partially evaluated and not inserted, or evaluated and (not
+    inserted, or inserted and later deleted). The cache is thus complemented by
+    information that either isn't inserted or gets deleted -- are we throwing
+    away something useful here?
+
+Now we have a list of candidate new rules.  For each candidate rule R, we
+compute the following:
+
+(1) We compute which data are captured by R.  If R captures < (ndata * c) data,
+then R captured insufficient data.  We add R to the reject list of P and
+continue to the next candidate rule.
+
+(2) If R captures all data uncaptured by P, then R now behaves like the default
+rule, but at the cost of adding a rule.  We add R to the reject list of P and
+continue.
+
+(3) We compute the majority class of data captured by R, and count how many data
+it correctly predicts.  If this number is `< (ndata * c)`, then R correctly
+captured insufficient data.  We add R to the reject list of P and continue.
+
+Let P' be prefix P extended with rule R.  We compute the lower bound of the
+objective of R
+
+    (number of mistakes) / ndata + c * len(P')
+
+(4) If it's greater than the smallest observed objective, then P' is a dead
+prefix and we continue to the next candidate.
+
+We compute the default prediction for P', which lets us compute the objective.
+If it's smaller than the best objective we've seen, we update that.
+
+(5) The children of P' are one longer that P' (i.e., are length K + 2).  If this
+length exceeds M, the maximum prefix length we have to check, then there's no
+point to pursuing P', it is a dead prefix and we continue to the next candidate.
+
+Also because the children of P' are one longer that P', we can give them a
+tighter lower bound,
+
+    (number of mistakes) / ndata + c * len(P') + c
+
+(6) If this is greater than the smallest observed objective, then there's no
+point in pursuing P', it is a dead prefix and we continue to the next candidate.
+
+(7) We check whether there's a permutation of P' in the ICM.
+
+    If not, then add an entry for P' to the ICM.
+    Otherwise, call the permutation T.
+        If the objective of P' is lower than T, then T is inferior and we replace it with P'.
+        Otherwise, P' is inferior and we continue to the next candidate.
+
+If P' reaches this far, then we construct a cache entry for it.
+
 #### Cache
 
 The cache data structure is a hash map that also encodes a tree.

@@ -183,14 +183,7 @@ we can identify these via the **inverse canonical map (ICM)** that maps an
 ordered prefix to its permutation in the cache.
 We thus lazily initialize the list of P's **reject list** of rejected rules.
 
-    Aside:
-    This depends on finding elements of S, which depends on what's in the cache.
-    When is a prefix not in the cache?
-    Either it hasn't yet been evaluated,
-    or it has been partially evaluated and not inserted,
-    or evaluated and (not inserted, or inserted and later deleted).
-    The cache is thus complemented by information that either isn't inserted or
-    gets deleted -- are we throwing away something useful here?
+    Aside: This depends on finding elements of S, which depends on what's in the cache. When is a prefix not in the cache? Either it hasn't yet been evaluated, or it has been partially evaluated and not inserted, or evaluated and (not inserted, or inserted and later deleted). The cache is thus complemented by information that either isn't inserted or gets deleted -- are we throwing away something useful here?
 
 Now we have a list of candidate new rules.  For each candidate rule R, we
 compute the following:

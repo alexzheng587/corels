@@ -157,7 +157,7 @@ evaluated P and placed it in the cache.
 First we check whether P is still in the cache (it could have been garbage
 collected, e.g., because we found a new objective smaller than its lower bound,
 or because we found a permutation with lower objective).  You could say that we
-garbage collect the queue lazily.  If P is not in the cache, we stop (and
+garbage collect the queue **lazily**.  If P is not in the cache, we stop (and
 continue to the next prefix in the queue).
 
 Next we construct the list of new rules to consider.  Naively, this would be all
@@ -181,7 +181,7 @@ Because of our **symmetry-based garbage collection** of prefixes equivalent up
 to a permutation, there are at most K elements of S in the cache;
 we can identify these via the **inverse canonical map (ICM)** that maps an
 ordered prefix to its permutation in the cache.
-We thus lazily initialize the list of P's **reject list** of rejected rules.
+We thus **lazily** initialize the list of P's **reject list** of rejected rules.
 
 * Aside: This depends on finding elements of S, which depends on what's in the cache. When is a prefix not in the cache? Either it hasn't yet been evaluated, or it has been partially evaluated and not inserted, or evaluated and (not inserted, or inserted and later deleted). The cache is thus complemented by information that either isn't inserted or gets deleted -- are we throwing away something useful here?
 

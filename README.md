@@ -228,10 +228,10 @@ it is a **dead prefix** and we continue to the next candidate.
 
 (7) We check whether there's a permutation of P' in the ICM.
 
-    If not, then add an entry for P' to the ICM.
-    Otherwise, call the permutation T.
-        If the objective of P' is lower than T, then T is **inferior** and we replace it with P'.
-        Otherwise, P' is **inferior** and we continue to the next candidate.
+* If not, then add an entry for P' to the ICM.
+* Otherwise, call the permutation T.
+  * If the objective of P' is lower than T, then T is **inferior** and we replace it with P'.
+  * Otherwise, P' is **inferior** and we continue to the next candidate.
 
 If P' reaches this far, then we construct a cache entry for it.
 

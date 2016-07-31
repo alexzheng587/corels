@@ -1,6 +1,10 @@
 # bbcache
 Branch-and-bound algorithm, with caching, for decision lists.
 
+The main function is `bbound` in [`code/serial_priority.py`](https://github.com/elaine84/bbcache/blob/heapq/code/serial_priority.py)
+
+and the work in the inner loop is done by `incremental` in [`code/branch_bound.py`](https://github.com/elaine84/bbcache/blob/heapq/code/branch_bound.py)
+
 ## Dependencies
 
 ### Python dependencies
@@ -129,6 +133,108 @@ to permutation -- we only keep the best.
 * Symmetry-aware pruning for equivalence classes of prefixes that contain
 (possibly multiple) adjacent pairs of commuting rules -- we only evaluate one.
 
+#### Overview, sort of
+
+A small amount of work is done once upfront to compute pairs of rules that
+**commute globally** due to zero overlap, and to compute pairs of rules where
+one **dominates** another, i.e., A dominates B if A captures all the data that
+B captures.
+
+Note that the **maximum length prefix** we have to check is
+
+    M = (best observed objective) / c < 1 / c.
+
+Furthermore, if we ever encounter a perfect prefix of length L, then we can set
+
+    M = L - 1.
+
+(If the policy is breadth first, we can just stop.  Otherwise, the algorithm
+stops when the queue is empty.)
+
+Suppose we take prefix P of length K off the queue.  That means we've already
+evaluated P and placed it in the cache.
+
+First we check whether P is still in the cache (it could have been garbage
+collected, e.g., because we found a new objective smaller than its lower bound,
+or because we found a permutation with lower objective).  You could say that we
+garbage collect the queue **lazily**.  If P is not in the cache, we stop (and
+continue to the next prefix in the queue).
+
+Next we construct the list of new rules to consider.  Naively, this would be all
+rules not in the prefix.  Let R be the last rule in P.  We eliminate the
+following rules from consideration:
+
+* rules that have zero overlap with R and have a larger index
+
+* rules that are dominated by (any rule in) P
+
+* rules that we already know would be rejected by P
+
+A rule is **rejected** by a prefix if it doesn't correctly capture enough data
+(it must correctly capture `>= c * ndata`).
+Let Q be P's parent.  If Q rejects a rule, then P will also reject that rule.
+This 'inheritance' of rejected rules only depends on which data are captured
+by Q, and doesn't actually depend on the order of rules in Q.
+Let S be the set of rules formed from (K-1) rules of P, in any order.
+P inherits rejected rules from any elements of S.
+Because of our **symmetry-based garbage collection** of prefixes equivalent up
+to a permutation, there are at most K elements of S in the cache;
+we can identify these via the **inverse canonical map (ICM)** that maps an
+ordered prefix to its permutation in the cache.
+We thus **lazily** initialize the list of P's **reject list** of rejected rules.
+
+* Aside: This depends on finding elements of S, which depends on what's in the cache. When is a prefix not in the cache? Either it hasn't yet been evaluated, or it has been partially evaluated and not inserted, or evaluated and (not inserted, or inserted and later deleted). The cache is thus complemented by information that either isn't inserted or gets deleted -- are we throwing away something useful here?
+
+Now we have a list of candidate new rules.  For each candidate rule R, we
+compute the following:
+
+(1) We compute which data are captured by R.  If R captures `< (ndata * c)`
+data, then R **captured insufficient** data.
+We add R to the **reject list** of P and continue to the next candidate rule.
+
+(2) If R captures all data uncaptured by P, then R now behaves like the default
+rule, but at the cost of adding a rule.
+We add R to the reject list of P and continue.
+
+(3) We compute the majority class of data captured by R,
+and count how many data it correctly predicts.
+If this number is `< (ndata * c)`, then R **correctly captured insufficient** data.
+We add R to the reject list of P and continue.
+
+Let P' be prefix P extended with rule R.
+We compute the lower bound of the objective of R
+
+    (number of mistakes) / ndata + c * len(P')
+
+(4) If it's greater than the smallest observed objective,
+then P' is a **dead prefix** and we continue to the next candidate.
+
+We compute the default prediction for P', which lets us compute the objective.
+If it's smaller than the best objective we've seen, we update that.
+
+(5) The children of P' are one longer that P' (i.e., are length K + 2).
+If this length exceeds M, the maximum prefix length we have to check,
+then there's no point to pursuing P',
+it is a **dead prefix** and we continue to the next candidate.
+
+Also because the children of P' are one longer that P',
+we can give them a tighter lower bound,
+
+    (number of mistakes) / ndata + c * len(P') + c
+
+(6) If this is greater than the smallest observed objective,
+then there's no point in pursuing P',
+it is a **dead prefix** and we continue to the next candidate.
+
+(7) We check whether there's a permutation of P' in the ICM.
+
+* If not, then add an entry for P' to the ICM.
+* Otherwise, call the permutation T.
+  * If the objective of P' is lower than T, then T is **inferior** and we replace it with P'.
+  * Otherwise, P' is **inferior** and we continue to the next candidate.
+
+If P' reaches this far, then we construct a cache entry for it.
+
 #### Cache
 
 The cache data structure is a hash map that also encodes a tree.
@@ -201,7 +307,7 @@ A `used` cache entry thus retains four attributes:
 
 * **num_children** : if `num_children` reaches zero, the `used` cache entry is a `dead end` and we delete it (via the `prune_up` routine, which also removes `dead end` ancestors)
 
-* **reject_list** : when an `unused` cache entry is retrieved, this attribute is lazily initialized by copying its parent's `reject_list`
+* **reject_list** : when an `unused` cache entry for prefix P of length L is retrieved, this attribute is lazily initialized by taking the union of `reject_list` elements from any cached prefix in S, where S is the set of prefixes formed by taking subsets of (L-1) rules from P; this is efficient due to our symmetry-aware garbage collection and an associated data structure.
 
 ##### Elementary cache operations
 
@@ -252,9 +358,10 @@ regularization term.
  
     priority = (# incorrect) / (# data) + c * (prefix length)
 
-#### Symmetry-aware pruning
+#### Symmetry-aware pruning I
 
-Two rules A and B **commute** if they capture non-intersecting subsets of data.
+If two rules A and B capture non-intersecting subsets of data, they
+**commute globally (type I)**.
 If rules A and B commute, then a rule list where A and B are adjacent is
 equivalent to another rule list where A and B swap positions.
 More generally, a rule list containing possibly multiple, possibly overlapping,
@@ -267,7 +374,20 @@ as informed by a hash map `cdict` that maps each rule `R_i` to a set of rules
 When growing a prefix that ends with rule `R_i`, we only append a rule `R_j` if
 it is **not** in `S_i`.
 
-For `adult`, `cdict` maps each rule to a set that on average has 25 rules.
+For `tdata`, `cdict` maps each rule to a set that on average has 59 rules
+(15% of 377 total).
+
+For `adult`, `cdict` maps each rule to a set that on average has 25 rules
+(8% of 284 total).
+
+Note that we could also define a local version of (type I) commuting.
+
+#### Symmetry-aware pruning II
+
+If two rules A and B are adjacent in a rule list and the both predict "the same
+way" (i.e., both predict "0" or both predict "1" for captured data), then they
+**commute locally (II)**.
+The way we handle this currently could be made more efficient.
 
 #### Relation-aware pruning
 
@@ -285,6 +405,7 @@ Notice that the intersection of `S_i` and `T_i` is the empty set, thus the
 mappings represented by `cdict` and `rdict` can easily be combined into a single
 mapping.
 
+For `tdata`, `rdict` maps each rule to a set that on average has 3 rules.
 For `adult`, `rdict` maps each rule to a set that on average has 2 rules.
 
 #### Symmetry-aware garbage collection
@@ -322,143 +443,19 @@ permutation, and if so, determine which is better.
 We couple ICM and cache updates:  cache insertions and deletions trigger
 corresponding ICM operations.
 
-## tic-tac-toe results
+## small datasets with rule expansion
 
-### tdata, breadth-first, no regularization (c = 0.)
+The last three columns report the number of rules mined for (max cardinality, min support)
 
-* Aggressive "optimistic (lying) warm start" (initialize min_objective = 0.001)
-* Finds a minimum length (8 rules) perfect prefix (< 180 sec)
-
-### tdata, curiosity, no regularization (c = 0.)
-
-* Cold start, quickly (< 2 sec) finds a perfect prefix that is very long (68 rules)
-
-### tdata, curiosity, regularization (c = 0.001)
-
-* Cold start, quickly (< 2 sec) finds a perfect prefix of length 10
-* Then quickly finds perfect prefixes of length 9, then 8 (< 3 sec)
-* Then certifies that the best (perfect) prefix has length 8 (< 225 sec)
-* Final cache contains 1776 entries with lower bound < 0.008
-
-## adult results
-
-Subsampling 10% of dataset and `min_captured_correct = max(c, 0.003)` unless
-otherwise noted.
-
-### adult, curiosity, no regularization (c = 0.)
-
-* Certifies there are no prefixes with objective < 0.005
-* Up to symmetries, ~170,000 prefixes have lower bound < 0.005 (length <= 11)
-
-* Initialize min_objective = 0.01
-* Inconclusive, > 3,000,000 prefixes have lower bound < 0.01
-
-### adult, curiosity, regularization (c = 0.003)
-
-* Initialize min_objective = 0.01
-* Quickly certifies (< 1 sec) that there are no prefixes with objective < 0.01
-* Up to symmetries, 471 prefixes have lower bound < 0.01
-
-* Inconclusive for objective < 0.05
-* Up to symmetries, > 3,000,000 prefixes have lower bound < 0.05
-
-### adult, curiosity, regularization (c = 0.01)
-
-* Certifies (< 380 sec) that there are no prefixes with objective < 0.05
-* Up to symmetries, ~150,000 prefixes have lower bound < 0.05 (length <= 4)
-
-* Certifies (< 18,000 sec) that there are no prefixes with objective < 0.06
-* Up to symmetries, ~1,000,000 prefixes have lower bound < 0.06 (length <= 5)
-
-* Inconclusive for objective < 0.08
-* Up to symmetries, > 3,000,000 prefixes have lower bound < 0.08
-
-### adult, curiosity, regularization (c = 0.02)
-
-* Certifies (< 95 sec) there are no prefixes with objective < 0.08
-* Certifies (< 240 sec) there are no prefixes with objective < 0.09
-
-### adult, curiosity, aggressive regularization (min_captured_correct = c)
-
-* (c = 0.1) Certifies (< 1.5 sec) the best prefix is (51,) on school laptop
-* (c = 0.09) Certifies (< 5 sec) the best prefix is (118,)
-* (c = 0.08) Certifies (< 10 sec) the best prefix is (118,)
-* (c = 0.07) Certifies (< 25 sec) the best prefix is (118,)
-* (c = 0.06) Certifies (< 210 sec) the best prefix is (69,)
-* (c = 0.05) Certifies (< 1,060 sec) the best prefix is (69,)
-* (c = 0.04) (< 40,000 sec) the best prefix is (69,)
-
-* (c = 0.03) (cache reaches 3 x 10^6 entries in 170 sec)
-* (c = 0.02) (cache reaches 3 x 10^6 entries in 131 sec)
-
-* (c = 0.01) (cache reaches 3 x 10^6 entries in 136 sec)
-(0,)    0.26432 0.74568
-(11,)   0.26199 0.74801
-(23,)   0.25601 0.75399
-(43,)   0.22742 0.78258
-(128, 43, 69)   0.22282 0.80718
-(33, 43, 69)    0.22182 0.80818
-(41, 43, 69)    0.22149 0.80851
-
-* (c = 0.0) (cache reaches 3 x 10^6 entries in 102 sec)
-* `lower_bound` priority metric performs similarly
-(0,)    0.25432 0.74568
-(11,)   0.25199 0.74801
-(23,)   0.24601 0.75399
-(43,)   0.21742 0.78258
-(114, 59)   0.21676 0.78324
-(114, 69)   0.20180 0.79820
-(114, 38, 69)   0.20146 0.79854
-(114, 236, 69)  0.19648 0.80352
-(114, 236, 38, 69)  0.19614 0.80386
-(114, 236, 38, 87, 43, 69)  0.19249 0.80751
-(114, 236, 38, 87, 43, 267, 69) 0.19149 0.80851
-(114, 236, 38, 87, 43, 34, 69)  0.19116 0.80884
-(43, 38, 87, 267, 34, 69)   0.19016 0.80984
-
-### adult, objective
-
-* (c = 0.) quickly (< 20 sec) finds a good prefix
-* (objective = 0.15525, accuracy = 0.84475, length = 39)
-* (43, 69, 122, 121, 0, 206, 77, 1, 81, 20, 26, 49, 38, 134, 54, 57, 58, 130, 75, 136, 160, 73, 240, 67, 138, 217, 87, 91, 189, 34, 243, 35, 47, 140, 30, 76, 153, 21, 253)
-* No improvement after 500 sec
-
-* Full dataset (c = 0.)
-* quickly (~1.0 sec) finds a good prefix (accuracy = 0.83431, length = 36)
-* (43, 69, 122, 121, 77, 0, 62, 1, 46, 97, 20, 75, 21, 47, 32, 33, 162, 48, 50, 266, 49, 54, 58, 120, 66, 123, 185, 76, 129, 84, 260, 53, 95, 139, 244, 52)
-* No improvement after 500 sec
-
-* Full dataset (c = 0.0001)
-* (43, 69, 122, 121, 77, 0, 62, 3, 7, 46, 97)
-* (objective = 0.16675, accuracy = 0.83435, seconds < 1)
-
-* Full dataset (c = 0.001)
-* (43, 69, 122, 77, 46, 118, 97)
-* (objective = 0.17169, accuracy: 0.83531, seconds < 100)
-
-* (c = 0.003) quickly (< 1 sec) finds a good prefix
-* (43, 69, 122, 121) (objective = 0.17656, accuracy = 0.83544)
-* cache reaches 3 x 10^6 entries in 201 sec
-
-* (c = 0.01) quickly (< 4 sec) finds a good prefix
-* (43, 122, 121) (objective = 0.20088, accuracy = 0.82912)
-* cache reaches 3 x 10^6 entries in 216 sec
-
-* (c = 0.02) quickly (< 1 sec) finds a good prefix
-* (122, 121) (objective = 0.23049, accuracy = 0.80951)
-* cache reaches 3 x 10^6 entries in 205 sec
-
-### adult, objective, small subsample (sample = 0.017)
-
-* (c = 0.) (< 14 sec, objective = 0.09198, accuracy = 0.90802, length = 54)
-* (122, 121, 43, 69, 59, 0, 4, 2, 12, 77, 8, 16, 49, 73, 32, 33, 54, 57, 130, 81, 75, 76, 162, 26, 91, 87, 128, 174, 175, 67, 254, 65, 144, 150, 6, 18, 1, 96, 102, 147, 97, 94, 168, 219, 244, 243, 156, 143, 85, 120, 196, 276, 105, 182)
-* No improvement after 500 sec, cache stays small (< 2000)
-
-### adult, curiosity, warm start
-
-* (c = 0.) (0.15525)
-* (c = 0.003) (0.17656)
-* (c = 0.01) (0.20088)
+| dataset | # data | # 0 | # 1 | f. 0 | f. 1 | # dim | (2, 0.10) | (2, 0.01) | (3, 0.1) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| bcancer | 683 | 444 | 239 | 0.65 | 0.35 | 28 | 1,343 | 1,682 | 16,366 |
+| cars | 1,728 | 1,210 | 518 | 0.70 | 0.30 | 22 | 993 | 1,095 | 11,196 |
+| haberman | 306 | 81 | 225 | 0.26 | 0.74 | 16 | 340 | 441 | 2,390 |
+| monks1 | 432 | 216 | 216 | 0.5 | 0.5 | 18 | 612 | 623 | 5,770 |
+| monks2 | 432 | 290 | 142 | 0.67 | 0.33 | 18 | 621 | 623 | 5,611 |
+| monks3 | 432 | 204 | 228 | 0.47 | 0.53 | 18 | 665 | 699 | 6,292 |
+| votes | 435 | 168 | 267 | 0.39 | 0.61 | 17 | 645 | 865 | 4,261 |
 
 ## implemented but not explained
 
@@ -467,6 +464,20 @@ If `c > 0`, don't add prefix to priority queue or cache if
 
 ## todo
 
+Semantics should buy us more than we're already achieving.  Let's optimize the crap out of tic-tac-toe!
+
+From Cynthia:  If the rules make the same prediction on all of their overlapping points, then they commute.
+
+Compute commutes as rule is added!
+
+Curiosity doesn't seem to be helping `adult` with `c = 0.01` find the best
+prefix of length 3, compared to `objective` and `breadth_first`.
+Run `breadth_first` on all prefixes of at least length 4.
+
+Does the FP growth code have ideas that would be useful to us?
+
+Conditional commutativity?
+
 Insertions and deletions into `pdict` (and `priority_queue`?) should happen in
 parallel with analogous cache operations.
 
@@ -474,13 +485,6 @@ May want to completely remove dependence of incremental on cache.
 
 Should we skip symmetry-based garbage collection (via `pdict`) when
 `len(prefix) == max_prefix_len_check`?
-
-Some of the metrics (`commutes` and `captured_zero`) currently include other
-recently added savings -- separate these out properly.
-
-Could track children explicitly as a cache entry attribute.  This would
-facilitate proper garbage collection. (Currently, finding ancestors is easy, but
-finding children is dumb.)
 
 Not properly updating `num_children` in cache entries or `metrics.cache_size`.
 

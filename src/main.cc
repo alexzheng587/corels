@@ -25,7 +25,6 @@ int main()
     CacheTree tree(nsamples, nrules, c, rules, labels);
     tree.toy(100000000);
     printf("\nnum_nodes: %zu\n", tree.num_nodes());
-    printf("num_interior: %zu\n", tree.num_interior());
     printf("num_evaluated: %zu\n", tree.num_evaluated());
     printf("\nmin_objective: %1.5f\n", tree.min_objective());
 

@@ -54,7 +54,6 @@ class CacheTree {
 
     inline double min_objective() const;
     inline size_t num_nodes() const;
-    inline size_t num_interior() const;
     inline size_t num_evaluated() const;
 
     void insert_root();
@@ -73,7 +72,6 @@ class CacheTree {
     double c_;
     double min_objective_;
     size_t num_nodes_;
-    size_t num_interior_;
     size_t num_evaluated_;
     std::vector<rule_t> rules_;
     std::vector<rule_t> labels_;
@@ -127,10 +125,6 @@ inline double CacheTree::min_objective() const {
 
 inline size_t CacheTree::num_nodes() const {
     return num_nodes_;
-}
-
-inline size_t CacheTree::num_interior() const {
-    return num_interior_;
 }
 
 inline size_t CacheTree::num_evaluated() const {

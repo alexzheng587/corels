@@ -19,7 +19,7 @@ CacheNode::CacheNode(size_t id, size_t nrules, bool prediction,
 
 CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules, rule_t *labels)
     : root_(0), nsamples_(nsamples), nrules_(nrules), c_(c), min_objective_(1.),
-      num_nodes_(0), num_interior_(0), num_evaluated_(0) {
+      num_nodes_(0), num_evaluated_(0) {
     rules_.resize(nrules);
     labels_.resize(2);
     size_t i;
@@ -109,7 +109,6 @@ void CacheTree::evaluate_children(CacheNode* parent, VECTOR parent_not_captured)
         prune_up(parent);
     } else {
         parent->set_done();
-        ++num_interior_;
         ++num_evaluated_;
     }
 }

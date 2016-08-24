@@ -7,7 +7,7 @@ CXX = g++
 
 DEPSDIR := .deps
 
-CLEAN = main *~ *.o *.so
+CLEAN = bbcache *~ *.o *.so
 
 all: bbcache
 

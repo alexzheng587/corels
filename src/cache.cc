@@ -153,7 +153,7 @@ void CacheTree::toy(size_t max_num_nodes) {
             evaluate_children(node, not_captured);
         ++num_iter;
         if ((num_iter % 10000) == 0)
-            printf("%zu, %zu\n", num_iter, num_nodes_);
+            printf("num_iter: %zu, num_nodes: %zu\n", num_iter, num_nodes_);
     }
 }
 

@@ -4,8 +4,6 @@
 
 int main()
 {
-    std::cout << "hello\n";
-
     int nrules, nsamples, nlabels, nsamples_chk;
     rule_t *rules, *labels;
 

@@ -62,62 +62,6 @@ void CacheTree::insert(size_t new_rule, bool prediction, bool default_prediction
     ++num_nodes_;
 }
 
-void CacheTree::evaluate_children(CacheNode* parent, VECTOR parent_not_captured) {
-    VECTOR captured, captured_zeros, not_captured, not_captured_zeros;
-    int num_captured, c0, c1, captured_correct;
-    int num_not_captured, d0, d1, default_correct;
-    bool prediction, default_prediction;
-    double lower_bound, objective, parent_lower_bound;
-    rule_vinit(nsamples_, &captured);
-    rule_vinit(nsamples_, &captured_zeros);
-    rule_vinit(nsamples_, &not_captured);
-    rule_vinit(nsamples_, &not_captured_zeros);
-    size_t i, len_prefix;
-    len_prefix = parent->depth() + 1;
-    parent_lower_bound = parent->lower_bound();
-    for (i = 1; i < nrules_; i++) {
-        rule_vand(captured, parent_not_captured, rules_[i].truthtable, nsamples_, &num_captured);
-        rule_vand(captured_zeros, captured, labels_[0].truthtable, nsamples_, &c0);
-        c1 = num_captured - c0;
-        if (c0 > c1) {
-            prediction = 0;
-            captured_correct = c0;
-        } else {
-            prediction = 1;
-            captured_correct = c1;
-        }
-        lower_bound = parent_lower_bound + (float)(num_captured - captured_correct) / nsamples_ + c_;
-        rule_vandnot(not_captured, parent_not_captured, captured, nsamples_, &num_not_captured);
-        rule_vand(not_captured_zeros, not_captured, labels_[0].truthtable, nsamples_, &d0);
-        d1 = num_not_captured - d0;
-        if (d0 > d1) {
-            default_prediction = 0;
-            default_correct = d0;
-        } else {
-            default_prediction = 1;
-            default_correct = d1;
-        }
-        objective = lower_bound + (float)(num_not_captured - default_correct) / nsamples_;
-        if (objective < min_objective_) {
-            printf("min(objective): %1.5f -> %1.5f, length: %zu, cache size: %zu\n",
-                   min_objective_, objective, len_prefix, num_nodes_);
-            min_objective_ = objective;
-        }
-        if ((lower_bound + c_) < min_objective_)
-            insert(i, prediction, default_prediction, lower_bound, objective, parent);
-    }
-    if (parent->children_.size() == 0) {
-        prune_up(parent);
-    } else {
-        parent->set_done();
-        ++num_evaluated_;
-    }
-    rule_vfree(&captured);
-    rule_vfree(&captured_zeros);
-    rule_vfree(&not_captured);
-    rule_vfree(&not_captured_zeros);
-}
-
 void CacheTree::prune_up(CacheNode* node) {
     size_t id, depth = node->depth();
     CacheNode* parent;

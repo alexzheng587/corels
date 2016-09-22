@@ -59,14 +59,18 @@ class CacheTree {
     inline size_t num_nodes() const;
     inline size_t num_evaluated() const;
     inline rule_t rule(size_t idx) const;
+    inline rule_t label(size_t idx) const;
     inline size_t nsamples() const;
+    inline size_t nrules() const;
     inline double c() const;
     inline node_type* root() const;
+
+    inline void update_min_objective(double objective);
+    inline void increment_num_evaluated();
 
     void insert_root();
     void insert(size_t new_rule, bool prediction, bool default_prediction,
                 double lower_bound, double objective, CacheNode* parent);
-    void evaluate_children(CacheNode* parent, VECTOR parent_not_captured);
     void prune_up(CacheNode* node);
     void delete_subtree(CacheNode* node);
     void play_with_rules();
@@ -156,8 +160,16 @@ inline rule_t CacheTree::rule(size_t idx) const{
     return rules_[idx];
 }
 
+inline rule_t CacheTree::label(size_t idx) const{
+    return labels_[idx];
+}
+
 inline size_t CacheTree::nsamples() const {
     return nsamples_;
+}
+
+inline size_t CacheTree::nrules() const {
+    return nrules_;
 }
 
 inline double CacheTree::c() const {
@@ -166,4 +178,12 @@ inline double CacheTree::c() const {
 
 inline CacheNode* CacheTree::root() const {
     return root_;
+}
+
+inline void CacheTree::update_min_objective(double objective) {
+    min_objective_ = objective;
+}
+
+inline void CacheTree::increment_num_evaluated() {
+    ++num_evaluated_;
 }

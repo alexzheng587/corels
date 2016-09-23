@@ -3,6 +3,7 @@
 #include <vector>
 #include <stdlib.h>
 
+
 CacheNode::CacheNode(size_t nrules, bool default_prediction, double objective)
     : id_(0), depth_(0), default_prediction_(default_prediction),
       lower_bound_(0.), objective_(objective), done_(0) {
@@ -59,107 +60,6 @@ void CacheTree::insert(size_t new_rule, bool prediction, bool default_prediction
                                      lower_bound, objective, parent);
     parent->children_.insert(std::make_pair(new_rule, child));
     ++num_nodes_;
-}
-
-void CacheTree::evaluate_children(CacheNode* parent, VECTOR parent_not_captured) {
-    VECTOR captured, captured_zeros, not_captured, not_captured_zeros;
-    int num_captured, c0, c1, captured_correct;
-    int num_not_captured, d0, d1, default_correct;
-    bool prediction, default_prediction;
-    double lower_bound, objective, parent_lower_bound;
-    rule_vinit(nsamples_, &captured);
-    rule_vinit(nsamples_, &captured_zeros);
-    rule_vinit(nsamples_, &not_captured);
-    rule_vinit(nsamples_, &not_captured_zeros);
-    size_t i, len_prefix;
-    len_prefix = parent->depth() + 1;
-    parent_lower_bound = parent->lower_bound();
-    for (i = 1; i < nrules_; i++) {
-        rule_vand(captured, parent_not_captured, rules_[i].truthtable, nsamples_, &num_captured);
-        rule_vand(captured_zeros, captured, labels_[0].truthtable, nsamples_, &c0);
-        c1 = num_captured - c0;
-        if (c0 > c1) {
-            prediction = 0;
-            captured_correct = c0;
-        } else {
-            prediction = 1;
-            captured_correct = c1;
-        }
-        lower_bound = parent_lower_bound + (float)(num_captured - captured_correct) / nsamples_ + c_;
-        rule_vandnot(not_captured, parent_not_captured, captured, nsamples_, &num_not_captured);
-        rule_vand(not_captured_zeros, not_captured, labels_[0].truthtable, nsamples_, &d0);
-        d1 = num_not_captured - d0;
-        if (d0 > d1) {
-            default_prediction = 0;
-            default_correct = d0;
-        } else {
-            default_prediction = 1;
-            default_correct = d1;
-        }
-        objective = lower_bound + (float)(num_not_captured - default_correct) / nsamples_;
-        if (objective < min_objective_) {
-            printf("min(objective): %1.5f -> %1.5f, length: %zu, cache size: %zu\n",
-                   min_objective_, objective, len_prefix, num_nodes_);
-            min_objective_ = objective;
-        }
-        if ((lower_bound + c_) < min_objective_)
-            insert(i, prediction, default_prediction, lower_bound, objective, parent);
-    }
-    if (parent->children_.size() == 0) {
-        prune_up(parent);
-    } else {
-        parent->set_done();
-        ++num_evaluated_;
-    }
-    rule_vfree(&captured);
-    rule_vfree(&captured_zeros);
-    rule_vfree(&not_captured);
-    rule_vfree(&not_captured_zeros);
-}
-
-CacheNode* CacheTree::stochastic_select(VECTOR not_captured) {
-    CacheNode* node = root_;
-    rule_copy(not_captured, rules_[root_->id()].truthtable, nsamples_);
-    int cnt;
-    size_t idx = 0;
-    std::map<size_t, node_type*>::iterator iter;
-    while (node->done()) {
-        if ((node->lower_bound() + c_) > min_objective_) {
-            if (node->depth_ > 0) {
-                CacheNode* parent = node->parent();
-                parent->children_.erase(node->id());
-                delete_subtree(node);
-            }
-            return 0;
-        }
-        if (node->children_.size() == 0) {
-            prune_up(node);
-            return 0;
-        }
-        iter = node->children_.begin();
-        idx = rand() % (node->children_.size());
-        std::advance(iter, idx);
-        node = iter->second;
-        rule_vandnot(not_captured, not_captured, rules_[iter->first].truthtable, nsamples_, &cnt);
-    }
-    return node;
-}
-
-void CacheTree::toy(size_t max_num_nodes) {
-    CacheNode* node;
-    VECTOR not_captured;
-    size_t num_iter = 0;
-    rule_vinit(nsamples_, &not_captured);
-    insert_root();
-    while ((num_nodes_ < max_num_nodes) and (num_nodes_ > 0)) {
-        node = stochastic_select(not_captured);
-        if (node)
-            evaluate_children(node, not_captured);
-        ++num_iter;
-        if ((num_iter % 10000) == 0)
-            printf("num_iter: %zu, num_nodes: %zu\n", num_iter, num_nodes_);
-    }
-    rule_vfree(&not_captured);
 }
 
 void CacheTree::prune_up(CacheNode* node) {

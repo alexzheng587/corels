@@ -1,4 +1,4 @@
-#include "cache.hh"
+#include "bbound.hh"
 #include <iostream>
 #include <stdio.h>
 
@@ -21,7 +21,7 @@ int main()
 
     double c = 0.01;
     CacheTree tree(nsamples, nrules, c, rules, labels);
-    tree.toy(100000000);
+    bbound_stochastic(&tree, 100000000);
     printf("\nnum_nodes: %zu\n", tree.num_nodes());
     printf("num_evaluated: %zu\n", tree.num_evaluated());
     printf("\nmin_objective: %1.5f\n", tree.min_objective());

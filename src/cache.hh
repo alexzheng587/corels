@@ -11,7 +11,6 @@ extern "C" {
 class CacheNode;
 class CacheTree;
 
-
 class CacheNode {
   public:
     typedef CacheNode node_type;

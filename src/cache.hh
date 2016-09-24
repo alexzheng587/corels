@@ -10,7 +10,7 @@ extern "C" {
 
 class CacheNode;
 class CacheNodeCurious;
-class CacheTree;
+template<class N> class CacheTree;
 
 
 class CacheNode {
@@ -46,7 +46,7 @@ class CacheNode {
     CacheNode(size_t id, size_t nrules, bool prediction, bool default_prediction,
               double lower_bound, double objective, CacheNode* parent);
 
-    friend class CacheTree;
+    friend class CacheTree<CacheNode>;
 };
 
 class CacheNodeCurious: public CacheNode {
@@ -62,10 +62,9 @@ class CacheNodeCurious: public CacheNode {
                   double lower_bound, double objective, CacheNodeCurious* parent, double curiosity);
 };
 
+template<class N>
 class CacheTree {
   public:
-    typedef CacheNode node_type;
-
     CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules, rule_t *labels);
     ~CacheTree();
 
@@ -77,20 +76,20 @@ class CacheTree {
     inline size_t nsamples() const;
     inline size_t nrules() const;
     inline double c() const;
-    inline node_type* root() const;
+    inline N* root() const;
 
     inline void update_min_objective(double objective);
     inline void increment_num_evaluated();
 
     void insert_root();
     void insert(size_t new_rule, bool prediction, bool default_prediction,
-                double lower_bound, double objective, CacheNode* parent);
-    void prune_up(CacheNode* node);
-    void delete_subtree(CacheNode* node);
+                double lower_bound, double objective, N* parent);
+    void prune_up(N* node);
+    void delete_subtree(N* node);
     void play_with_rules();
 
   private:
-    node_type* root_;
+    N* root_;
     size_t nsamples_;
     size_t nrules_;
     double c_;
@@ -162,46 +161,57 @@ inline double CacheNodeCurious::curiosity() const {
     curiosity_;
 }
 
-inline double CacheTree::min_objective() const {
+template<class N>
+inline double CacheTree<N>::min_objective() const {
     return min_objective_;
 }
 
-inline size_t CacheTree::num_nodes() const {
+template<class N>
+inline size_t CacheTree<N>::num_nodes() const {
     return num_nodes_;
 }
 
-inline size_t CacheTree::num_evaluated() const {
+template<class N>
+inline size_t CacheTree<N>::num_evaluated() const {
     return num_evaluated_;
 }
 
-inline rule_t CacheTree::rule(size_t idx) const{
+template<class N>
+inline rule_t CacheTree<N>::rule(size_t idx) const{
     return rules_[idx];
 }
 
-inline rule_t CacheTree::label(size_t idx) const{
+template<class N>
+inline rule_t CacheTree<N>::label(size_t idx) const{
     return labels_[idx];
 }
 
-inline size_t CacheTree::nsamples() const {
+template<class N>
+inline size_t CacheTree<N>::nsamples() const {
     return nsamples_;
 }
 
-inline size_t CacheTree::nrules() const {
+template<class N>
+inline size_t CacheTree<N>::nrules() const {
     return nrules_;
 }
 
-inline double CacheTree::c() const {
+template<class N>
+inline double CacheTree<N>::c() const {
     return c_;
 }
 
-inline CacheNode* CacheTree::root() const {
+template<class N>
+inline N* CacheTree<N>::root() const {
     return root_;
 }
 
-inline void CacheTree::update_min_objective(double objective) {
+template<class N>
+inline void CacheTree<N>::update_min_objective(double objective) {
     min_objective_ = objective;
 }
 
-inline void CacheTree::increment_num_evaluated() {
+template<class N>
+inline void CacheTree<N>::increment_num_evaluated() {
     ++num_evaluated_;
 }

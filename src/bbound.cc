@@ -1,7 +1,7 @@
 #include "bbound.hh"
 
-
-void evaluate_children(CacheTree* tree, CacheNode* parent, VECTOR parent_not_captured) {
+template<class N>
+void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured) {
     VECTOR captured, captured_zeros, not_captured, not_captured_zeros;
     int num_captured, c0, c1, captured_correct;
     int num_not_captured, d0, d1, default_correct;
@@ -59,15 +59,16 @@ void evaluate_children(CacheTree* tree, CacheNode* parent, VECTOR parent_not_cap
     rule_vfree(&not_captured_zeros);
 }
 
-CacheNode* stochastic_select(CacheTree* tree, VECTOR not_captured) {
-    std::map<size_t, CacheNode*>::iterator iter;
-    CacheNode* node = tree->root();
+template<class N>
+N* stochastic_select(CacheTree<N>* tree, VECTOR not_captured) {
+    typename std::map<size_t, N*>::iterator iter;
+    N* node = tree->root();
     rule_copy(not_captured, tree->rule(node->id()).truthtable, tree->nsamples());
     int cnt;
     while (node->done()) {
         if ((node->lower_bound() + tree->c()) >= tree->min_objective()) {
             if (node->depth() > 0) {
-                CacheNode* parent = node->parent();
+                N* parent = node->parent();
                 parent->delete_child(node->id());
                 tree->delete_subtree(node);
             }
@@ -84,8 +85,9 @@ CacheNode* stochastic_select(CacheTree* tree, VECTOR not_captured) {
     return node;
 }
 
-void bbound_stochastic(CacheTree* tree, size_t max_num_nodes) {
-    CacheNode* node;
+template<class N>
+void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes) {
+    N* node;
     VECTOR not_captured;
     size_t num_iter = 0;
     rule_vinit(tree->nsamples(), &not_captured);
@@ -100,3 +102,10 @@ void bbound_stochastic(CacheTree* tree, size_t max_num_nodes) {
     }
     rule_vfree(&not_captured);
 }
+
+template void evaluate_children<CacheNode>(CacheTree<CacheNode>* tree, CacheNode* parent, VECTOR parent_not_captured);
+
+template CacheNode* stochastic_select<CacheNode>(CacheTree<CacheNode>* tree, VECTOR not_captured);
+
+template void bbound_stochastic(CacheTree<CacheNode>* tree, size_t max_num_nodes);
+

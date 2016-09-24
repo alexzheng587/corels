@@ -33,6 +33,8 @@ void evaluate_children(CacheTree* tree, CacheNode* parent, VECTOR parent_not_cap
             prediction = 1;
             captured_correct = c1;
         }
+        if (captured_correct < (c * nsamples))
+            continue;
         lower_bound = parent_lower_bound + (float)(num_captured - captured_correct) / nsamples + c;
         times->lower_bound_time = timestamp() - t1;
         ++times->lower_bound_num;

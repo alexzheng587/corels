@@ -74,11 +74,12 @@ void evaluate_children(CacheTree* tree, CacheNode* parent, VECTOR parent_not_cap
     rule_vfree(&not_captured_zeros);
 }
 
-CacheNode* stochastic_select(CacheTree* tree, VECTOR not_captured) {
+std::pair<CacheNode*, std::set<size_t> > stochastic_select(CacheTree* tree, VECTOR not_captured) {
     std::map<size_t, CacheNode*>::iterator iter;
     CacheNode* node = tree->root();
     rule_copy(not_captured, tree->rule(node->id()).truthtable, tree->nsamples());
     int cnt;
+    std::set<size_t> ordered_prefix;
     while (node->done()) {
         if ((node->lower_bound() + tree->c()) >= tree->min_objective()) {
             if (node->depth() > 0) {
@@ -86,21 +87,22 @@ CacheNode* stochastic_select(CacheTree* tree, VECTOR not_captured) {
                 parent->delete_child(node->id());
                 tree->delete_subtree(node);
             }
-            return 0;
+            return std::make_pair((CacheNode*) 0, ordered_prefix);
         }
         if (node->num_children() == 0) {
             tree->prune_up(node);
-            return 0;
+            return std::make_pair((CacheNode*) 0, ordered_prefix);
         }
         iter = node->random_child();
         node = iter->second;
+        ordered_prefix.insert(iter->first);
         rule_vandnot(not_captured, not_captured, tree->rule(iter->first).truthtable, tree->nsamples(), &cnt);
     }
-    return node;
+    return std::make_pair(node, ordered_prefix);
 }
 
 struct time* bbound_stochastic(CacheTree* tree, size_t max_num_nodes) {
-    CacheNode* node;
+    std::pair<CacheNode*, std::set<size_t> > node_ordered;
     VECTOR not_captured;
     times = (struct time*) calloc(1, sizeof(*times));
     double tot = timestamp();
@@ -109,12 +111,12 @@ struct time* bbound_stochastic(CacheTree* tree, size_t max_num_nodes) {
     tree->insert_root();
     while ((tree->num_nodes() < max_num_nodes) and (tree->num_nodes() > 0)) {
         double t0 = timestamp();
-        node = stochastic_select(tree, not_captured);
+        node_ordered = stochastic_select(tree, not_captured);
         times->stochastic_select_time += timestamp() - t0;
         ++times->stochastic_select_num;
-        if (node) {
+        if (node_ordered.first) {
             double t1 = timestamp();
-            evaluate_children(tree, node, not_captured);
+            evaluate_children(tree, node_ordered.first, not_captured);
             times->evaluate_children_time += timestamp() - t1;
             ++times->evaluate_children_num;
         }

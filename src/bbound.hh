@@ -1,4 +1,5 @@
 #include "cache.hh"
+#include <set>
 
 struct time {
     double total_time;
@@ -18,7 +19,7 @@ struct time {
 
 void evaluate_children(CacheTree* tree, CacheNode* parent, VECTOR parent_not_captured);
 
-CacheNode* stochastic_select(CacheTree* tree, VECTOR not_captured);
+std::pair<CacheNode*, std::set<size_t> > stochastic_select(CacheTree* tree, VECTOR not_captured);
 
 struct time* bbound_stochastic(CacheTree* tree, size_t max_num_nodes);
 

@@ -17,7 +17,7 @@ struct time {
     int tree_insertion_num;
 };
 
-void evaluate_children(CacheTree* tree, CacheNode* parent, VECTOR parent_not_captured);
+void evaluate_children(CacheTree* tree, CacheNode* parent, VECTOR parent_not_captured, std::set<size_t> ordered_prefix);
 
 std::pair<CacheNode*, std::set<size_t> > stochastic_select(CacheTree* tree, VECTOR not_captured);
 

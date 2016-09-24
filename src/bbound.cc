@@ -3,7 +3,7 @@
 
 struct time *times;
 
-void evaluate_children(CacheTree* tree, CacheNode* parent, VECTOR parent_not_captured) {
+void evaluate_children(CacheTree* tree, CacheNode* parent, VECTOR parent_not_captured, std::set<size_t> ordered_parent) {
     VECTOR captured, captured_zeros, not_captured, not_captured_zeros;
     int num_captured, c0, c1, captured_correct;
     int num_not_captured, d0, d1, default_correct;
@@ -21,6 +21,8 @@ void evaluate_children(CacheTree* tree, CacheNode* parent, VECTOR parent_not_cap
     double t0 = timestamp();
     for (i = 1; i < tree->nrules(); i++) {
         double t1 = timestamp();
+        if (ordered_parent.find(i) != ordered_parent.end())
+            continue;
         rule_vand(captured, parent_not_captured, tree->rule(i).truthtable, nsamples, &num_captured);
         rule_vand(captured_zeros, captured, tree->label(0).truthtable, nsamples, &c0);
         c1 = num_captured - c0;
@@ -116,7 +118,7 @@ struct time* bbound_stochastic(CacheTree* tree, size_t max_num_nodes) {
         ++times->stochastic_select_num;
         if (node_ordered.first) {
             double t1 = timestamp();
-            evaluate_children(tree, node_ordered.first, not_captured);
+            evaluate_children(tree, node_ordered.first, not_captured, node_ordered.second);
             times->evaluate_children_time += timestamp() - t1;
             ++times->evaluate_children_num;
         }

@@ -9,6 +9,7 @@ extern "C" {
 }
 
 class CacheNode;
+class CacheNodeCurious;
 class CacheTree;
 
 
@@ -31,7 +32,7 @@ class CacheNode {
     inline size_t num_children() const;
     inline std::map<size_t, CacheNode*>::iterator random_child();
 
-  private:
+  protected:
     size_t id_;
     size_t depth_;
     bool prediction_;
@@ -46,6 +47,19 @@ class CacheNode {
               double lower_bound, double objective, CacheNode* parent);
 
     friend class CacheTree;
+};
+
+class CacheNodeCurious: public CacheNode {
+    public:
+        explicit CacheNodeCurious(size_t nrules, bool default_prediction, double objective);
+
+        inline double curiosity() const;
+
+    protected:
+        double curiosity_;
+
+        CacheNodeCurious(size_t id, size_t nrules, bool prediction, bool default_prediction,
+                  double lower_bound, double objective, CacheNodeCurious* parent, double curiosity);
 };
 
 class CacheTree {
@@ -142,6 +156,10 @@ inline bool CacheNode::done() const{
 
 inline void CacheNode::set_done() {
     done_ = 1;
+}
+
+inline double CacheNodeCurious::curiosity() const {
+    curiosity_;
 }
 
 inline double CacheTree::min_objective() const {

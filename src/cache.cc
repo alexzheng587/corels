@@ -18,6 +18,17 @@ CacheNode::CacheNode(size_t id, size_t nrules, bool prediction,
     parent_->children_.insert(std::make_pair(id, this));
 }
 
+CacheNodeCurious::CacheNodeCurious(size_t nrules, bool default_prediction, double objective)
+    : CacheNode(nrules, default_prediction, objective), curiosity_(0.) {
+}
+
+CacheNodeCurious::CacheNodeCurious(size_t id, size_t nrules, bool prediction,
+                     bool default_prediction, double lower_bound,
+                     double objective, CacheNodeCurious* parent, double curiosity)
+    : CacheNode(id, nrules, prediction, default_prediction, lower_bound, objective, parent),
+      curiosity_(curiosity) {
+}
+
 CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules, rule_t *labels)
     : root_(0), nsamples_(nsamples), nrules_(nrules), c_(c), min_objective_(1.),
       num_nodes_(0), num_evaluated_(0) {

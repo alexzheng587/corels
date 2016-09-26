@@ -3,7 +3,7 @@
 
 struct time *times;
 
-void evaluate_children(CacheTree* tree, CacheNode* parent, VECTOR parent_not_captured) {
+void evaluate_children(CacheTree* tree, CacheNode* parent, VECTOR parent_not_captured, std::set<size_t> ordered_parent) {
     VECTOR captured, captured_zeros, not_captured, not_captured_zeros;
     int num_captured, c0, c1, captured_correct;
     int num_not_captured, d0, d1, default_correct;
@@ -21,6 +21,8 @@ void evaluate_children(CacheTree* tree, CacheNode* parent, VECTOR parent_not_cap
     double t0 = timestamp();
     for (i = 1; i < tree->nrules(); i++) {
         double t1 = timestamp();
+        if (ordered_parent.find(i) != ordered_parent.end())
+            continue;
         rule_vand(captured, parent_not_captured, tree->rule(i).truthtable, nsamples, &num_captured);
         rule_vand(captured_zeros, captured, tree->label(0).truthtable, nsamples, &c0);
         c1 = num_captured - c0;
@@ -31,6 +33,8 @@ void evaluate_children(CacheTree* tree, CacheNode* parent, VECTOR parent_not_cap
             prediction = 1;
             captured_correct = c1;
         }
+        if (captured_correct < (c * nsamples))
+            continue;
         lower_bound = parent_lower_bound + (float)(num_captured - captured_correct) / nsamples + c;
         times->lower_bound_time = timestamp() - t1;
         ++times->lower_bound_num;
@@ -74,11 +78,12 @@ void evaluate_children(CacheTree* tree, CacheNode* parent, VECTOR parent_not_cap
     rule_vfree(&not_captured_zeros);
 }
 
-CacheNode* stochastic_select(CacheTree* tree, VECTOR not_captured) {
+std::pair<CacheNode*, std::set<size_t> > stochastic_select(CacheTree* tree, VECTOR not_captured) {
     std::map<size_t, CacheNode*>::iterator iter;
     CacheNode* node = tree->root();
     rule_copy(not_captured, tree->rule(node->id()).truthtable, tree->nsamples());
     int cnt;
+    std::set<size_t> ordered_prefix;
     while (node->done()) {
         if ((node->lower_bound() + tree->c()) >= tree->min_objective()) {
             if (node->depth() > 0) {
@@ -86,21 +91,22 @@ CacheNode* stochastic_select(CacheTree* tree, VECTOR not_captured) {
                 parent->delete_child(node->id());
                 tree->delete_subtree(node);
             }
-            return 0;
+            return std::make_pair((CacheNode*) 0, ordered_prefix);
         }
         if (node->num_children() == 0) {
             tree->prune_up(node);
-            return 0;
+            return std::make_pair((CacheNode*) 0, ordered_prefix);
         }
         iter = node->random_child();
         node = iter->second;
+        ordered_prefix.insert(iter->first);
         rule_vandnot(not_captured, not_captured, tree->rule(iter->first).truthtable, tree->nsamples(), &cnt);
     }
-    return node;
+    return std::make_pair(node, ordered_prefix);
 }
 
 struct time* bbound_stochastic(CacheTree* tree, size_t max_num_nodes) {
-    CacheNode* node;
+    std::pair<CacheNode*, std::set<size_t> > node_ordered;
     VECTOR not_captured;
     times = (struct time*) calloc(1, sizeof(*times));
     double tot = timestamp();
@@ -109,12 +115,12 @@ struct time* bbound_stochastic(CacheTree* tree, size_t max_num_nodes) {
     tree->insert_root();
     while ((tree->num_nodes() < max_num_nodes) and (tree->num_nodes() > 0)) {
         double t0 = timestamp();
-        node = stochastic_select(tree, not_captured);
+        node_ordered = stochastic_select(tree, not_captured);
         times->stochastic_select_time += timestamp() - t0;
         ++times->stochastic_select_num;
-        if (node) {
+        if (node_ordered.first) {
             double t1 = timestamp();
-            evaluate_children(tree, node, not_captured);
+            evaluate_children(tree, node_ordered.first, not_captured, node_ordered.second);
             times->evaluate_children_time += timestamp() - t1;
             ++times->evaluate_children_num;
         }

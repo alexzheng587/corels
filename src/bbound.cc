@@ -66,7 +66,6 @@ void evaluate_children(CacheTree<T>* tree, Node<T>* parent, VECTOR parent_not_ca
         if ((lower_bound + c) < tree->min_objective()) {
             tree->insert(construct_policy(i, nrules, prediction, default_prediction, lower_bound,
                                           objective, parent, num_not_captured, nsamples, len_prefix, c));
-            //tree->insert(i, prediction, default_prediction, lower_bound, objective, parent, num_not_captured);
         }
     }
     if (parent->num_children() == 0) {

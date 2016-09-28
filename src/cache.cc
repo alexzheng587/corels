@@ -19,8 +19,8 @@ Node<T>::Node(size_t id, size_t nrules, bool prediction,
       objective_(objective), done_(0), storage_(storage), depth_(1 + parent->depth_), parent_(parent) {
 }
 
-template<class T>
-CacheTree<T>::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules, rule_t *labels)
+template<class N>
+CacheTree<N>::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules, rule_t *labels)
     : root_(0), nsamples_(nsamples), nrules_(nrules), c_(c), min_objective_(1.),
       num_nodes_(0), num_evaluated_(0) {
     rules_.resize(nrules);
@@ -32,13 +32,13 @@ CacheTree<T>::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules,
     labels_[1] = labels[1];
 }
 
-template<class T>
-CacheTree<T>::~CacheTree() {
+template<class N>
+CacheTree<N>::~CacheTree() {
     delete_subtree(root_);
 }
 
-template<class T>
-void CacheTree<T>::insert_root() {
+template<class N>
+void CacheTree<N>::insert_root() {
     VECTOR tmp_vec;
     size_t d0, d1;
     bool default_prediction;
@@ -53,21 +53,21 @@ void CacheTree<T>::insert_root() {
         default_prediction = 1;
         objective = (float)(d0) / nsamples_;
     }
-    root_ = new Node<T>(nrules_, default_prediction, objective);
+    root_ = new N(nrules_, default_prediction, objective);
     min_objective_ = objective;
     ++num_nodes_;
 }
 
-template<class T>
-void CacheTree<T>::insert(Node<T>* node) {
+template<class N>
+void CacheTree<N>::insert(N* node) {
     node->parent()->children_.insert(std::make_pair(node->id(), node));
     ++num_nodes_;
 }
 
-template<class T>
-void CacheTree<T>::prune_up(Node<T>* node) {
+template<class N>
+void CacheTree<N>::prune_up(N* node) {
     size_t id, depth = node->depth();
-    Node<T>* parent;
+    N* parent;
     while (node->children_.size() == 0) {
         if (depth > 0) {
             id = node->id();
@@ -84,10 +84,10 @@ void CacheTree<T>::prune_up(Node<T>* node) {
     }
 }
 
-template<class T>
-void CacheTree<T>::delete_subtree(Node<T>* node) {
-    Node<T>* child;
-    typename std::map<size_t, Node<T>*>::iterator iter;
+template<class N>
+void CacheTree<N>::delete_subtree(N* node) {
+    N* child;
+    typename std::map<size_t, N*>::iterator iter;
     if (node->done()) {
         iter = node->children_.begin();
         while (iter != node->children_.end()) {
@@ -106,6 +106,6 @@ template class Node<bool>;
 
 template class Node<double>;
 
-template class CacheTree<bool>;
+template class CacheTree<Node<bool> >;
 
-template class CacheTree<double>;
+template class CacheTree<Node<double> >;

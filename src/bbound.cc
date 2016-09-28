@@ -18,8 +18,8 @@ CuriousNode* curious_construct_policy(size_t new_rule, size_t nrules, bool predi
     return (new CuriousNode(new_rule, nrules, prediction, default_prediction, lower_bound, objective, curiosity, parent));
 }
 
-template<class T>
-void evaluate_children(CacheTree<T>* tree, Node<T>* parent, VECTOR parent_not_captured, construct_signature<T> construct_policy) {
+template<class N>
+void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured, construct_signature<N> construct_policy) {
     VECTOR captured, captured_zeros, not_captured, not_captured_zeros;
     int num_captured, c0, c1, captured_correct;
     int num_not_captured, d0, d1, default_correct;
@@ -80,16 +80,16 @@ void evaluate_children(CacheTree<T>* tree, Node<T>* parent, VECTOR parent_not_ca
     rule_vfree(&not_captured_zeros);
 }
 
-template<class T>
-Node<T>* stochastic_select(CacheTree<T>* tree, VECTOR not_captured) {
-    typename std::map<size_t, Node<T>*>::iterator iter;
-    Node<T>* node = tree->root();
+template<class N>
+N* stochastic_select(CacheTree<N>* tree, VECTOR not_captured) {
+    typename std::map<size_t, N*>::iterator iter;
+    N* node = tree->root();
     rule_copy(not_captured, tree->rule(node->id()).truthtable, tree->nsamples());
     int cnt;
     while (node->done()) {
         if ((node->lower_bound() + tree->c()) >= tree->min_objective()) {
             if (node->depth() > 0) {
-                Node<T>* parent = node->parent();
+                N* parent = node->parent();
                 parent->delete_child(node->id());
                 tree->delete_subtree(node);
             }
@@ -106,17 +106,17 @@ Node<T>* stochastic_select(CacheTree<T>* tree, VECTOR not_captured) {
     return node;
 }
 
-template<class T>
-void bbound_stochastic(CacheTree<T>* tree, size_t max_num_nodes, construct_signature<T> construct_policy) {
-    Node<T>* node;
+template<class N>
+void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes, construct_signature<N> construct_policy) {
+    N* node;
     VECTOR not_captured;
     size_t num_iter = 0;
     rule_vinit(tree->nsamples(), &not_captured);
     tree->insert_root();
     while ((tree->num_nodes() < max_num_nodes) and (tree->num_nodes() > 0)) {
-        node = stochastic_select<T>(tree, not_captured);
+        node = stochastic_select<N>(tree, not_captured);
         if (node)
-            evaluate_children<T>(tree, node, not_captured, construct_policy);
+            evaluate_children<N>(tree, node, not_captured, construct_policy);
         ++num_iter;
         if ((num_iter % 10000) == 0)
             printf("num_iter: %zu, num_nodes: %zu\n", num_iter, tree->num_nodes());
@@ -124,15 +124,15 @@ void bbound_stochastic(CacheTree<T>* tree, size_t max_num_nodes, construct_signa
     rule_vfree(&not_captured);
 }
 
-template void evaluate_children<bool>(CacheTree<bool>* tree, BaseNode* parent, VECTOR parent_not_captured, construct_signature<bool> construct_policy);
+template void evaluate_children<BaseNode>(CacheTree<BaseNode>* tree, BaseNode* parent, VECTOR parent_not_captured, construct_signature<BaseNode> construct_policy);
 
-template BaseNode* stochastic_select<bool>(CacheTree<bool>* tree, VECTOR not_captured);
+template BaseNode* stochastic_select<BaseNode>(CacheTree<BaseNode>* tree, VECTOR not_captured);
 
-template void bbound_stochastic<bool>(CacheTree<bool>* tree, size_t max_num_nodes, construct_signature<bool> construct_policy);
+template void bbound_stochastic<BaseNode>(CacheTree<BaseNode>* tree, size_t max_num_nodes, construct_signature<BaseNode> construct_policy);
 
-template void evaluate_children<double>(CacheTree<double>* tree, CuriousNode* parent, VECTOR parent_not_captured, construct_signature<double> construct_policy);
+template void evaluate_children<CuriousNode>(CacheTree<CuriousNode>* tree, CuriousNode* parent, VECTOR parent_not_captured, construct_signature<CuriousNode> construct_policy);
 
-template CuriousNode* stochastic_select<double>(CacheTree<double>* tree, VECTOR not_captured);
+template CuriousNode* stochastic_select<CuriousNode>(CacheTree<CuriousNode>* tree, VECTOR not_captured);
 
-template void bbound_stochastic<double>(CacheTree<double>* tree, size_t max_num_nodes, construct_signature<double> construct_policy);
+template void bbound_stochastic<CuriousNode>(CacheTree<CuriousNode>* tree, size_t max_num_nodes, construct_signature<CuriousNode> construct_policy);
 

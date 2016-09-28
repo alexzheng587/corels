@@ -20,8 +20,8 @@ int main()
     rule_print_all(labels, nlabels, nsamples);
 
     double c = 0.01;
-    CacheTree<CacheNode> tree(nsamples, nrules, c, rules, labels);
-    bbound_stochastic<CacheNode>(&tree, 100000000);
+    CacheTree<double> tree(nsamples, nrules, c, rules, labels);
+    bbound_stochastic<double>(&tree, 100000000, &curious_construct_policy);
     printf("\nnum_nodes: %zu\n", tree.num_nodes());
     printf("num_evaluated: %zu\n", tree.num_evaluated());
     printf("\nmin_objective: %1.5f\n", tree.min_objective());

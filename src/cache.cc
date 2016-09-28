@@ -3,7 +3,6 @@
 #include <vector>
 #include <stdlib.h>
 
-
 template<class T>
 Node<T>::Node(size_t nrules, bool default_prediction, double objective)
     : id_(0), default_prediction_(default_prediction),
@@ -102,10 +101,10 @@ void CacheTree<N>::delete_subtree(N* node) {
     delete node;
 }
 
-template class Node<bool>;
+template class Node<bool>; // BaseNode
 
-template class Node<double>;
+template class Node<double>; // CuriousNode
 
-template class CacheTree<Node<bool> >;
+template class CacheTree<BaseNode>;
 
-template class CacheTree<Node<double> >;
+template class CacheTree<CuriousNode>;

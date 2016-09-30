@@ -22,14 +22,14 @@ int main()
     rule_print_all(labels, nlabels, nsamples);
 
     double c = 0.01;
-    CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
+    CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
     printf("\nGreedy algorithm:\n\n");
     bbound_greedy(nsamples, nrules, rules, labels, 8);
 
     struct time* times = (struct time*) calloc(1, sizeof(*times));
-    bbound_stochastic<CuriousNode>(&tree, 1000000,
-                                   &curious_construct_policy,
-                                   times);
+    bbound_stochastic<BaseNode>(&tree, 1000000,
+                                &base_construct_policy,
+                                times);
     printf("BBOUND_STOCHASTIC\n");
     printf("\nnum_nodes: %zu\n", tree.num_nodes());
     printf("num_evaluated: %zu\n", tree.num_evaluated());
@@ -45,12 +45,12 @@ int main()
     printf("Number of tree insertions: %i\n", times->tree_insertion_num);
     clear_time(times);
 
-    CacheTree<CuriousNode> tree2(nsamples, nrules, c, rules, labels);
-    std::queue<CuriousNode*> bfs_q;
-    bbound_bfs<CuriousNode>(&tree2, 1000000,
-                            &curious_construct_policy,
-                            &bfs_q,
-                            times);
+    CacheTree<BaseNode> tree2(nsamples, nrules, c, rules, labels);
+    std::queue<BaseNode*> bfs_q;
+    bbound_bfs<BaseNode>(&tree2, 1000000,
+                         &base_construct_policy,
+                         &bfs_q,
+                         times);
     printf("\n\n\nBBOUND_BFS\n");
     printf("\nnum_nodes: %zu\n", tree2.num_nodes());
     printf("num_evaluated: %zu\n", tree2.num_evaluated());

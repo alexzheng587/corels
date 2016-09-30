@@ -6,7 +6,7 @@
 template<class T>
 Node<T>::Node(size_t nrules, bool default_prediction, double objective)
     : id_(0), default_prediction_(default_prediction),
-      lower_bound_(0.), objective_(objective), done_(0), storage_(0), depth_(0) {
+      lower_bound_(0.), objective_(objective), done_(0), depth_(0), storage_(0) {
 }
 
 template<class T>
@@ -15,7 +15,7 @@ Node<T>::Node(size_t id, size_t nrules, bool prediction,
            double objective, T storage, Node<T>* parent)
     : id_(id), prediction_(prediction),
       default_prediction_(default_prediction), lower_bound_(lower_bound),
-      objective_(objective), done_(0), storage_(storage), depth_(1 + parent->depth_), parent_(parent) {
+      objective_(objective), done_(0), depth_(1 + parent->depth_), parent_(parent), storage_(storage) {
 }
 
 template<class N>

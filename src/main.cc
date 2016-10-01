@@ -46,11 +46,11 @@ int main()
     clear_time(times);
 
     CacheTree<BaseNode> tree2(nsamples, nrules, c, rules, labels);
-    std::queue<BaseNode*> bfs_q;
-    bbound_bfs<BaseNode>(&tree2, 1000000,
-                         &base_construct_policy,
-                         &bfs_q,
-                         times);
+    BaseQueue bfs_q;
+    bbound_queue<BaseNode, BaseQueue>(&tree2, 1000000,
+                                      &base_construct_policy,
+                                      &bfs_q,
+                                      times);
     printf("\n\n\nBBOUND_BFS\n");
     printf("\nnum_nodes: %zu\n", tree2.num_nodes());
     printf("num_evaluated: %zu\n", tree2.num_evaluated());

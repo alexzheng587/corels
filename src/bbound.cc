@@ -164,8 +164,9 @@ std::pair<N*, std::set<size_t> >
 queue_select(CacheTree<N>* tree, Q* q, VECTOR captured) {
     int cnt;
 
-    N* node = q->front();
+    N* selected_node = q->front();
     q->pop();
+    N* node = selected_node;
 
     /* clear captured vector */
     rule_vandnot(captured,
@@ -187,7 +188,7 @@ queue_select(CacheTree<N>* tree, Q* q, VECTOR captured) {
         node = node->parent();
     }
 
-    return std::make_pair(node, ordered_prefix);
+    return std::make_pair(selected_node, ordered_prefix);
 }
 
 template<class N, class Q>

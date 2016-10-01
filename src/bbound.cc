@@ -21,6 +21,14 @@ CuriousNode* curious_construct_policy(size_t new_rule, size_t nrules, bool predi
                             lower_bound, objective, curiosity, parent));
 }
 
+BaseNode* base_queue_front(BaseQueue* q) {
+    return q->front();
+}
+
+CuriousNode* curious_queue_front(CuriousQueue* q) {
+    return q->top();
+}
+
 template<class N, class Q>
 void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured,
                        std::set<size_t> ordered_parent,
@@ -169,10 +177,10 @@ void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes,
 
 template<class N, class Q>
 std::pair<N*, std::set<size_t> >
-queue_select(CacheTree<N>* tree, Q* q, VECTOR captured) {
+queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured) {
     int cnt;
 
-    N* selected_node = q->front();
+    N* selected_node = front(q); //q->front();
     q->pop();
 
     N* node = selected_node;
@@ -206,7 +214,7 @@ template<class N, class Q>
 void bbound_queue(CacheTree<N>* tree,
                 size_t max_num_nodes,
                 construct_signature<N> construct_policy,
-                Q* q,
+                Q* q, N*(*front)(Q*),
                 struct time* times) {
     int cnt;
     std::pair<N*, std::set<size_t> > node_ordered;
@@ -223,7 +231,7 @@ void bbound_queue(CacheTree<N>* tree,
     while ((tree->num_nodes() < max_num_nodes) &&
            !q->empty()) {
         double t0 = timestamp();
-        node_ordered = queue_select<N, Q>(tree, q, captured);
+        node_ordered = queue_select<N, Q>(tree, q, front, captured);
         times->stochastic_select_time += timestamp() - t0;
         ++times->stochastic_select_num;
         if (node_ordered.first) {
@@ -307,6 +315,14 @@ evaluate_children<BaseNode, BaseQueue>(CacheTree<BaseNode>* tree,
                                        construct_signature<BaseNode> construct_policy,
                                        BaseQueue* q, struct time*);
 
+template void
+evaluate_children<CuriousNode, CuriousQueue>(CacheTree<CuriousNode>* tree,
+                                             CuriousNode* parent,
+                                             VECTOR parent_not_captured,
+                                             std::set<size_t> ordered_parent,
+                                             construct_signature<CuriousNode> construct_policy,
+                                             CuriousQueue* q, struct time*);
+
 template std::pair<BaseNode*, std::set<size_t> >
 stochastic_select<BaseNode>(CacheTree<BaseNode>* tree,
                             VECTOR not_captured);
@@ -320,11 +336,27 @@ bbound_stochastic<BaseNode>(CacheTree<BaseNode>* tree,
 template std::pair<BaseNode*, std::set<size_t> >
 queue_select<BaseNode, BaseQueue>(CacheTree<BaseNode>* tree,
                                   BaseQueue* q,
+                                  BaseNode*(*front)(BaseQueue*),
                                   VECTOR captured);
+
+template std::pair<CuriousNode*, std::set<size_t> >
+queue_select<CuriousNode, CuriousQueue>(CacheTree<CuriousNode>* tree,
+                                        CuriousQueue* q,
+                                        CuriousNode*(*front)(CuriousQueue*),
+                                        VECTOR captured);
 
 template void
 bbound_queue<BaseNode, BaseQueue>(CacheTree<BaseNode>* tree,
                                   size_t max_num_nodes,
                                   construct_signature<BaseNode> construct_policy,
                                   BaseQueue* q,
+                                  BaseNode*(*front)(BaseQueue*),
                                   struct time*);
+
+template void
+bbound_queue<CuriousNode, CuriousQueue>(CacheTree<CuriousNode>* tree,
+                                        size_t max_num_nodes,
+                                        construct_signature<CuriousNode> construct_policy,
+                                        CuriousQueue* q,
+                                        CuriousNode*(*front)(CuriousQueue*),
+                                        struct time*);

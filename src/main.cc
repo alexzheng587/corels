@@ -50,8 +50,9 @@ int main()
     bbound_queue<BaseNode, BaseQueue>(&tree2, 1000000,
                                       &base_construct_policy,
                                       &bfs_q,
+                                      &base_queue_front,
                                       times);
-    printf("\n\n\nBBOUND_BFS\n");
+    printf("\n\n\nBFS\n");
     printf("\nnum_nodes: %zu\n", tree2.num_nodes());
     printf("num_evaluated: %zu\n", tree2.num_evaluated());
     printf("\nmin_objective: %1.5f\n", tree2.min_objective());
@@ -64,8 +65,30 @@ int main()
     printf("Objective time: %f\n", times->objective_time);
     printf("Total tree insertion time: %f\n", times->tree_insertion_time);
     printf("Number of tree insertions: %i\n", times->tree_insertion_num);
-    free(times);
+    clear_time(times);
 
+    CacheTree<CuriousNode> tree3(nsamples, nrules, c, rules, labels);
+    CuriousQueue curious_q(curious_cmp);
+    bbound_queue<CuriousNode, CuriousQueue>(&tree3, 1000000,
+                                            &curious_construct_policy,
+                                            &curious_q,
+                                            &curious_queue_front,
+                                            times);
+    printf("\n\n\nCURIOUSITY\n");
+    printf("\nnum_nodes: %zu\n", tree3.num_nodes());
+    printf("num_evaluated: %zu\n", tree3.num_evaluated());
+    printf("\nmin_objective: %1.5f\n", tree3.min_objective());
+    printf("Total time: %f\n", times->total_time);
+    printf("Evaluate children time: %f\n", times->evaluate_children_time);
+    printf("Stochastic select time: %f\n", times->stochastic_select_time);
+    printf("Rule evaluation time: %f\n", times->rule_evaluation_time);
+    printf("Lower bound time: %f\n", times->lower_bound_time);
+    printf("Number of lower bound evaluations: %d\n", times->lower_bound_num);
+    printf("Objective time: %f\n", times->objective_time);
+    printf("Total tree insertion time: %f\n", times->tree_insertion_time);
+    printf("Number of tree insertions: %i\n", times->tree_insertion_num);
+
+    free(times);
     printf("\ndelete rules\n");
 	rules_free(rules, nrules, 1);
 	printf("delete labels\n");

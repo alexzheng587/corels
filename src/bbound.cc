@@ -158,8 +158,8 @@ void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes,
     while ((tree->num_nodes() < max_num_nodes) and (tree->num_nodes() > 0)) {
         double t0 = timestamp();
         node_ordered = stochastic_select<N>(tree, not_captured);
-        times->stochastic_select_time += timestamp() - t0;
-        ++times->stochastic_select_num;
+        times->node_select_time += timestamp() - t0;
+        ++times->node_select_num;
         if (node_ordered.first) {
             double t1 = timestamp();
             evaluate_children<N, NullQueue<N> >(tree, node_ordered.first, not_captured,
@@ -232,8 +232,8 @@ void bbound_queue(CacheTree<N>* tree,
            !q->empty()) {
         double t0 = timestamp();
         node_ordered = queue_select<N, Q>(tree, q, front, captured);
-        times->stochastic_select_time += timestamp() - t0;
-        ++times->stochastic_select_num;
+        times->node_select_time += timestamp() - t0;
+        ++times->node_select_num;
         if (node_ordered.first) {
             double t1 = timestamp();
             /* not_captured = default rule truthtable & ~ captured */

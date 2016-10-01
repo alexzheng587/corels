@@ -36,7 +36,7 @@ int main()
     printf("\nmin_objective: %1.5f\n", tree.min_objective());
     printf("Total time: %f\n", times->total_time);
     printf("Evaluate children time: %f\n", times->evaluate_children_time);
-    printf("Stochastic select time: %f\n", times->stochastic_select_time);
+    printf("Node select time: %f\n", times->node_select_time);
     printf("Rule evaluation time: %f\n", times->rule_evaluation_time);
     printf("Lower bound time: %f\n", times->lower_bound_time);
     printf("Number of lower bound evaluations: %d\n", times->lower_bound_num);
@@ -58,7 +58,7 @@ int main()
     printf("\nmin_objective: %1.5f\n", tree2.min_objective());
     printf("Total time: %f\n", times->total_time);
     printf("Evaluate children time: %f\n", times->evaluate_children_time);
-    printf("Stochastic select time: %f\n", times->stochastic_select_time);
+    printf("Node select time: %f\n", times->node_select_time);
     printf("Rule evaluation time: %f\n", times->rule_evaluation_time);
     printf("Lower bound time: %f\n", times->lower_bound_time);
     printf("Number of lower bound evaluations: %d\n", times->lower_bound_num);
@@ -80,7 +80,7 @@ int main()
     printf("\nmin_objective: %1.5f\n", tree3.min_objective());
     printf("Total time: %f\n", times->total_time);
     printf("Evaluate children time: %f\n", times->evaluate_children_time);
-    printf("Stochastic select time: %f\n", times->stochastic_select_time);
+    printf("Node select time: %f\n", times->node_select_time);
     printf("Rule evaluation time: %f\n", times->rule_evaluation_time);
     printf("Lower bound time: %f\n", times->lower_bound_time);
     printf("Number of lower bound evaluations: %d\n", times->lower_bound_num);

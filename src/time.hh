@@ -4,8 +4,8 @@ struct time {
     double total_time;
     double evaluate_children_time;
     int evaluate_children_num;
-    double stochastic_select_time;
-    int stochastic_select_num;
+    double node_select_time;
+    int node_select_num;
     double rule_evaluation_time;
     int rule_evaluation_num;
     double lower_bound_time;

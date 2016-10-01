@@ -4,8 +4,8 @@ void clear_time(struct time* t) {
     t->total_time = 0;
     t->evaluate_children_time = 0;
     t->evaluate_children_num = 0;
-    t->stochastic_select_time = 0;
-    t->stochastic_select_num = 0;
+    t->node_select_time = 0;
+    t->node_select_num = 0;
     t->rule_evaluation_time = 0;
     t->rule_evaluation_num = 0;
     t->lower_bound_time = 0;

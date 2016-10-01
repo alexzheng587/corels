@@ -13,9 +13,9 @@ template<class T>
 Node<T>::Node(size_t id, size_t nrules, bool prediction,
            bool default_prediction, double lower_bound,
            double objective, T storage, Node<T>* parent)
-    : id_(id), prediction_(prediction),
-      default_prediction_(default_prediction), lower_bound_(lower_bound),
-      objective_(objective), done_(0), depth_(1 + parent->depth_), parent_(parent), storage_(storage) {
+    : id_(id), prediction_(prediction), default_prediction_(default_prediction),
+      lower_bound_(lower_bound), objective_(objective),
+      done_(0), depth_(1 + parent->depth_), parent_(parent), storage_(storage) {
 }
 
 template<class N>

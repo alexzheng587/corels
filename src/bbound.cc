@@ -6,7 +6,8 @@ BaseNode* base_construct_policy(size_t new_rule, size_t nrules, bool prediction,
                                 double objective, BaseNode* parent,
                                 int num_not_captured, int nsamples,
                                 int len_prefix, double c) {
-    return (new BaseNode(new_rule, nrules, prediction, default_prediction, lower_bound, objective, 0, parent));
+    return (new BaseNode(new_rule, nrules, prediction, default_prediction,
+                         lower_bound, objective, 0, parent));
 }
 
 CuriousNode* curious_construct_policy(size_t new_rule, size_t nrules, bool prediction,
@@ -14,13 +15,16 @@ CuriousNode* curious_construct_policy(size_t new_rule, size_t nrules, bool predi
                                       double objective, CuriousNode* parent,
                                       int num_not_captured, int nsamples,
                                       int len_prefix, double c) {
-    double curiosity = (lower_bound - c * len_prefix) * nsamples / (float)(nsamples - num_not_captured) + c * len_prefix;
-    return (new CuriousNode(new_rule, nrules, prediction, default_prediction, lower_bound, objective, curiosity, parent));
+    double curiosity = (lower_bound - c * len_prefix) * nsamples /
+                       (float)(nsamples - num_not_captured) + c * len_prefix;
+    return (new CuriousNode(new_rule, nrules, prediction, default_prediction,
+                            lower_bound, objective, curiosity, parent));
 }
 
 template<class N, class Q>
 void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured,
-                       std::set<size_t> ordered_parent, construct_signature<N> construct_policy, Q* q, struct time* times) {
+                       std::set<size_t> ordered_parent,
+                       construct_signature<N> construct_policy, Q* q, struct time* times) {
     VECTOR captured, captured_zeros, not_captured, not_captured_zeros;
     int num_captured, c0, c1, captured_correct;
     int num_not_captured, d0, d1, default_correct;
@@ -133,7 +137,8 @@ std::pair<N*, std::set<size_t> > stochastic_select(CacheTree<N>* tree, VECTOR no
 }
 
 template<class N>
-void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes, construct_signature<N> construct_policy, struct time* times) {
+void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes,
+                       construct_signature<N> construct_policy, struct time* times) {
     std::pair<N*, std::set<size_t> > node_ordered;
     VECTOR not_captured;
     NullQueue<N>* q = NULL;
@@ -149,7 +154,8 @@ void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes, construct_signa
         ++times->stochastic_select_num;
         if (node_ordered.first) {
             double t1 = timestamp();
-            evaluate_children<N, NullQueue<N> >(tree, node_ordered.first, not_captured, node_ordered.second, construct_policy, q, times);
+            evaluate_children<N, NullQueue<N> >(tree, node_ordered.first, not_captured,
+                                                node_ordered.second, construct_policy, q, times);
             times->evaluate_children_time += timestamp() - t1;
             ++times->evaluate_children_num;
         }
@@ -241,12 +247,12 @@ void bbound_queue(CacheTree<N>* tree,
     rule_vfree(&not_captured);
 }
 
-void bbound_greedy(size_t nsamples, size_t nrules, rule_t *rules, rule_t *labels, 
-        size_t max_prefix_length) {
+void bbound_greedy(size_t nsamples, size_t nrules, rule_t *rules, rule_t *labels,
+                   size_t max_prefix_length) {
     // Initialize variables
     rule_t greedy_list[max_prefix_length];
     std::vector<rule_t> available_rules (rules, rules + nrules);
-    VECTOR captured, captured_zeros, unseen;// not_captured, not_captured_zeros;
+    VECTOR captured, captured_zeros, unseen; // not_captured, not_captured_zeros;
     int num_captured, c0, c1, prediction, captured_correct;
     rule_vinit(nsamples, &captured);
     rule_vinit(nsamples, &captured_zeros);
@@ -287,19 +293,19 @@ void bbound_greedy(size_t nsamples, size_t nrules, rule_t *rules, rule_t *labels
 
 template void
 evaluate_children<BaseNode, NullQueue<BaseNode> >(CacheTree<BaseNode>* tree,
-                            BaseNode* parent,
-                            VECTOR parent_not_captured,
-                            std::set<size_t> ordered_parent,
-                            construct_signature<BaseNode> construct_policy,
-                            NullQueue<BaseNode>* q, struct time*);
+                                                  BaseNode* parent,
+                                                  VECTOR parent_not_captured,
+                                                  std::set<size_t> ordered_parent,
+                                                  construct_signature<BaseNode> construct_policy,
+                                                  NullQueue<BaseNode>* q, struct time*);
 
 template void
 evaluate_children<BaseNode, BaseQueue>(CacheTree<BaseNode>* tree,
-                            BaseNode* parent,
-                            VECTOR parent_not_captured,
-                            std::set<size_t> ordered_parent,
-                            construct_signature<BaseNode> construct_policy,
-                            BaseQueue* q, struct time*);
+                                       BaseNode* parent,
+                                       VECTOR parent_not_captured,
+                                       std::set<size_t> ordered_parent,
+                                       construct_signature<BaseNode> construct_policy,
+                                       BaseQueue* q, struct time*);
 
 template std::pair<BaseNode*, std::set<size_t> >
 stochastic_select<BaseNode>(CacheTree<BaseNode>* tree,
@@ -313,12 +319,12 @@ bbound_stochastic<BaseNode>(CacheTree<BaseNode>* tree,
 
 template std::pair<BaseNode*, std::set<size_t> >
 queue_select<BaseNode, BaseQueue>(CacheTree<BaseNode>* tree,
-                     BaseQueue* q,
-                     VECTOR captured);
+                                  BaseQueue* q,
+                                  VECTOR captured);
 
 template void
 bbound_queue<BaseNode, BaseQueue>(CacheTree<BaseNode>* tree,
-                     size_t max_num_nodes,
-                     construct_signature<BaseNode> construct_policy,
-                     BaseQueue* q,
-                     struct time*);
+                                  size_t max_num_nodes,
+                                  construct_signature<BaseNode> construct_policy,
+                                  BaseQueue* q,
+                                  struct time*);

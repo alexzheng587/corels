@@ -11,14 +11,19 @@ class NullQueue {
 typedef std::queue<BaseNode*> BaseQueue;
 
 template<class N>
-using construct_signature = N* (*)(size_t, size_t, bool, bool, double, double, N* parent, int, int, int, double);
+using construct_signature = N* (*)(size_t, size_t, bool, bool, double, double,
+                                   N* parent, int, int, int, double);
 
-BaseNode* base_construct_policy(size_t new_rule, size_t nrules, bool prediction, bool default_prediction,
-                                double lower_bound, double objective, BaseNode* parent, int num_not_captured,
+BaseNode* base_construct_policy(size_t new_rule, size_t nrules,
+                                bool prediction, bool default_prediction,
+                                double lower_bound, double objective,
+                                BaseNode* parent, int num_not_captured,
                                 int nsamples, int len_prefix, double c);
 
-CuriousNode* curious_construct_policy(size_t new_rule, size_t nrules, bool prediction, bool default_prediction,
-                                      double lower_bound, double objective, CuriousNode* parent, int num_not_captured,
+CuriousNode* curious_construct_policy(size_t new_rule, size_t nrules,
+                                      bool prediction, bool default_prediction,
+                                      double lower_bound, double objective,
+                                      CuriousNode* parent, int num_not_captured,
                                       int nsamples, int len_prefix, double c);
 
 template<class N, class Q>

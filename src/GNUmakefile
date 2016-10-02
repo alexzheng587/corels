@@ -3,7 +3,7 @@ LDFLAGS :=
 LIBS :=
 
 CC = gcc
-CXX = g++
+CXX = g++ -std=c++11
 
 DEPSDIR := .deps
 
@@ -11,7 +11,7 @@ CLEAN = bbcache *~ *.o *.so
 
 all: bbcache
 
-bbcache: main.o bbound.o cache.o rulelib.o
+bbcache: main.o bbound.o cache.o rulelib.o time.o
 	$(CXX) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(LIBS)
 
 main.o: main.cc $(DEPSDIR)/stamp
@@ -19,6 +19,9 @@ main.o: main.cc $(DEPSDIR)/stamp
 
 bbound.o: bbound.cc $(DEPSDIR)/stamp
 	$(CXX) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@
+
+time.o: time.cc $(DEPSDIR)/stamp
+	$(CC) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@
 
 cache.o: cache.cc $(DEPSDIR)/stamp
 	$(CXX) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@

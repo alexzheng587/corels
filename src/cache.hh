@@ -8,49 +8,60 @@ extern "C" {
   #include "rule.h"
 }
 
-class CacheNode;
-class CacheTree;
+template <class T> class Node;
+template <class N> class CacheTree;
 
-class CacheNode {
+typedef Node<bool> BaseNode;       // nothing extra
+typedef Node<double> CuriousNode;  // curiosity
+
+template <class T>
+class Node {
   public:
-    typedef CacheNode node_type;
+    explicit Node(size_t nrules, bool default_prediction, double objective);
 
-    explicit CacheNode(size_t nrules, bool default_prediction, double objective);
+    Node(size_t id, size_t nrules, bool prediction, bool default_prediction,
+         double lower_bound, double objective, T storage, Node<T>* parent);
+
     inline size_t id() const;
-    inline size_t depth() const;
     inline bool prediction() const;
     inline bool default_prediction() const;
     inline double lower_bound() const;
     inline double objective() const;
-    inline node_type* child(size_t idx) const;
-    inline node_type* parent() const;
     inline bool done() const;
     inline void set_done();
+
+    inline size_t depth() const;
+    inline Node<T>* child(size_t idx) const;
+    inline Node<T>* parent() const;
     inline void delete_child(size_t idx);
     inline size_t num_children() const;
-    inline std::map<size_t, CacheNode*>::iterator random_child();
+
+    inline T& get_storage(); // can this be const?
+
+    inline typename std::map<size_t, Node<T>*>::iterator random_child(); // FIXME
+    // inline typename std::map<size_t, Node<T>*>::iterator random_child(PRNG prng);
 
   private:
+
     size_t id_;
-    size_t depth_;
     bool prediction_;
     bool default_prediction_;
     double lower_bound_;
     double objective_;
     bool done_;
-    node_type* parent_;
-    std::map<size_t, node_type*> children_;
 
-    CacheNode(size_t id, size_t nrules, bool prediction, bool default_prediction,
-              double lower_bound, double objective, CacheNode* parent);
+    size_t depth_;
+    Node<T>* parent_;
+    std::map<size_t, Node<T>*> children_;
 
-    friend class CacheTree;
+    T storage_;  // space for something extra, like curiosity or a bit vector
+
+    friend class CacheTree<Node<T> >;
 };
 
+template<class N>
 class CacheTree {
   public:
-    typedef CacheNode node_type;
-
     CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules, rule_t *labels);
     ~CacheTree();
 
@@ -62,20 +73,19 @@ class CacheTree {
     inline size_t nsamples() const;
     inline size_t nrules() const;
     inline double c() const;
-    inline node_type* root() const;
+    inline N* root() const;
 
     inline void update_min_objective(double objective);
     inline void increment_num_evaluated();
 
     void insert_root();
-    void insert(size_t new_rule, bool prediction, bool default_prediction,
-                double lower_bound, double objective, CacheNode* parent);
-    void prune_up(CacheNode* node);
-    void delete_subtree(CacheNode* node);
+    void insert(N* node);
+    void prune_up(N* node);
+    void delete_subtree(N* node);
     void play_with_rules();
 
   private:
-    node_type* root_;
+    N* root_;
     size_t nsamples_;
     size_t nrules_;
     double c_;
@@ -86,44 +96,64 @@ class CacheTree {
     std::vector<rule_t> labels_;
 };
 
-inline size_t CacheNode::id() const {
+template <class T>
+inline size_t Node<T>::id() const {
     return id_;
 }
 
-inline size_t CacheNode::depth() const {
-    return depth_;
-}
-
-inline bool CacheNode::prediction() const {
+template <class T>
+inline bool Node<T>::prediction() const {
     return prediction_;
 }
 
-inline bool CacheNode::default_prediction() const {
+template <class T>
+inline bool Node<T>::default_prediction() const {
     return default_prediction_;
 }
 
-inline double CacheNode::lower_bound() const {
+template <class T>
+inline double Node<T>::lower_bound() const {
     return lower_bound_;
 }
 
-inline double CacheNode::objective() const {
+template <class T>
+inline double Node<T>::objective() const {
     return objective_;
 }
 
-inline CacheNode* CacheNode::child(size_t idx) const {
+template <class T>
+inline bool Node<T>::done() const{
+    return done_;
+}
+
+template <class T>
+inline void Node<T>::set_done() {
+    done_ = 1;
+}
+
+template <class T>
+inline size_t Node<T>::depth() const {
+    return depth_;
+}
+
+template<class T>
+inline Node<T>* Node<T>::child(size_t idx) const {
     return children_.find(idx)->second;
 }
 
-inline void CacheNode::delete_child(size_t idx) {
+template<class T>
+inline void Node<T>::delete_child(size_t idx) {
     children_.erase(idx);
 }
 
-inline size_t CacheNode::num_children() const {
+template<class T>
+inline size_t Node<T>::num_children() const {
     return children_.size();
 }
 
-inline std::map<size_t, CacheNode*>::iterator CacheNode::random_child() {
-    std::map<size_t, CacheNode*>::iterator iter;
+template<class T>
+inline typename std::map<size_t, Node<T>*>::iterator Node<T>::random_child() {
+    typename std::map<size_t, Node<T>*>::iterator iter;
     size_t idx;
     iter = children_.begin();
     idx = rand() % (children_.size());
@@ -131,58 +161,67 @@ inline std::map<size_t, CacheNode*>::iterator CacheNode::random_child() {
     return iter;
 }
 
-inline CacheNode* CacheNode::parent() const {
+template<class T>
+inline Node<T>* Node<T>::parent() const {
     return parent_;
 }
 
-inline bool CacheNode::done() const{
-    return done_;
+template<class T>
+inline T& Node<T>::get_storage() {
+    return storage_;
 }
 
-inline void CacheNode::set_done() {
-    done_ = 1;
-}
-
-inline double CacheTree::min_objective() const {
+template<class N>
+inline double CacheTree<N>::min_objective() const {
     return min_objective_;
 }
 
-inline size_t CacheTree::num_nodes() const {
+template<class N>
+inline size_t CacheTree<N>::num_nodes() const {
     return num_nodes_;
 }
 
-inline size_t CacheTree::num_evaluated() const {
+template<class N>
+inline size_t CacheTree<N>::num_evaluated() const {
     return num_evaluated_;
 }
 
-inline rule_t CacheTree::rule(size_t idx) const{
+template<class N>
+inline rule_t CacheTree<N>::rule(size_t idx) const{
     return rules_[idx];
 }
 
-inline rule_t CacheTree::label(size_t idx) const{
+template<class N>
+inline rule_t CacheTree<N>::label(size_t idx) const{
     return labels_[idx];
 }
 
-inline size_t CacheTree::nsamples() const {
+template<class N>
+inline size_t CacheTree<N>::nsamples() const {
     return nsamples_;
 }
 
-inline size_t CacheTree::nrules() const {
+template<class N>
+inline size_t CacheTree<N>::nrules() const {
     return nrules_;
 }
 
-inline double CacheTree::c() const {
+template<class N>
+inline double CacheTree<N>::c() const {
     return c_;
 }
 
-inline CacheNode* CacheTree::root() const {
+template<class N>
+inline N* CacheTree<N>::root() const {
     return root_;
 }
 
-inline void CacheTree::update_min_objective(double objective) {
+template<class N>
+inline void CacheTree<N>::update_min_objective(double objective) {
     min_objective_ = objective;
 }
 
-inline void CacheTree::increment_num_evaluated() {
+template<class N>
+inline void CacheTree<N>::increment_num_evaluated() {
     ++num_evaluated_;
 }

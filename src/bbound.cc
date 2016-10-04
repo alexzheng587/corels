@@ -130,11 +130,11 @@ std::pair<N*, std::set<size_t> > stochastic_select(CacheTree<N>* tree, VECTOR no
                 if (parent->num_children() == 0)
                     tree->prune_up(parent);
             }
-            return std::make_pair((N*) 0, ordered_prefix);
+            return std::make_pair((N*) 0, std::set<size_t>{});
         }
         if (node->num_children() == 0) {
             tree->prune_up(node);
-            return std::make_pair((N*) 0, ordered_prefix);
+            return std::make_pair((N*) 0, std::set<size_t>{});
         }
         iter = node->random_child();
         node = iter->second;
@@ -192,7 +192,7 @@ queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured) {
         tree->delete_subtree(selected_node);
         if (parent->num_children() == 0)
             tree->prune_up(parent);
-        return std::make_pair((N*) 0, ordered_prefix);
+        return std::make_pair((N*) 0, std::set<size_t>{});
     }
 
     /* clear captured vector */

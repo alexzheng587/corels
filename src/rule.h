@@ -148,6 +148,7 @@ void rule_copy(VECTOR, VECTOR, int);
 
 int rule_isset(VECTOR, int);
 int rule_vinit(int, VECTOR *);
+void rule_vclear(int, VECTOR *v);
 int rule_vfree(VECTOR *);
 int make_default(VECTOR *, int);
 void rule_vand(VECTOR, VECTOR, VECTOR, int, int *);

@@ -195,9 +195,7 @@ queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured) {
         return std::make_pair((N*) 0, std::set<size_t>{});
     }
 
-    /* clear captured vector */
-    rule_vandnot(captured,
-                 captured, captured, tree->nsamples(), &cnt);
+    rule_vclear(tree->nsamples(), &captured);
 
     while (node != tree->root()) { /* or node->id() != root->id() */
         ordered_prefix.insert(node->id());
@@ -297,6 +295,10 @@ void bbound_greedy(size_t nsamples, size_t nrules, rule_t *rules, rule_t *labels
         greedy_list[i] = best_rule;
     }
     rule_print_all(greedy_list, max_prefix_length, nsamples);
+
+    rule_vfree(&captured);
+    rule_vfree(&captured_zeros);
+    rule_vfree(&unseen);
 }
 
 template void

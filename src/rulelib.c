@@ -197,7 +197,7 @@ rule_vinit(int len, VECTOR *ret)
 	return (0);
 }
 
-/* Clear vector -- set to all 1's */
+/* Clear vector -- set to all 0's */
 void
 rule_vclear(int len, VECTOR *v) {
 #ifdef GMP

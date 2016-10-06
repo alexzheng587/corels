@@ -130,11 +130,11 @@ std::pair<N*, std::set<size_t> > stochastic_select(CacheTree<N>* tree, VECTOR no
                 if (parent->num_children() == 0)
                     tree->prune_up(parent);
             }
-            return std::make_pair((N*) 0, ordered_prefix);
+            return std::make_pair((N*) 0, std::set<size_t>{});
         }
         if (node->num_children() == 0) {
             tree->prune_up(node);
-            return std::make_pair((N*) 0, ordered_prefix);
+            return std::make_pair((N*) 0, std::set<size_t>{});
         }
         iter = node->random_child();
         node = iter->second;
@@ -192,12 +192,10 @@ queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured) {
         tree->delete_subtree(selected_node);
         if (parent->num_children() == 0)
             tree->prune_up(parent);
-        return std::make_pair((N*) 0, ordered_prefix);
+        return std::make_pair((N*) 0, std::set<size_t>{});
     }
 
-    /* clear captured vector */
-    rule_vandnot(captured,
-                 captured, captured, tree->nsamples(), &cnt);
+    rule_vclear(tree->nsamples(), &captured);
 
     while (node != tree->root()) { /* or node->id() != root->id() */
         ordered_prefix.insert(node->id());
@@ -297,6 +295,10 @@ void bbound_greedy(size_t nsamples, size_t nrules, rule_t *rules, rule_t *labels
         greedy_list[i] = best_rule;
     }
     rule_print_all(greedy_list, max_prefix_length, nsamples);
+
+    rule_vfree(&captured);
+    rule_vfree(&captured_zeros);
+    rule_vfree(&unseen);
 }
 
 template void

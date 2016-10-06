@@ -197,6 +197,17 @@ rule_vinit(int len, VECTOR *ret)
 	return (0);
 }
 
+/* Clear vector -- set to all 0's */
+void
+rule_vclear(int len, VECTOR *v) {
+#ifdef GMP
+    mpz_set_ui(*v, 0);
+#else
+    int nentries = (len + BITS_PER_ENTRY - 1)/BITS_PER_ENTRY;
+    memset(*v, 0, nentries * sizeof(v_entry));
+#endif
+}
+
 /* Deallocate a vector. */
 int
 rule_vfree(VECTOR *v)

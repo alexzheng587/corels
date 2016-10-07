@@ -9,6 +9,12 @@ class NullQueue {
     void push(N* node) {};
 };
 
+template<class N>
+class NullPermutationMap {
+  public:
+    void permutation_insert(N* n, size_t i, bool prediction, bool default_prediction, double lower_bound, double objective, N* parent) {};
+};
+
 typedef std::queue<BaseNode*> BaseQueue;
 
 // lambda function for priority queue metric using curiosity
@@ -39,12 +45,12 @@ CuriousNode* curious_construct_policy(size_t new_rule, size_t nrules,
                                       CuriousNode* parent, int num_not_captured,
                                       int nsamples, int len_prefix, double c);
 
-template<class N, class Q>
+template<class N, class Q, class P>
 extern void evaluate_children(CacheTree<N>* tree, N* parent,
                               VECTOR parent_not_captured,
                               std::set<size_t> ordered_parent,
                               construct_signature<N> construct_policy,
-                              Q* q, struct time*);
+                              Q* q, struct time*, P* p);
 
 template<class N>
 extern std::pair<N*, std::set<size_t> > stochastic_select(CacheTree<N>* tree, VECTOR not_captured);
@@ -59,12 +65,11 @@ template<class N, class Q>
 extern std::pair<N*, std::set<size_t> >
 queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured);
 
-template<class N, class Q>
+template<class N, class Q, class P>
 extern void bbound_queue(CacheTree<N>* tree,
                          size_t max_num_nodes,
                          construct_signature<N> construct_policy,
-                         Q* q,
-                         N*(*front)(Q*),
-                         struct time*);
+                         Q* q, N*(*front)(Q*),
+                         struct time*, P* p);
 
 void bbound_greedy(size_t nsamples, size_t nrules, rule_t *rules, rule_t *labels, size_t max_prefix_length);

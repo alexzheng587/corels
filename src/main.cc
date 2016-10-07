@@ -47,11 +47,12 @@ int main()
 
     CacheTree<BaseNode> tree2(nsamples, nrules, c, rules, labels);
     BaseQueue bfs_q;
-    bbound_queue<BaseNode, BaseQueue>(&tree2, 1000000,
+    NullPermutationMap<BaseNode> p;
+    bbound_queue<BaseNode, BaseQueue, NullPermutationMap<BaseNode> >(&tree2, 1000000,
                                       &base_construct_policy,
                                       &bfs_q,
                                       &base_queue_front,
-                                      times);
+                                      times, &p);
     printf("\n\n\nBFS\n");
     printf("\nnum_nodes: %zu\n", tree2.num_nodes());
     printf("num_evaluated: %zu\n", tree2.num_evaluated());
@@ -69,11 +70,12 @@ int main()
 
     CacheTree<CuriousNode> tree3(nsamples, nrules, c, rules, labels);
     CuriousQueue curious_q(curious_cmp);
-    bbound_queue<CuriousNode, CuriousQueue>(&tree3, 1000000,
+    NullPermutationMap<CuriousNode> p2;
+    bbound_queue<CuriousNode, CuriousQueue, NullPermutationMap<CuriousNode> >(&tree3, 1000000,
                                             &curious_construct_policy,
                                             &curious_q,
                                             &curious_queue_front,
-                                            times);
+                                            times, &p2);
     printf("\n\n\nCURIOUSITY\n");
     printf("\nnum_nodes: %zu\n", tree3.num_nodes());
     printf("num_evaluated: %zu\n", tree3.num_evaluated());

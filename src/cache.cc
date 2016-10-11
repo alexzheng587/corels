@@ -33,7 +33,7 @@ CacheTree<N>::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules,
 
 template<class N>
 CacheTree<N>::~CacheTree() {
-    delete_subtree(root_);
+    destroy_subtree(root_);
 }
 
 template<class N>
@@ -84,23 +84,20 @@ void CacheTree<N>::prune_up(N* node) {
 }
 
 template<class N>
-template<class P>
-void CacheTree<N>::delete_subtree(N* node, P* p) {
+void CacheTree<N>::destroy_subtree(N* node) {
     N* child;
     typename std::map<size_t, N*>::iterator iter;
     if (node->done()) {
         iter = node->children_.begin();
         while (iter != node->children_.end()) {
             child = iter->second;
-            delete_subtree(child, p);
+            destroy_subtree(child);
             ++iter;
         }
     }
     --num_nodes_;    
     //printf("delete node %zu at depth %zu (lb=%1.5f, ob=%1.5f) %zu\n",
     //       node->id(), node->depth(), node->lower_bound(), node->objective(), num_nodes_);
-    if (p)
-        p->remove_node(node);
     delete node;
 }
 

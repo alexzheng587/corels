@@ -81,7 +81,8 @@ class CacheTree {
     void insert_root();
     void insert(N* node);
     void prune_up(N* node);
-    void delete_subtree(N* node);
+    template <class P>
+    void delete_subtree(N* node, P* p = NULL);
     void play_with_rules();
 
   private:

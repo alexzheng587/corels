@@ -27,6 +27,7 @@ int main()
     bbound_greedy(nsamples, nrules, rules, labels, 8);
 
     struct time* times = (struct time*) calloc(1, sizeof(*times));
+    /*
     bbound_stochastic<BaseNode>(&tree, 1000000,
                                 &base_construct_policy,
                                 times);
@@ -44,11 +45,12 @@ int main()
     printf("Total tree insertion time: %f\n", times->tree_insertion_time);
     printf("Number of tree insertions: %i\n", times->tree_insertion_num);
     clear_time(times);
+    */
 
     CacheTree<BaseNode> tree2(nsamples, nrules, c, rules, labels);
     BaseQueue bfs_q;
-    NullPermutationMap<BaseNode> p;
-    bbound_queue<BaseNode, BaseQueue, NullPermutationMap<BaseNode> >(&tree2, 1000000,
+    PrefixPermutationMap<BaseNode> p;
+    bbound_queue<BaseNode, BaseQueue, PrefixPermutationMap<BaseNode> >(&tree2, 1000000,
                                       &base_construct_policy,
                                       &bfs_q,
                                       &base_queue_front,
@@ -68,10 +70,11 @@ int main()
     printf("Number of tree insertions: %i\n", times->tree_insertion_num);
     clear_time(times);
 
+    /*
     CacheTree<CuriousNode> tree3(nsamples, nrules, c, rules, labels);
     CuriousQueue curious_q(curious_cmp);
-    NullPermutationMap<CuriousNode> p2;
-    bbound_queue<CuriousNode, CuriousQueue, NullPermutationMap<CuriousNode> >(&tree3, 1000000,
+    NullPermutationMap<CuriousNode, PrefixKey> p2;
+    bbound_queue<CuriousNode, CuriousQueue, NullPermutationMap<CuriousNode, PrefixKey> >(&tree3, 1000000,
                                             &curious_construct_policy,
                                             &curious_q,
                                             &curious_queue_front,
@@ -89,6 +92,7 @@ int main()
     printf("Objective time: %f\n", times->objective_time);
     printf("Total tree insertion time: %f\n", times->tree_insertion_time);
     printf("Number of tree insertions: %i\n", times->tree_insertion_num);
+    */
 
     free(times);
     printf("\ndelete rules\n");

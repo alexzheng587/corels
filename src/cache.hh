@@ -38,6 +38,8 @@ class Node {
 
     inline T& get_storage(); // can this be const?
 
+    inline typename std::map<size_t, Node<T>*>::iterator children_begin();
+    inline typename std::map<size_t, Node<T>*>::iterator children_end();
     inline typename std::map<size_t, Node<T>*>::iterator random_child(); // FIXME
     // inline typename std::map<size_t, Node<T>*>::iterator random_child(PRNG prng);
 
@@ -77,12 +79,12 @@ class CacheTree {
 
     inline void update_min_objective(double objective);
     inline void increment_num_evaluated();
+    inline void decrement_num_nodes();
 
     void insert_root();
     void insert(N* node);
     void prune_up(N* node);
-    template <class P>
-    void delete_subtree(N* node, P* p = NULL);
+    void destroy_subtree(N* node);
     void play_with_rules();
 
   private:
@@ -150,6 +152,16 @@ inline void Node<T>::delete_child(size_t idx) {
 template<class T>
 inline size_t Node<T>::num_children() const {
     return children_.size();
+}
+
+template<class T>
+inline typename std::map<size_t, Node<T>*>::iterator Node<T>::children_begin() {
+    return children_.begin();
+}
+
+template<class T>
+inline typename std::map<size_t, Node<T>*>::iterator Node<T>::children_end() {
+    return children_.end();
 }
 
 template<class T>
@@ -225,4 +237,9 @@ inline void CacheTree<N>::update_min_objective(double objective) {
 template<class N>
 inline void CacheTree<N>::increment_num_evaluated() {
     ++num_evaluated_;
+}
+
+template<class N>
+inline void CacheTree<N>::decrement_num_nodes() {
+    --num_nodes_;
 }

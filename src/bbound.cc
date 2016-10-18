@@ -182,44 +182,27 @@ queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured) {
 
     N* selected_node = front(q); //q->front();
     q->pop();
-    size_t selected_depth = selected_node->depth();
 
     N* node = selected_node;
-    std::vector<N*> backwards_path;
-    std::set<size_t> ordered_prefix;
-
     if (node->deleted()) {  // lazily delete leaf nodes
         N* parent = node->parent();
         parent->delete_child(node->id());
         tree->decrement_num_nodes();
         delete node;
+        if (parent->num_children() == 0)
+            tree->prune_up(parent);
         return std::make_pair((N*) 0, std::set<size_t>{});
     }
 
-    while (node != tree->root()) { /* or node->id() != root->id() */
-        backwards_path.push_back(node);
-        node = node->parent();
-    }
-
+    std::set<size_t> ordered_prefix;
     rule_vclear(tree->nsamples(), &captured);
 
-    typename std::vector<N*>::reverse_iterator rit = backwards_path.rbegin();
-    for (; rit != backwards_path.rend(); ++rit) {
-        node = *rit;
-        if (node->depth() < selected_depth) {
-            if ((node->lower_bound() + tree->c()) >= tree->min_objective()) {
-                N* parent = node->parent();
-                parent->delete_child(node->id());
-                tree->delete_subtree(node, false);
-                if (parent->num_children() == 0)
-                    tree->prune_up(parent);
-            return std::make_pair((N*) 0, std::set<size_t>{});
-            }
-        }
+    while (node != tree->root()) { /* or node->id() != root->id() */
         ordered_prefix.insert(node->id());
         rule_vor(captured,
                  captured, tree->rule(node->id()).truthtable,
                  tree->nsamples(), &cnt);
+        node = node->parent();
     }
     return std::make_pair(selected_node, ordered_prefix);
 }
@@ -231,6 +214,7 @@ void bbound_queue(CacheTree<N>* tree,
                 Q* q, N*(*front)(Q*),
                 struct time* times) {
     int cnt;
+    double min_objective = 1.0;
     std::pair<N*, std::set<size_t> > node_ordered;
 
     VECTOR captured, not_captured;
@@ -250,6 +234,7 @@ void bbound_queue(CacheTree<N>* tree,
         ++times->node_select_num;
         if (node_ordered.first) {
             double t1 = timestamp();
+            min_objective = tree->min_objective();
             /* not_captured = default rule truthtable & ~ captured */
             rule_vandnot(not_captured,
                          tree->rule(tree->root()->id()).truthtable, captured,
@@ -258,6 +243,12 @@ void bbound_queue(CacheTree<N>* tree,
                                  node_ordered.second, construct_policy, q, times);
             times->evaluate_children_time += timestamp() - t1;
             ++times->evaluate_children_num;
+            if (tree->min_objective() < min_objective) {
+                min_objective = tree->min_objective();
+                printf("num_nodes before garbage_collect: %zu\n", tree->num_nodes());
+                tree->garbage_collect(tree->root());
+                printf("num_nodes after garbage_collect: %zu\n", tree->num_nodes());
+            }
         }
         ++num_iter;
         if ((num_iter % 10000) == 0)

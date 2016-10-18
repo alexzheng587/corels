@@ -86,6 +86,7 @@ class CacheTree {
     void insert(N* node);
     void prune_up(N* node);
     void delete_subtree(N* node, bool destructive);
+    void garbage_collect(N* node);
     void play_with_rules();
 
   private:

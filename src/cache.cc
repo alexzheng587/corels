@@ -6,7 +6,7 @@
 template<class T>
 Node<T>::Node(size_t nrules, bool default_prediction, double objective)
     : id_(0), default_prediction_(default_prediction),
-      lower_bound_(0.), objective_(objective), done_(0), depth_(0), storage_(0), deleted_(0) {
+      lower_bound_(0.), objective_(objective), done_(0), deleted_(0), depth_(0), storage_(0) {
 }
 
 template<class T>
@@ -15,7 +15,7 @@ Node<T>::Node(size_t id, size_t nrules, bool prediction,
            double objective, T storage, Node<T>* parent)
     : id_(id), prediction_(prediction), default_prediction_(default_prediction),
       lower_bound_(lower_bound), objective_(objective),
-      done_(0), depth_(1 + parent->depth_), parent_(parent), storage_(storage), deleted_(0) {
+      done_(0), deleted_(0), depth_(1 + parent->depth_), parent_(parent), storage_(storage) {
 }
 
 template<class N>
@@ -102,6 +102,35 @@ void CacheTree<N>::delete_subtree(N* node, bool destructive) {
             --num_nodes_;
             delete node;
         } else
+            node->set_deleted();
+    }
+    //printf("delete node %zu at depth %zu (lb=%1.5f, ob=%1.5f) %zu\n",
+    //       node->id(), node->depth(), node->lower_bound(), node->objective(), num_nodes_);
+}
+
+template<class N>
+void CacheTree<N>::garbage_collect(N* node) {
+    N* child;
+    typename std::map<size_t, N*>::iterator iter;
+    if (node->done()) {
+        if ((node->lower_bound() + c_) >= min_objective_) {
+            if (node->depth() > 0) {
+                N* parent = node->parent();
+                parent->delete_child(node->id());
+            }
+            delete_subtree(node, false);
+        } else {
+            iter = node->children_.begin();
+            while (iter != node->children_.end()) {
+                child = iter->second;
+                garbage_collect(child);
+                ++iter;
+            }
+        }
+        if (node->num_children() == 0)
+            prune_up(node);
+    } else {
+        if ((node->lower_bound() + c_) >= min_objective_)
             node->set_deleted();
     }
     //printf("delete node %zu at depth %zu (lb=%1.5f, ob=%1.5f) %zu\n",

@@ -68,7 +68,7 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
         if (captured_correct < (c * nsamples))
             continue;
         lower_bound = parent_lower_bound + (float)(num_captured - captured_correct) / nsamples + c;
-        times->lower_bound_time = timestamp() - t1;
+        times->lower_bound_time = time_diff(t1);
         ++times->lower_bound_num;
         double t2 = timestamp();
         rule_vandnot(not_captured, parent_not_captured, captured, nsamples, &num_not_captured);
@@ -82,7 +82,7 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
             default_correct = d1;
         }
         objective = lower_bound + (float)(num_not_captured - default_correct) / nsamples;
-        times->objective_time += timestamp() - t2;
+        times->objective_time += time_diff(t2);
         ++times->objective_num;
         if (objective < tree->min_objective()) {
             printf("min(objective): %1.5f -> %1.5f, length: %d, cache size: %zu\n",
@@ -92,25 +92,28 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
         if ((lower_bound + c) < tree->min_objective()) {
             N* n;
             if (p) {
+                double t3 = timestamp();
                 n = p->permutation_insert(construct_policy, i, nrules, prediction, default_prediction, lower_bound,
                                            objective, parent, num_not_captured, nsamples, len_prefix, c, tree,
                                            p->get_key(ordered_parent, captured));
+                times->permutation_map_insertion_time += time_diff(t3);
+                ++times->permutation_map_insertion_num;
             }
             else
                 n = construct_policy(i, nrules, prediction, default_prediction,
                                     lower_bound, objective, parent,
                                     num_not_captured, nsamples, len_prefix, c);
             if (n) {
-                double t3 = timestamp();
+                double t4 = timestamp();
                 tree->insert(n);
-                times->tree_insertion_time += timestamp() - t3;
+                times->tree_insertion_time += time_diff(t4);
                 ++times->tree_insertion_num;
 
                 if (q) q->push(n);
             }
         }
     }
-    times->rule_evaluation_time += timestamp() - t0;
+    times->rule_evaluation_time += time_diff(t0);
     ++times->rule_evaluation_num;
     if (parent->num_children() == 0) {
         tree->prune_up(parent);
@@ -209,6 +212,10 @@ queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured, P* p) {
     rule_vclear(tree->nsamples(), &captured);
 
     while (node != tree->root()) { /* or node->id() != root->id() */
+        if (node->deleted()) {
+            delete node;
+            return std::make_pair((N*) 0, std::set<size_t>{});
+        }
         ordered_prefix.insert(node->id());
         rule_vor(captured,
                  captured, tree->rule(node->id()).truthtable,
@@ -328,6 +335,7 @@ void delete_subtree(CacheTree<N>* tree, N* node, P* p) {
     tree->decrement_num_nodes();
     if (p)
         p->remove_node(node);
+    node->set_deleted();
 //    delete node;
 }
 

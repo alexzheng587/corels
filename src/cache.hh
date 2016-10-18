@@ -29,6 +29,8 @@ class Node {
     inline double objective() const;
     inline bool done() const;
     inline void set_done();
+    inline bool deleted() const;
+    inline void set_deleted();
 
     inline size_t depth() const;
     inline Node<T>* child(size_t idx) const;
@@ -51,6 +53,7 @@ class Node {
     double lower_bound_;
     double objective_;
     bool done_;
+    bool deleted_;
 
     size_t depth_;
     Node<T>* parent_;
@@ -133,6 +136,17 @@ template <class T>
 inline void Node<T>::set_done() {
     done_ = 1;
 }
+
+template <class T>
+inline bool Node<T>::deleted() const{
+    return deleted_;
+}
+
+template <class T>
+inline void Node<T>::set_deleted() {
+    deleted_ = 1;
+}
+
 
 template <class T>
 inline size_t Node<T>::depth() const {

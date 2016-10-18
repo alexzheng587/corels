@@ -68,6 +68,8 @@ int main()
     printf("Objective time: %f\n", times->objective_time);
     printf("Total tree insertion time: %f\n", times->tree_insertion_time);
     printf("Number of tree insertions: %i\n", times->tree_insertion_num);
+    printf("Permutation map insertion time: %f\n", times->permutation_map_insertion_time);
+    printf("Number of permutation map insertions: %i\n", times->permutation_map_insertion_num);
     clear_time(times);
 
     /*

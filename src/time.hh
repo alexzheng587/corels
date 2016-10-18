@@ -14,6 +14,8 @@ struct time {
     int objective_num;
     double tree_insertion_time;
     int tree_insertion_num;
+    double permutation_map_insertion_time;
+    int permutation_map_insertion_num;
 };
 
 void clear_time(struct time* t);
@@ -22,4 +24,8 @@ inline double timestamp() {
     struct timeval now;
     gettimeofday(&now, 0);
     return now.tv_sec + now.tv_usec * 0.000001;
+}
+
+inline double time_diff(double t0) {
+    return timestamp() - t0;
 }

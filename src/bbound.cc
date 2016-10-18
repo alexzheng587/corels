@@ -182,35 +182,45 @@ queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured) {
 
     N* selected_node = front(q); //q->front();
     q->pop();
+    size_t selected_depth = selected_node->depth();
 
     N* node = selected_node;
+    std::vector<N*> backwards_path;
     std::set<size_t> ordered_prefix;
 
-    if ((selected_node->lower_bound() + tree->c()) >= tree->min_objective()) {
-        N* parent = selected_node->parent();
-        tree->delete_subtree(selected_node, false);
-        if (parent->num_children() == 0)
-            tree->prune_up(parent);
+    if (node->deleted()) {  // lazily delete leaf nodes
+        N* parent = node->parent();
+        parent->delete_child(node->id());
+        tree->decrement_num_nodes();
+        delete node;
         return std::make_pair((N*) 0, std::set<size_t>{});
+    }
+
+    while (node != tree->root()) { /* or node->id() != root->id() */
+        backwards_path.push_back(node);
+        node = node->parent();
     }
 
     rule_vclear(tree->nsamples(), &captured);
 
-    while (node != tree->root()) { /* or node->id() != root->id() */
-        if (node->deleted()) {
-            N* parent = node->parent();
-            parent->delete_child(node->id());
-            tree->decrement_num_nodes();
-            delete node;
+    typename std::vector<N*>::reverse_iterator rit = backwards_path.rbegin();
+    for (; rit != backwards_path.rend(); ++rit) {
+        node = *rit;
+        if (node->depth() < selected_depth) {
+            if ((node->lower_bound() + tree->c()) >= tree->min_objective()) {
+                N* parent = node->parent();
+                parent->delete_child(node->id());
+                tree->delete_subtree(node, false);
+                if (parent->num_children() == 0)
+                    tree->prune_up(parent);
             return std::make_pair((N*) 0, std::set<size_t>{});
-         }
+            }
+        }
         ordered_prefix.insert(node->id());
         rule_vor(captured,
                  captured, tree->rule(node->id()).truthtable,
                  tree->nsamples(), &cnt);
-        node = node->parent();
     }
-
     return std::make_pair(selected_node, ordered_prefix);
 }
 

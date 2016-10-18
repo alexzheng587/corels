@@ -122,11 +122,15 @@ std::pair<N*, std::set<size_t> > stochastic_select(CacheTree<N>* tree, VECTOR no
     int cnt;
     std::set<size_t> ordered_prefix;
     while (node->done()) {
+        if (node->deleted()) {
+            delete node;
+            return std::make_pair((N*) 0, std::set<size_t>{});
+        }
         if ((node->lower_bound() + tree->c()) >= tree->min_objective()) {
             if (node->depth() > 0) {
                 N* parent = node->parent();
                 parent->delete_child(node->id());
-                tree->delete_subtree(node);
+                tree->delete_subtree(node, false);
                 if (parent->num_children() == 0)
                     tree->prune_up(parent);
             }
@@ -189,7 +193,7 @@ queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured) {
     if ((selected_node->lower_bound() + tree->c()) >= tree->min_objective()) {
         N* parent = selected_node->parent();
         parent->delete_child(selected_node->id());
-        tree->delete_subtree(selected_node);
+        tree->delete_subtree(selected_node, false);
         if (parent->num_children() == 0)
             tree->prune_up(parent);
         return std::make_pair((N*) 0, std::set<size_t>{});
@@ -198,6 +202,10 @@ queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured) {
     rule_vclear(tree->nsamples(), &captured);
 
     while (node != tree->root()) { /* or node->id() != root->id() */
+        if (node->deleted()) {
+            delete node;
+            return std::make_pair((N*) 0, std::set<size_t>{});
+         }
         ordered_prefix.insert(node->id());
         rule_vor(captured,
                  captured, tree->rule(node->id()).truthtable,

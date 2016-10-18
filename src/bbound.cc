@@ -198,8 +198,8 @@ queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured) {
 
     while (node != tree->root()) { /* or node->id() != root->id() */
         if (node->deleted()) {
-            N* parent = selected_node->parent();
-            parent->delete_child(selected_node->id());
+            N* parent = node->parent();
+            parent->delete_child(node->id());
             tree->decrement_num_nodes();
             delete node;
             return std::make_pair((N*) 0, std::set<size_t>{});

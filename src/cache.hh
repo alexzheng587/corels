@@ -80,6 +80,7 @@ class CacheTree {
 
     inline void update_min_objective(double objective);
     inline void increment_num_evaluated();
+    inline void decrement_num_nodes();
 
     void insert_root();
     void insert(N* node);
@@ -237,4 +238,9 @@ inline void CacheTree<N>::update_min_objective(double objective) {
 template<class N>
 inline void CacheTree<N>::increment_num_evaluated() {
     ++num_evaluated_;
+}
+
+template<class N>
+inline void CacheTree<N>::decrement_num_nodes() {
+    --num_nodes_;
 }

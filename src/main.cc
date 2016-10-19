@@ -93,5 +93,5 @@ int main()
 	rules_free(rules, nrules, 1);
 	printf("delete labels\n");
 	rules_free(labels, nlabels, 0);
-    printf("deconstructor\n");
+	printf("tree destructors\n");
 }

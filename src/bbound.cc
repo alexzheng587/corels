@@ -256,7 +256,6 @@ void bbound_queue(CacheTree<N>* tree,
 
     printf("Deleting queue elements, since they may not be reachable by the tree's destructor\n");
     N* node;
-    N* parent;
     while (!q->empty()) {
         node = front(q);
         q->pop();

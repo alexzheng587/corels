@@ -431,6 +431,14 @@ bbound_queue<BaseNode, BaseQueue, PrefixPermutationMap<BaseNode> >(CacheTree<Bas
                                   struct time*, PrefixPermutationMap<BaseNode>* p);
 
 template void
+bbound_queue<BaseNode, BaseQueue, NullPermutationMap<BaseNode, PrefixKey> >(CacheTree<BaseNode>* tree,
+                                  size_t max_num_nodes,
+                                  construct_signature<BaseNode> construct_policy,
+                                  BaseQueue* q,
+                                  BaseNode*(*front)(BaseQueue*),
+                                  struct time*, NullPermutationMap<BaseNode, PrefixKey>* p);
+
+template void
 bbound_queue<CuriousNode, CuriousQueue, NullPermutationMap<CuriousNode, PrefixKey> >(CacheTree<CuriousNode>* tree,
                                         size_t max_num_nodes,
                                         construct_signature<CuriousNode> construct_policy,

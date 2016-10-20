@@ -55,10 +55,35 @@ int main()
                                       &bfs_q,
                                       &base_queue_front,
                                       times, &p);
-    printf("\n\n\nBFS\n");
+    printf("\n\n\nBFS Permutation Map\n");
     printf("\nnum_nodes: %zu\n", tree2.num_nodes());
     printf("num_evaluated: %zu\n", tree2.num_evaluated());
     printf("\nmin_objective: %1.5f\n", tree2.min_objective());
+    printf("Total time: %f\n", times->total_time);
+    printf("Evaluate children time: %f\n", times->evaluate_children_time);
+    printf("Node select time: %f\n", times->node_select_time);
+    printf("Rule evaluation time: %f\n", times->rule_evaluation_time);
+    printf("Lower bound time: %f\n", times->lower_bound_time);
+    printf("Number of lower bound evaluations: %d\n", times->lower_bound_num);
+    printf("Objective time: %f\n", times->objective_time);
+    printf("Total tree insertion time: %f\n", times->tree_insertion_time);
+    printf("Number of tree insertions: %i\n", times->tree_insertion_num);
+    printf("Permutation map insertion time: %f\n", times->permutation_map_insertion_time);
+    printf("Number of permutation map insertions: %i\n", times->permutation_map_insertion_num);
+    clear_time(times);
+
+    CacheTree<BaseNode> tree3(nsamples, nrules, c, rules, labels);
+    BaseQueue bfs_q_2;
+    NullPermutationMap<BaseNode, PrefixKey> p2;
+    bbound_queue<BaseNode, BaseQueue, NullPermutationMap<BaseNode, PrefixKey> >(&tree3, 1000000,
+                                      &base_construct_policy,
+                                      &bfs_q_2,
+                                      &base_queue_front,
+                                      times, &p2);
+    printf("\n\n\nBFS No Permutation Map\n");
+    printf("\nnum_nodes: %zu\n", tree3.num_nodes());
+    printf("num_evaluated: %zu\n", tree3.num_evaluated());
+    printf("\nmin_objective: %1.5f\n", tree3.min_objective());
     printf("Total time: %f\n", times->total_time);
     printf("Evaluate children time: %f\n", times->evaluate_children_time);
     printf("Node select time: %f\n", times->node_select_time);

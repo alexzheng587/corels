@@ -86,7 +86,7 @@ class CacheTree {
     void insert(N* node);
     void prune_up(N* node);
     void delete_subtree(N* node, bool destructive);
-    void garbage_collect(N* node);
+    void garbage_collect();
     void play_with_rules();
 
   private:
@@ -99,6 +99,8 @@ class CacheTree {
     size_t num_evaluated_;
     std::vector<rule_t> rules_;
     std::vector<rule_t> labels_;
+
+    void gc_helper(N* node);
 };
 
 template <class T>

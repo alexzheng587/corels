@@ -109,32 +109,24 @@ void CacheTree<N>::delete_subtree(N* node, bool destructive) {
 }
 
 template<class N>
-void CacheTree<N>::garbage_collect(N* node) {
+void CacheTree<N>::gc_helper(N* node) {
     N* child;
-    typename std::map<size_t, N*>::iterator iter;
-    if (node->done()) {
-        if ((node->lower_bound() + c_) >= min_objective_) {
-            if (node->depth() > 0) {
-                N* parent = node->parent();
-                parent->delete_child(node->id());
-            }
-            delete_subtree(node, false);
-        } else {
-            iter = node->children_.begin();
-            while (iter != node->children_.end()) {
-                child = iter->second;
-                garbage_collect(child);
-                ++iter;
-            }
-        }
-        if (node->num_children() == 0)
-            prune_up(node);
-    } else {
-        if ((node->lower_bound() + c_) >= min_objective_)
-            node->set_deleted();
+    std::vector<N*> children;
+    for (typename std::map<size_t, N*>::iterator cit = node->children_.begin(); cit != node->children_.end(); ++cit)
+        children.push_back(cit->second);
+    for (typename std::vector<N*>::iterator cit = children.begin(); cit != children.end(); ++cit) {
+        child = *cit;
+        if ((child->lower_bound() + c_) >= min_objective_) {
+            node->delete_child(child->id());
+            delete_subtree(child, false);
+        } else
+            gc_helper(child);
     }
-    //printf("delete node %zu at depth %zu (lb=%1.5f, ob=%1.5f) %zu\n",
-    //       node->id(), node->depth(), node->lower_bound(), node->objective(), num_nodes_);
+}
+
+template<class N>
+void CacheTree<N>::garbage_collect() {
+    gc_helper(root_);
 }
 
 template class Node<bool>; // BaseNode

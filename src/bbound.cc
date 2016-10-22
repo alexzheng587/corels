@@ -139,7 +139,7 @@ std::pair<N*, std::set<size_t> > stochastic_select(CacheTree<N>* tree, VECTOR no
             if (node->depth() > 0) {
                 N* parent = node->parent();
                 parent->delete_child(node->id());
-                delete_subtree<N, P>(tree, node, p);
+                delete_subtree<N, P>(tree, node, p, true);
                 if (parent->num_children() == 0)
                     tree->prune_up(parent);
             }
@@ -198,7 +198,7 @@ queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured, P* p) {
     q->pop();
 
     N* node = selected_node;
-    std::set<size_t> ordered_prefix;
+/*    std::set<size_t> ordered_prefix;
 
     if ((selected_node->lower_bound() + tree->c()) >= tree->min_objective()) {
         N* parent = selected_node->parent();
@@ -206,9 +206,16 @@ queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured, P* p) {
         delete_subtree<N, P>(tree, selected_node, p);
         if (parent->num_children() == 0)
             tree->prune_up(parent);
+        */
+    if (node->deleted()) {  // lazily delete leaf nodes
+        N* parent = node->parent();
+        parent->delete_child(node->id());
+        tree->decrement_num_nodes();
+        delete node;
         return std::make_pair((N*) 0, std::set<size_t>{});
     }
 
+    std::set<size_t> ordered_prefix;
     rule_vclear(tree->nsamples(), &captured);
 
     while (node != tree->root()) { /* or node->id() != root->id() */
@@ -222,7 +229,6 @@ queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured, P* p) {
                  tree->nsamples(), &cnt);
         node = node->parent();
     }
-
     return std::make_pair(selected_node, ordered_prefix);
 }
 
@@ -233,6 +239,7 @@ void bbound_queue(CacheTree<N>* tree,
                 Q* q, N*(*front)(Q*),
                 struct time* times, P* p) {
     int cnt;
+    double min_objective = 1.0;
     std::pair<N*, std::set<size_t> > node_ordered;
 
     VECTOR captured, not_captured;
@@ -244,7 +251,8 @@ void bbound_queue(CacheTree<N>* tree,
 
     tree->insert_root();
     q->push(tree->root());
-    p->permutation_map_.insert(std::make_pair(node_ordered.second ,tree->root()));
+    if (p)
+        p->permutation_map_.insert(std::make_pair(node_ordered.second ,tree->root()));
     while ((tree->num_nodes() < max_num_nodes) &&
            !q->empty()) {
         double t0 = timestamp();
@@ -253,6 +261,7 @@ void bbound_queue(CacheTree<N>* tree,
         ++times->node_select_num;
         if (node_ordered.first) {
             double t1 = timestamp();
+            min_objective = tree->min_objective();
             /* not_captured = default rule truthtable & ~ captured */
             rule_vandnot(not_captured,
                          tree->rule(tree->root()->id()).truthtable, captured,
@@ -261,6 +270,12 @@ void bbound_queue(CacheTree<N>* tree,
                                  node_ordered.second, construct_policy, q, times, p);
             times->evaluate_children_time += timestamp() - t1;
             ++times->evaluate_children_num;
+            if (tree->min_objective() < min_objective) {
+                min_objective = tree->min_objective();
+                printf("num_nodes before garbage_collect: %zu\n", tree->num_nodes());
+                tree->garbage_collect(tree->root());
+                printf("num_nodes after garbage_collect: %zu\n", tree->num_nodes());
+            }
         }
         ++num_iter;
         if ((num_iter % 10000) == 0)
@@ -321,22 +336,27 @@ void bbound_greedy(size_t nsamples, size_t nrules, rule_t *rules, rule_t *labels
 }
 
 template<class N, class P>
-void delete_subtree(CacheTree<N>* tree, N* node, P* p) {
+void delete_subtree(CacheTree<N>* tree, N* node, P* p, bool destructive) {
     N* child;
     typename std::map<size_t, N*>::iterator iter;
+    if (p)
+        p->remove_node(node);
     if (node->done()) {
         iter = node->children_begin();
         while (iter != node->children_end()) {
             child = iter->second;
-            delete_subtree<N, P>(tree, child, p);
+            delete_subtree<N, P>(tree, child, p, destructive);
             ++iter;
         }
+        tree->decrement_num_nodes(); // always delete interior (non-leaf) nodes
+        delete node;
+    } else {
+        if (destructive) {  // only delete leaf nodes in destructive mode
+            tree->decrement_num_nodes();
+            delete node;
+        } else
+            node->set_deleted();
     }
-    tree->decrement_num_nodes();
-    if (p)
-        p->remove_node(node);
-    node->set_deleted();
-//    delete node;
 }
 
 template<class N>
@@ -360,7 +380,7 @@ N* PrefixPermutationMap<N>::permutation_insert(construct_signature<N> construct_
         if (lower_bound < permuted_node->lower_bound()) {
             N* permuted_parent = permuted_node->parent();
             permuted_parent->delete_child(permuted_node->id());
-            delete_subtree<N, PrefixPermutationMap<N> >(tree, permuted_node, this);
+            delete_subtree<N, PrefixPermutationMap<N> >(tree, permuted_node, this, false);
             child = construct_policy(new_rule, nrules, prediction, default_prediction,
                                         lower_bound, objective, parent,
                                         num_not_captured, nsamples, len_prefix, c);
@@ -449,19 +469,19 @@ bbound_queue<CuriousNode, CuriousQueue, NullPermutationMap<CuriousNode, PrefixKe
 template void
 delete_subtree<BaseNode, NullPermutationMap<BaseNode, PrefixKey> >(CacheTree<BaseNode>* tree,
                                                                    BaseNode* n,
-                                                                   NullPermutationMap<BaseNode, PrefixKey>* p);
+                                                                   NullPermutationMap<BaseNode, PrefixKey>* p, bool destructive);
 
 template void
 delete_subtree<BaseNode, PrefixPermutationMap<BaseNode> >(CacheTree<BaseNode>* tree,
                                                           BaseNode* n,
-                                                          PrefixPermutationMap<BaseNode>* p);
+                                                          PrefixPermutationMap<BaseNode>* p, bool destructive);
 
 template void
 delete_subtree<CuriousNode, NullPermutationMap<CuriousNode, PrefixKey> >(CacheTree<CuriousNode>* tree,
                                                                          CuriousNode* n,
-                                                                         NullPermutationMap<CuriousNode, PrefixKey>* p);
+                                                                         NullPermutationMap<CuriousNode, PrefixKey>* p, bool destructive);
 
 template void
 delete_subtree<CuriousNode, PrefixPermutationMap<CuriousNode> >(CacheTree<CuriousNode>* tree,
                                                                 CuriousNode* n,
-                                                                PrefixPermutationMap<CuriousNode>* p);
+                                                                PrefixPermutationMap<CuriousNode>* p, bool destructive);

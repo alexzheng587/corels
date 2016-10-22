@@ -87,7 +87,8 @@ class CacheTree {
     void insert_root();
     void insert(N* node);
     void prune_up(N* node);
-    void destroy_subtree(N* node);
+    void destroy_subtree(N* node, bool destructive);
+    void garbage_collect(N* node);
     void play_with_rules();
 
   private:
@@ -146,7 +147,6 @@ template <class T>
 inline void Node<T>::set_deleted() {
     deleted_ = 1;
 }
-
 
 template <class T>
 inline size_t Node<T>::depth() const {

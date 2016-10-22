@@ -1,6 +1,3 @@
-#ifndef _BBOUND_H_
-#define _BBOUND_H_
-
 #include "cache.hh"
 #include <functional>
 #include <queue>
@@ -14,9 +11,7 @@
 template<class N>
 class NullQueue {
   public:
-    void push(N* node) {
-        (void) node;
-    };
+    void push(N*) {};
 };
 
 typedef std::queue<BaseNode*> BaseQueue;
@@ -94,10 +89,9 @@ class NullPermutationMap {
     std::map<K, N*> permutation_map_;
 };
 
-
-
 typedef std::set<size_t> PrefixKey;
-//typedef std::map<PrefixKey, BaseNode*> PrefixPermutationMap;
+typedef VECTOR CapturedKey;
+
 template<class N>
 class PrefixPermutationMap {
     private:
@@ -132,8 +126,6 @@ inline std::set<size_t> PrefixPermutationMap<N>::get_key(std::set<size_t> ordere
 }
 
 template<class N, class P>
-extern void delete_subtree(CacheTree<N>* tree, N* node, P* p);
+extern void delete_subtree(CacheTree<N>* tree, N* node, P* p, bool destructive);
 
 void bbound_greedy(size_t nsamples, size_t nrules, rule_t *rules, rule_t *labels, size_t max_prefix_length);
-
-#endif

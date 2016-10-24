@@ -339,8 +339,8 @@ template<class N, class P>
 void delete_subtree(CacheTree<N>* tree, N* node, P* p, bool destructive) {
     N* child;
     typename std::map<size_t, N*>::iterator iter;
-    if (p)
-        p->remove_node(node);
+//    if (p)
+//        p->remove_node(node);
     if (node->done()) {
         iter = node->children_begin();
         while (iter != node->children_end()) {
@@ -378,7 +378,8 @@ N* PrefixPermutationMap<N>::permutation_insert(construct_signature<N> construct_
             child = construct_policy(new_rule, nrules, prediction, default_prediction,
                                         lower_bound, objective, parent,
                                         num_not_captured, nsamples, len_prefix, c);
-            permutation_map_.insert(std::make_pair(key, child));
+            iter->second = child;
+            //permutation_map_.insert(std::make_pair(key, child));
         }
     } else {
         child = construct_policy(new_rule, nrules, prediction, default_prediction,

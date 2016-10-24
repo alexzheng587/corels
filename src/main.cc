@@ -101,7 +101,7 @@ int main()
     CacheTree<CuriousNode> tree3(nsamples, nrules, c, rules, labels);
     CuriousQueue curious_q(curious_cmp);
     PrefixPermutationMap<CuriousNode> p2;
-    bbound_queue<CuriousNode, CuriousQueue, PrefixPermutationMap<CuriousNode> >(&tree3, 10000000,
+    bbound_queue<CuriousNode, CuriousQueue, PrefixPermutationMap<CuriousNode> >(&tree3, 1000000,
                                             &curious_construct_policy,
                                             &curious_q,
                                             &curious_queue_front,

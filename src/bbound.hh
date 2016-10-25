@@ -6,7 +6,7 @@
 template<class N>
 class NullQueue {
   public:
-    void push(N* node) {};
+    void push(N*) {};
 };
 
 typedef std::queue<BaseNode*> BaseQueue;

@@ -16,8 +16,7 @@ CuriousNode* curious_construct_policy(size_t new_rule, size_t nrules, bool predi
                                       double objective, CuriousNode* parent,
                                       int num_not_captured, int nsamples,
                                       int len_prefix, double c) {
-    double curiosity = (lower_bound - c * len_prefix) * nsamples /
-                       (float)(nsamples - num_not_captured) + c * len_prefix;
+    double curiosity = (lower_bound - c * len_prefix + c) * nsamples / (double)(nsamples - num_not_captured);
     return (new CuriousNode(new_rule, nrules, prediction, default_prediction,
                             lower_bound, objective, curiosity, parent));
 }

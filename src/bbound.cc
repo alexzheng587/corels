@@ -208,8 +208,6 @@ queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured, P* p) {
             tree->prune_up(parent);
         */
     if (node->deleted()) {  // lazily delete leaf nodes
-        N* parent = node->parent();
-        parent->delete_child(node->id());
         tree->decrement_num_nodes();
         delete node;
         return std::make_pair((N*) 0, std::set<size_t>{});
@@ -273,7 +271,7 @@ void bbound_queue(CacheTree<N>* tree,
             if (tree->min_objective() < min_objective) {
                 min_objective = tree->min_objective();
                 printf("num_nodes before garbage_collect: %zu\n", tree->num_nodes());
-                tree->garbage_collect(tree->root());
+                tree->garbage_collect();
                 printf("num_nodes after garbage_collect: %zu\n", tree->num_nodes());
             }
         }
@@ -283,6 +281,17 @@ void bbound_queue(CacheTree<N>* tree,
                    num_iter, tree->num_nodes());
     }
     times->total_time = timestamp() - tot;
+
+    printf("Deleting queue elements, since they may not be reachable by the tree's destructor\n");
+    N* node;
+    while (!q->empty()) {
+        node = front(q);
+        q->pop();
+        if (node->deleted()) {
+            tree->decrement_num_nodes();
+            delete node;
+        }
+    }
     rule_vfree(&captured);
     rule_vfree(&not_captured);
 }

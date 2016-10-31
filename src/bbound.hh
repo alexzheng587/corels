@@ -76,6 +76,7 @@ extern void bbound_queue(CacheTree<N>* tree,
  */
 typedef std::set<size_t> PrefixKey;
 typedef VECTOR CapturedKey;
+typedef std::map<PrefixKey, N*> PrefixPermutationMap;
 
 template<class N, class K>
 using permutation_insert_signature = N* (*)(construct_signature<N>, size_t, size_t, bool, bool, 
@@ -84,7 +85,7 @@ template<class N>
 N* prefix_permutation_insert(construct_signature<N> construct_policy, size_t new_rule,
                         size_t nrules, bool prediction, bool default_prediction, double lower_bound,
                         double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
-                        double c, CacheTree<N>* tree, PrefixKey key);
+                        double c, CacheTree<N>* tree, PrefixKey key, PrefixPermutationMap P);
 
 template<class N>
 class NullPermutationMap {
@@ -98,6 +99,7 @@ class NullPermutationMap {
     std::map<PrefixKey, N*> permutation_map_;
 };
 
+/*
 template<class N>
 class PrefixPermutationMap {
     public:
@@ -109,6 +111,7 @@ class PrefixPermutationMap {
 //        inline void remove_node(N* node);
         std::map<PrefixKey, N*> permutation_map_;
 };
+*/
 
 /*
 template<class N>

@@ -30,11 +30,11 @@ CuriousNode* curious_queue_front(CuriousQueue* q) {
     return q->top();
 }
 
-template<class N, class Q, class P>
+template<class N, class Q, class K>
 void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured,
                        std::set<size_t> ordered_parent,
                        construct_signature<N> construct_policy, Q* q, struct time* times,
-                       P* p) {
+                       permutation_insert_signature<N, K>* p) {
     VECTOR captured, captured_zeros, not_captured, not_captured_zeros;
     int num_captured, c0, c1, captured_correct;
     int num_not_captured, d0, d1, default_correct;
@@ -93,7 +93,7 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
             N* n;
             if (p) {
                 double t3 = timestamp();
-                n = p->permutation_insert(construct_policy, i, nrules, prediction, default_prediction, lower_bound,
+                n = permutation_insert(construct_policy, i, nrules, prediction, default_prediction, lower_bound,
                                            objective, parent, num_not_captured, nsamples, len_prefix, c, tree,
                                            p->get_key(ordered_parent, captured));
                 times->permutation_map_insertion_time += time_diff(t3);
@@ -369,23 +369,23 @@ void delete_subtree(CacheTree<N>* tree, N* node, P* p, bool destructive) {
 }
 
 template<class N>
-N* PrefixPermutationMap<N>::permutation_insert(construct_signature<N> construct_policy, size_t new_rule,
+N* prefix_permutation_insert(construct_signature<N> construct_policy, size_t new_rule,
                                                 size_t nrules, bool prediction, bool default_prediction, double lower_bound,
                                                 double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
-                                                double c, CacheTree<N>* tree, PrefixKey key) {
+                                                double c, CacheTree<N>* tree, PrefixKey key, PrefixPermutationMap p) {
     typename std::map<PrefixKey, N*>::iterator iter;
     N* child = NULL;
     key.insert(new_rule);
     std::set<size_t>::iterator iter2;
-    iter = permutation_map_.find(key);
-    if (iter != permutation_map_.end()) {
+    iter = p.find(key);
+    if (iter != p.end()) {
         N* permuted_node = iter->second;
         if (lower_bound < permuted_node->lower_bound()) {
             N* permuted_parent = permuted_node->parent();
             permuted_parent->delete_child(permuted_node->id());
             delete_subtree<N, PrefixPermutationMap<N> >(tree, permuted_node, this, false);
             child = construct_policy(new_rule, nrules, prediction, default_prediction,
-                                        lower_bound, objective, parent,
+                                       lower_bound, objective, parent,
                                         num_not_captured, nsamples, len_prefix, c);
             iter->second = child;
             //permutation_map_.insert(std::make_pair(key, child));

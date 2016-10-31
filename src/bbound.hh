@@ -94,8 +94,8 @@ class NullPermutationMap {
                                                 double objective, N* parent, int num_not_captured, int nsamples, int len_prefix, 
                                                 double c, CacheTree<N>* tree, std::set<size_t> key)  {};
     std::set<size_t> get_key(std::set<size_t> ordered_prefix, VECTOR captured) {};
-    void remove_node(N* node) {};
-    std::map<PrefixKey, N*> permutation_map_;
+    void remove_key(PrefixKey key) {};
+    std::map<PrefixKey, std::pair<N*, double> > permutation_map_;
 };
 
 template<class N>
@@ -106,24 +106,17 @@ class PrefixPermutationMap {
                                                 double objective, N* parent, int num_not_captured, int nsamples, int len_prefix, 
                                                 double c, CacheTree<N>* tree, PrefixKey key);
         inline PrefixKey get_key(std::set<size_t> ordered_prefix, VECTOR captured);
-//        inline void remove_node(N* node);
-        std::map<PrefixKey, N*> permutation_map_;
+        inline void remove_key(PrefixKey key);
+        std::map<PrefixKey, std::pair<N*, double> > permutation_map_;
 };
 
-/*
 template<class N>
-inline void PrefixPermutationMap<N>::remove_node(N* node) {
-    typename std::map<PrefixKey, N*>::iterator iter;
-    std::set<size_t> key;
-    size_t depth = node->depth();
-    for(size_t i = 0; i < depth; ++i) {
-        key.insert(node->id());
-        node = node->parent();
-    }
+inline void PrefixPermutationMap<N>::remove_key(PrefixKey key) {
+    typename std::map<PrefixKey, std::pair<N*, double> >::iterator iter;
     iter = permutation_map_.find(key);
-    permutation_map_.erase(iter);
+    iter->second.first = NULL;
+    //permutation_map_.erase(iter);
 }
-*/
 
 template <class N>
 inline std::set<size_t> PrefixPermutationMap<N>::get_key(std::set<size_t> ordered_prefix, VECTOR captured) {

@@ -31,6 +31,7 @@ class Node {
     inline void set_done();
     inline bool deleted() const;
     inline void set_deleted();
+    inline std::vector<size_t> get_prefix();
 
     inline size_t depth() const;
     inline Node<T>* child(size_t idx) const;
@@ -87,9 +88,9 @@ class CacheTree {
     void insert_root();
     void insert(N* node);
     void prune_up(N* node);
-    void destroy_subtree(N* node, bool destructive);
     void garbage_collect();
     void play_with_rules();
+    N* check_prefix(std::vector<size_t> prefix);
 
   private:
     N* root_;
@@ -148,6 +149,18 @@ inline bool Node<T>::deleted() const{
 template <class T>
 inline void Node<T>::set_deleted() {
     deleted_ = 1;
+}
+
+template <class T>
+inline std::vector<size_t> Node<T>::get_prefix() {
+    std::vector<size_t> prefix(depth_);
+    auto it = prefix.begin();
+    Node<T>* node = this;
+    for(size_t i = depth_; i > 0; --i) {
+        it = prefix.insert(it, node->id());
+        node = node->parent();
+    }
+    return prefix;
 }
 
 template <class T>

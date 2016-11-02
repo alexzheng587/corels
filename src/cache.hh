@@ -170,7 +170,12 @@ inline size_t Node<T>::depth() const {
 
 template<class T>
 inline Node<T>* Node<T>::child(size_t idx) const {
-    return children_.find(idx)->second;
+    typename std::map<size_t, N*>::iterator child_iter;
+    child_iter = children_.find(idx);
+    if (child_iter == children_.end())
+        return NULL;
+    else
+        return children_.find(idx)->second;
 }
 
 template<class T>

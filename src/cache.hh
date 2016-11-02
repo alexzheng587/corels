@@ -34,7 +34,7 @@ class Node {
     inline std::vector<size_t> get_prefix();
 
     inline size_t depth() const;
-    inline Node<T>* child(size_t idx) const;
+    inline Node<T>* child(size_t idx);
     inline Node<T>* parent() const;
     inline void delete_child(size_t idx);
     inline size_t num_children() const;
@@ -169,13 +169,13 @@ inline size_t Node<T>::depth() const {
 }
 
 template<class T>
-inline Node<T>* Node<T>::child(size_t idx) const {
-    typename std::map<size_t, N*>::iterator child_iter;
-    child_iter = children_.find(idx);
-    if (child_iter == children_.end())
+inline Node<T>* Node<T>::child(size_t idx) {
+    typename std::map<size_t, Node<T>*>::iterator iter;
+    iter = children_.find(idx);
+    if (iter == children_.end())
         return NULL;
     else
-        return children_.find(idx)->second;
+        return iter->second;
 }
 
 template<class T>

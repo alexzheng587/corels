@@ -88,12 +88,14 @@ void CacheTree<N>::prune_up(N* node) {
 
 template<class N>
 N* CacheTree<N>::check_prefix(std::vector<size_t> prefix) {
+    typename std::map<size_t, N*>::iterator child_iter;
     N* node = this->root_;
     for(std::vector<size_t>::iterator it = prefix.begin(); it != prefix.end(); ++it) {
-        node = node->child(*it);
-        if (node == NULL) {
+        child_iter = node->children_.find(*it);
+        if (child_iter != node->children_.end())
+            node = node->child(*it);
+        else
             return NULL;
-        }
     }
     return node;
 }

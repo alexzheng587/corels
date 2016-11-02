@@ -239,6 +239,7 @@ void bbound_queue(CacheTree<N>* tree,
     size_t num_iter = 0;
 
     tree->insert_root();
+    ++times->tree_insertion_num;
     q->push(tree->root());
     if (p)
         p->permutation_map_.insert(std::make_pair(node_ordered.second, std::make_pair(std::vector<size_t>(), 0.0)));
@@ -267,13 +268,13 @@ void bbound_queue(CacheTree<N>* tree,
             }
         }
         ++num_iter;
-        if ((num_iter % 10000) == 0)
-            printf("num_iter: %zu, num_nodes: %zu\n",
-                   num_iter, tree->num_nodes());
+        if ((num_iter % 100) == 0)
+            printf("iter: %zu, tree: %zu, queue: %zu, tree inserts: %zu, permutation_insert(): %zu\n",
+                   num_iter, tree->num_nodes(), q->size(), times->tree_insertion_num, times->permutation_map_insertion_num);
     }
     times->total_time = time_diff(tot);
 
-    printf("Deleting queue elements, since they may not be reachable by the tree's destructor\n");
+    printf("Deleting queue elements and corresponding nodes in the cache, since they may not be reachable by the tree's destructor\n");
     N* node;
     while (!q->empty()) {
         node = front(q);

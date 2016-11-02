@@ -21,13 +21,12 @@ int main()
     printf("\nLabels (%d) for %d samples\n\n", nlabels, nsamples);
     rule_print_all(labels, nlabels, nsamples);
 
-    double c = 0.01;
+    double c = 0.001;
     printf("\nGreedy algorithm:\n\n");
     bbound_greedy(nsamples, nrules, rules, labels, 8);
 
     struct time* times = (struct time*) calloc(1, sizeof(*times));
 
-    /*
     CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
     bbound_stochastic<BaseNode>(&tree, 100000,
                                 &base_construct_policy,
@@ -46,7 +45,6 @@ int main()
     printf("Total tree insertion time: %f\n", times->tree_insertion_time);
     printf("Number of tree insertions: %i\n", times->tree_insertion_num);
     clear_time(times);
-    */
 
     CacheTree<BaseNode> tree2(nsamples, nrules, c, rules, labels);
     BaseQueue bfs_q;
@@ -73,7 +71,6 @@ int main()
     printf("Number of permutation map insertions: %i\n", times->permutation_map_insertion_num);
     clear_time(times);
 
-    /*
     CacheTree<BaseNode> tree3(nsamples, nrules, c, rules, labels);
     BaseQueue bfs_q_2;
     NullPermutationMap<BaseNode> p2;
@@ -102,7 +99,7 @@ int main()
     CacheTree<CuriousNode> tree4(nsamples, nrules, c, rules, labels);
     CuriousQueue curious_q(curious_cmp);
     PrefixPermutationMap<CuriousNode> p3;
-    bbound_queue<CuriousNode, CuriousQueue, PrefixPermutationMap<CuriousNode> >(&tree4, 10000,
+    bbound_queue<CuriousNode, CuriousQueue, PrefixPermutationMap<CuriousNode> >(&tree4, 100000,
                                             &curious_construct_policy,
                                             &curious_q,
                                             &curious_queue_front,
@@ -122,7 +119,6 @@ int main()
     printf("Number of tree insertions: %i\n", times->tree_insertion_num);
     printf("Permutation map insertion time: %f\n", times->permutation_map_insertion_time);
     printf("Number of permutation map insertions: %i\n", times->permutation_map_insertion_num);
-    */
 
     free(times);
     printf("\ndelete rules\n");

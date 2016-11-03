@@ -31,15 +31,18 @@ class Node {
     inline void set_done();
     inline bool deleted() const;
     inline void set_deleted();
+    inline std::vector<size_t> get_prefix();
 
     inline size_t depth() const;
-    inline Node<T>* child(size_t idx) const;
+    inline Node<T>* child(size_t idx);
     inline Node<T>* parent() const;
     inline void delete_child(size_t idx);
     inline size_t num_children() const;
 
     inline T& get_storage(); // can this be const?
 
+    inline typename std::map<size_t, Node<T>*>::iterator children_begin();
+    inline typename std::map<size_t, Node<T>*>::iterator children_end();
     inline typename std::map<size_t, Node<T>*>::iterator random_child(); // FIXME
     // inline typename std::map<size_t, Node<T>*>::iterator random_child(PRNG prng);
 
@@ -85,9 +88,9 @@ class CacheTree {
     void insert_root();
     void insert(N* node);
     void prune_up(N* node);
-    void delete_subtree(N* node, bool destructive);
     void garbage_collect();
     void play_with_rules();
+    N* check_prefix(std::vector<size_t> prefix);
 
   private:
     N* root_;
@@ -139,7 +142,7 @@ inline void Node<T>::set_done() {
 }
 
 template <class T>
-bool Node<T>::deleted() const{
+inline bool Node<T>::deleted() const{
     return deleted_;
 }
 
@@ -149,13 +152,30 @@ inline void Node<T>::set_deleted() {
 }
 
 template <class T>
+inline std::vector<size_t> Node<T>::get_prefix() {
+    std::vector<size_t> prefix(depth_);
+    auto it = prefix.begin();
+    Node<T>* node = this;
+    for(size_t i = depth_; i > 0; --i) {
+        it = prefix.insert(it, node->id());
+        node = node->parent();
+    }
+    return prefix;
+}
+
+template <class T>
 inline size_t Node<T>::depth() const {
     return depth_;
 }
 
 template<class T>
-inline Node<T>* Node<T>::child(size_t idx) const {
-    return children_.find(idx)->second;
+inline Node<T>* Node<T>::child(size_t idx) {
+    typename std::map<size_t, Node<T>*>::iterator iter;
+    iter = children_.find(idx);
+    if (iter == children_.end())
+        return NULL;
+    else
+        return iter->second;
 }
 
 template<class T>
@@ -166,6 +186,16 @@ inline void Node<T>::delete_child(size_t idx) {
 template<class T>
 inline size_t Node<T>::num_children() const {
     return children_.size();
+}
+
+template<class T>
+inline typename std::map<size_t, Node<T>*>::iterator Node<T>::children_begin() {
+    return children_.begin();
+}
+
+template<class T>
+inline typename std::map<size_t, Node<T>*>::iterator Node<T>::children_end() {
+    return children_.end();
 }
 
 template<class T>

@@ -1,4 +1,5 @@
-#include "cache.hh"
+//#include "cache.hh"
+#include "bbound.hh"
 #include <memory>
 #include <vector>
 #include <stdlib.h>
@@ -33,7 +34,8 @@ CacheTree<N>::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules,
 
 template<class N>
 CacheTree<N>::~CacheTree() {
-    delete_subtree(root_, true);
+    if (root_)
+        delete_subtree<N>(this, root_, true);
     printf("num_nodes: %zu\n", num_nodes_);
 }
 
@@ -85,27 +87,14 @@ void CacheTree<N>::prune_up(N* node) {
 }
 
 template<class N>
-void CacheTree<N>::delete_subtree(N* node, bool destructive) {
-    N* child;
-    typename std::map<size_t, N*>::iterator iter;
-    if (node->done()) {
-        iter = node->children_.begin();
-        while (iter != node->children_.end()) {
-            child = iter->second;
-            delete_subtree(child, destructive);
-            ++iter;
-        }
-        --num_nodes_;   // always delete interior (non-leaf) nodes
-        delete node;
-    } else {
-        if (destructive) {  // only delete leaf nodes in destructive mode
-            --num_nodes_;
-            delete node;
-        } else
-            node->set_deleted();
+N* CacheTree<N>::check_prefix(std::vector<size_t> prefix) {
+    N* node = this->root_;
+    for(std::vector<size_t>::iterator it = prefix.begin(); it != prefix.end(); ++it) {
+        node = node->child(*it);
+        if (node == NULL)
+            return NULL;
     }
-    //printf("delete node %zu at depth %zu (lb=%1.5f, ob=%1.5f) %zu\n",
-    //       node->id(), node->depth(), node->lower_bound(), node->objective(), num_nodes_);
+    return node;
 }
 
 template<class N>
@@ -118,7 +107,7 @@ void CacheTree<N>::gc_helper(N* node) {
         child = *cit;
         if ((child->lower_bound() + c_) >= min_objective_) {
             node->delete_child(child->id());
-            delete_subtree(child, false);
+            delete_subtree<N>(this, child, false);
         } else
             gc_helper(child);
     }

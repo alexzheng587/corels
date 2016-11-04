@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     const char lfile[] = "../data/tdata_R.label";
     rules_init(lfile, &nlabels, &nsamples_chk, &labels, 0);
 
-    char *optarg;
+    extern char *optarg;
     bool run_stochastic = false;
     bool run_bfs = false;
     bool run_curiosity = false;
@@ -56,12 +56,6 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    double c = 0.001;
-    if (verbosity >= 10) {
-        printf("\nGreedy algorithm:\n\n");
-        bbound_greedy(nsamples, nrules, rules, labels, 8);
-    }
-
     if (verbosity >= 100) {
         printf("\n%d rules %d samples\n\n", nrules, nsamples);
         rule_print_all(rules, nrules, nsamples);
@@ -69,7 +63,12 @@ int main(int argc, char *argv[]) {
         printf("\nLabels (%d) for %d samples\n\n", nlabels, nsamples);
         rule_print_all(labels, nlabels, nsamples);
     }
+    if (verbosity >= 10) {
+        printf("\nGreedy algorithm:\n\n");
+        bbound_greedy(nsamples, nrules, rules, labels, 8);
+    }
 
+    double c = 0.001;
     Logger logger(verbosity); /** need to define verbosity semantics **/
     if (run_stochastic) {
         printf("BBOUND_STOCHASTIC\n");
@@ -105,6 +104,7 @@ int main(int argc, char *argv[]) {
             logger.dumpState();
             logger.clearState();
         } else {
+            printf("\n\n\nBFS No Permutation Map\n");
             CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
             BaseQueue bfs_q_2;
             NullPermutationMap<BaseNode> p2;
@@ -115,7 +115,6 @@ int main(int argc, char *argv[]) {
                                                         &bfs_q_2,
                                                         &base_queue_front,
                                                         logger, NULL);
-            printf("\n\n\nBFS No Permutation Map\n");
             printf("\nnum_nodes: %zu\n", tree.num_nodes());
             printf("num_evaluated: %zu\n", tree.num_evaluated());
             printf("\nmin_objective: %1.5f\n", tree.min_objective());
@@ -125,6 +124,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (run_curiosity) {
+        printf("\n\n\nCURIOUSITY\n");
         CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
         CuriousQueue curious_q(curious_cmp);
         PrefixPermutationMap<CuriousNode> p3;
@@ -135,7 +135,6 @@ int main(int argc, char *argv[]) {
                                                          &curious_q,
                                                          &curious_queue_front,
                                                          logger, &p3);
-        printf("\n\n\nCURIOUSITY\n");
         printf("\nnum_nodes: %zu\n", tree.num_nodes());
         printf("num_evaluated: %zu\n", tree.num_evaluated());
         printf("\nmin_objective: %1.5f\n", tree.min_objective());

@@ -1,4 +1,6 @@
 #include "cache.hh"
+#include "utils.hh"
+
 #include <functional>
 #include <queue>
 #include <map>
@@ -49,7 +51,7 @@ extern void evaluate_children(CacheTree<N>* tree, N* parent,
                               VECTOR parent_not_captured,
                               std::set<size_t> ordered_parent,
                               construct_signature<N> construct_policy,
-                              Q* q, struct time*, P* p);
+                              Q* q, Logger& logger, P* p);
 
 template<class N, class P>
 extern std::pair<N*, std::set<size_t> > stochastic_select(CacheTree<N>* tree, VECTOR not_captured, P* p);
@@ -58,7 +60,7 @@ template<class N>
 extern void bbound_stochastic(CacheTree<N>* tree,
                               size_t max_num_nodes,
                               construct_signature<N> construct_policy,
-                              struct time*);
+                              Logger& logger);
 
 template<class N, class Q>
 extern std::pair<N*, std::set<size_t> >
@@ -69,7 +71,7 @@ extern void bbound_queue(CacheTree<N>* tree,
                          size_t max_num_nodes,
                          construct_signature<N> construct_policy,
                          Q* q, N*(*front)(Q*),
-                         struct time*, P* p);
+                         Logger& logger, P* p);
 
 /*
  * Permutation Map

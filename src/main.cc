@@ -12,8 +12,8 @@ int main()
     char infile_name[] = "../data/tdata_R.out";
     char* infile = infile_name;
     rules_init(infile, &nrules, &nsamples, &rules, 1);
-//    printf("\n%d rules %d samples\n\n", nrules, nsamples);
-//    rule_print_all(rules, nrules, nsamples);
+    printf("\n%d rules %d samples\n\n", nrules, nsamples);
+    rule_print_all(rules, nrules, nsamples);
 
     char lfile_name[] = "../data/tdata_R.label";
     char* lfile = lfile_name;
@@ -21,14 +21,15 @@ int main()
     printf("\nLabels (%d) for %d samples\n\n", nlabels, nsamples);
     rule_print_all(labels, nlabels, nsamples);
 
-    double c = 0.01;
-    CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
+    double c = 0.001;
     printf("\nGreedy algorithm:\n\n");
     bbound_greedy(nsamples, nrules, rules, labels, 8);
 
     struct time* times = (struct time*) calloc(1, sizeof(*times));
+
     /*
-    bbound_stochastic<BaseNode>(&tree, 1000000,
+    CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
+    bbound_stochastic<BaseNode>(&tree, 100000,
                                 &base_construct_policy,
                                 times);
     printf("BBOUND_STOCHASTIC\n");
@@ -45,12 +46,11 @@ int main()
     printf("Total tree insertion time: %f\n", times->tree_insertion_time);
     printf("Number of tree insertions: %i\n", times->tree_insertion_num);
     clear_time(times);
-    */
 
-/*    CacheTree<BaseNode> tree2(nsamples, nrules, c, rules, labels);
+    CacheTree<BaseNode> tree2(nsamples, nrules, c, rules, labels);
     BaseQueue bfs_q;
     PrefixPermutationMap<BaseNode> p;
-    bbound_queue<BaseNode, BaseQueue, PrefixPermutationMap<BaseNode> >(&tree2, 10000000,
+    bbound_queue<BaseNode, BaseQueue, PrefixPermutationMap<BaseNode> >(&tree2, 100000,
                                       &base_construct_policy,
                                       &bfs_q,
                                       &base_queue_front,
@@ -69,13 +69,13 @@ int main()
     printf("Total tree insertion time: %f\n", times->tree_insertion_time);
     printf("Number of tree insertions: %i\n", times->tree_insertion_num);
     printf("Permutation map insertion time: %f\n", times->permutation_map_insertion_time);
-    printf("Number of permutation map insertions: %i\n", times->permutation_map_insertion_num);
+    printf("Number of calls to permutation_insert(): %i\n", times->permutation_map_insertion_num);
     clear_time(times);
-*/
-/*    CacheTree<BaseNode> tree3(nsamples, nrules, c, rules, labels);
+
+    CacheTree<BaseNode> tree3(nsamples, nrules, c, rules, labels);
     BaseQueue bfs_q_2;
     NullPermutationMap<BaseNode> p2;
-    bbound_queue<BaseNode, BaseQueue, NullPermutationMap<BaseNode> >(&tree3, 10000000,
+    bbound_queue<BaseNode, BaseQueue, NullPermutationMap<BaseNode> >(&tree3, 100000,
                                       &base_construct_policy,
                                       &bfs_q_2,
                                       &base_queue_front,
@@ -94,22 +94,22 @@ int main()
     printf("Total tree insertion time: %f\n", times->tree_insertion_time);
     printf("Number of tree insertions: %i\n", times->tree_insertion_num);
     printf("Permutation map insertion time: %f\n", times->permutation_map_insertion_time);
-    printf("Number of permutation map insertions: %i\n", times->permutation_map_insertion_num);
+    printf("Number of calls to permutation_insert(): %i\n", times->permutation_map_insertion_num);
     clear_time(times);
     */
 
-    CacheTree<CuriousNode> tree3(nsamples, nrules, c, rules, labels);
+    CacheTree<CuriousNode> tree4(nsamples, nrules, c, rules, labels);
     CuriousQueue curious_q(curious_cmp);
-    PrefixPermutationMap<CuriousNode> p2;
-    bbound_queue<CuriousNode, CuriousQueue, PrefixPermutationMap<CuriousNode> >(&tree3, 1000000,
+    PrefixPermutationMap<CuriousNode> p3;
+    bbound_queue<CuriousNode, CuriousQueue, PrefixPermutationMap<CuriousNode> >(&tree4, 100000,
                                             &curious_construct_policy,
                                             &curious_q,
                                             &curious_queue_front,
-                                            times, &p2);
+                                            times, &p3);
     printf("\n\n\nCURIOUSITY\n");
-    printf("\nnum_nodes: %zu\n", tree3.num_nodes());
-    printf("num_evaluated: %zu\n", tree3.num_evaluated());
-    printf("\nmin_objective: %1.5f\n", tree3.min_objective());
+    printf("\nnum_nodes: %zu\n", tree4.num_nodes());
+    printf("num_evaluated: %zu\n", tree4.num_evaluated());
+    printf("\nmin_objective: %1.5f\n", tree4.min_objective());
     printf("Total time: %f\n", times->total_time);
     printf("Evaluate children time: %f\n", times->evaluate_children_time);
     printf("Node select time: %f\n", times->node_select_time);

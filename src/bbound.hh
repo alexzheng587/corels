@@ -49,7 +49,8 @@ extern void evaluate_children(CacheTree<N>* tree, N* parent,
                               VECTOR parent_not_captured,
                               std::set<size_t> ordered_parent,
                               construct_signature<N> construct_policy,
-                              Q* q, struct time*, P* p);
+                              Q* q, struct time*, permutation_insert_signature<N, P>* permutation_insert,
+                              P* p);
 
 template<class N, class P>
 extern std::pair<N*, std::set<size_t> > stochastic_select(CacheTree<N>* tree, VECTOR not_captured, P* p);
@@ -76,65 +77,51 @@ extern void bbound_queue(CacheTree<N>* tree,
  */
 typedef std::set<size_t> PrefixKey;
 typedef VECTOR CapturedKey;
-typedef std::map<PrefixKey, N*> PrefixPermutationMap;
+typedef std::map<PrefixKey, std::pair<std::vector<size_t>, double> > PrefixPermutationMap;
 
-template<class N, class K>
+template<class N, class P>
 using permutation_insert_signature = N* (*)(construct_signature<N>, size_t, size_t, bool, bool, 
-                                            double, double, N* parent, int, int, int, double, CacheTree<N>*, K);
+                                            double, double, N* parent, int, int, int, double, CacheTree<N>*, VECTOR,
+                                            std::vector<size_t>, P);
 template<class N>
 N* prefix_permutation_insert(construct_signature<N> construct_policy, size_t new_rule,
                         size_t nrules, bool prediction, bool default_prediction, double lower_bound,
                         double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
-                        double c, CacheTree<N>* tree, PrefixKey key, PrefixPermutationMap P);
+                        double c, CacheTree<N>* tree, VECTOR captured, std::vector<size_t>, PrefixPermutationMap p);
 
+/*
 template<class N>
 class NullPermutationMap {
   public:
     N* permutation_insert(construct_signature<N> construct_policy, size_t new_rule, 
                                                 size_t nrules, bool prediction, bool default_prediction, double lower_bound, 
                                                 double objective, N* parent, int num_not_captured, int nsamples, int len_prefix, 
-                                                double c, CacheTree<N>* tree, std::set<size_t> key)  {};
+                                                double c, CacheTree<N>* tree, std::set<size_t> key, std::vector<size_t> prefix)  {};
     std::set<size_t> get_key(std::set<size_t> ordered_prefix, VECTOR captured) {};
-    void remove_node(N* node) {};
-    std::map<PrefixKey, N*> permutation_map_;
+    std::map<PrefixKey, std::pair<std::vector<size_t>, double> > permutation_map_;
 };
 
-/*
 template<class N>
 class PrefixPermutationMap {
     public:
         N* permutation_insert(construct_signature<N> construct_policy, size_t new_rule, 
                                                 size_t nrules, bool prediction, bool default_prediction, double lower_bound, 
                                                 double objective, N* parent, int num_not_captured, int nsamples, int len_prefix, 
-                                                double c, CacheTree<N>* tree, PrefixKey key);
+                                                double c, CacheTree<N>* tree, PrefixKey key, std::vector<size_t> prefix);
         inline PrefixKey get_key(std::set<size_t> ordered_prefix, VECTOR captured);
-//        inline void remove_node(N* node);
-        std::map<PrefixKey, N*> permutation_map_;
+        std::map<PrefixKey, std::pair<std::vector<size_t>, double> > permutation_map_;
 };
 */
 
 /*
-template<class N>
-inline void PrefixPermutationMap<N>::remove_node(N* node) {
-    typename std::map<PrefixKey, N*>::iterator iter;
-    std::set<size_t> key;
-    size_t depth = node->depth();
-    for(size_t i = 0; i < depth; ++i) {
-        key.insert(node->id());
-        node = node->parent();
-    }
-    iter = permutation_map_.find(key);
-    permutation_map_.erase(iter);
-}
-*/
-
 template <class N>
-inline std::set<size_t> PrefixPermutationMap<N>::get_key(std::set<size_t> ordered_prefix, VECTOR captured) {
+std::set<size_t> PrefixPermutationMap<N>::get_key(std::set<size_t> ordered_prefix, VECTOR captured) {
     (void) captured;
     return ordered_prefix;
 }
+*/
 
-template<class N, class P>
-extern void delete_subtree(CacheTree<N>* tree, N* node, P* p, bool destructive);
+template<class N>
+extern void delete_subtree(CacheTree<N>* tree, N* node, bool destructive);
 
 void bbound_greedy(size_t nsamples, size_t nrules, rule_t *rules, rule_t *labels, size_t max_prefix_length);

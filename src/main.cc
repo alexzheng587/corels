@@ -64,7 +64,7 @@ int main()
                                       &bfs_q_2,
                                       &base_queue_front,
                                       times, &captured_permutation_insert, &p2);
-    printf("\n\n\nBFS Captured Permutation Map\n");
+    printf("\n\n\nBFS Captured Symmetry Map\n");
     printf("\nnum_nodes: %zu\n", tree3.num_nodes());
     printf("num_evaluated: %zu\n", tree3.num_evaluated());
     printf("\nmin_objective: %1.5f\n", tree3.min_objective());
@@ -81,15 +81,16 @@ int main()
     printf("Number of calls to permutation_insert(): %i\n", times->permutation_map_insertion_num);
     clear_time(times);
 
+    c = 0.01;
     CacheTree<CuriousNode> tree4(nsamples, nrules, c, rules, labels);
     CuriousQueue curious_q(curious_cmp);
     PrefixPermutationMap p3;
-    bbound_queue<CuriousNode, CuriousQueue, PrefixPermutationMap>(&tree4, 100000,
+    bbound_queue<CuriousNode, CuriousQueue, PrefixPermutationMap>(&tree4, 360000,
                                             &curious_construct_policy,
                                             &curious_q,
                                             &curious_queue_front,
                                             times, &prefix_permutation_insert, &p3);
-    printf("\n\n\nCURIOUSITY\n");
+    printf("\n\n\nCURIOUSITY Prefix Permutation Map\n");
     printf("\nnum_nodes: %zu\n", tree4.num_nodes());
     printf("num_evaluated: %zu\n", tree4.num_evaluated());
     printf("\nmin_objective: %1.5f\n", tree4.min_objective());
@@ -106,6 +107,7 @@ int main()
     printf("Number of permutation map insertions: %i\n", times->permutation_map_insertion_num);
     clear_time(times);
 
+    c = 0.001;
     CacheTree<CuriousNode> tree5(nsamples, nrules, c, rules, labels);
     CuriousQueue curious_q2(curious_cmp);
     CapturedPermutationMap p4;
@@ -114,7 +116,7 @@ int main()
                                             &curious_q2,
                                             &curious_queue_front,
                                             times, &captured_permutation_insert, &p4);
-    printf("\n\n\nCURIOUSITY\n");
+    printf("\n\n\nCURIOUSITY Captured Symmetry Map\n");
     printf("\nnum_nodes: %zu\n", tree5.num_nodes());
     printf("num_evaluated: %zu\n", tree5.num_evaluated());
     printf("\nmin_objective: %1.5f\n", tree5.min_objective());

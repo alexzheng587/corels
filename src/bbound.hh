@@ -48,8 +48,9 @@ CuriousNode* curious_construct_policy(size_t new_rule, size_t nrules,
  * Permutation Map
  */
 typedef std::set<size_t> PrefixKey;
-typedef VECTOR CapturedKey;
+typedef std::vector<bool> CapturedKey;
 typedef std::map<PrefixKey, std::pair<std::vector<size_t>, double> > PrefixPermutationMap;
+typedef std::map<CapturedKey, std::pair<std::vector<size_t>, double> > CapturedPermutationMap;
 
 template<class N, class P>
 using permutation_insert_signature = N* (*)(construct_signature<N>, size_t, size_t, bool, bool, 
@@ -61,6 +62,13 @@ N* prefix_permutation_insert(construct_signature<N> construct_policy, size_t new
                         size_t nrules, bool prediction, bool default_prediction, double lower_bound,
                         double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
                         double c, CacheTree<N>* tree, VECTOR captured, std::vector<size_t>, PrefixPermutationMap* p);
+
+template<class N>
+N* captured_permutation_insert(construct_signature<N> construct_policy, size_t new_rule,
+                        size_t nrules, bool prediction, bool default_prediction, double lower_bound,
+                        double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
+                        double c, CacheTree<N>* tree, VECTOR captured, std::vector<size_t>, CapturedPermutationMap* p);
+
 
 /*
 template<class N>

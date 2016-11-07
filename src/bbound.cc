@@ -357,7 +357,7 @@ void bbound_queue(CacheTree<N>* tree,
         }
         ++num_iter;
         if ((num_iter % 10000) == 0)
-            printf("iter: %zu, tree: %zu, queue: %zu, tree inserts: %zu, permutation_insert(): %zu\n",
+            printf("iter: %zu, tree: %zu, queue: %zu, tree inserts: %d, permutation_insert(): %d\n",
                    num_iter, tree->num_nodes(), q->size(), times->tree_insertion_num, times->permutation_map_insertion_num);
     }
 

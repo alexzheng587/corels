@@ -80,7 +80,7 @@ int main()
     printf("Permutation map insertion time: %f\n", times->permutation_map_insertion_time);
     printf("Number of calls to permutation_insert(): %i\n", times->permutation_map_insertion_num);
     clear_time(times);
-/*
+
     CacheTree<CuriousNode> tree4(nsamples, nrules, c, rules, labels);
     CuriousQueue curious_q(curious_cmp);
     PrefixPermutationMap p3;
@@ -104,7 +104,6 @@ int main()
     printf("Number of tree insertions: %i\n", times->tree_insertion_num);
     printf("Permutation map insertion time: %f\n", times->permutation_map_insertion_time);
     printf("Number of permutation map insertions: %i\n", times->permutation_map_insertion_num);
-    */
 
     free(times);
     printf("\ndelete rules\n");

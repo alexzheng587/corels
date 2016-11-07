@@ -23,9 +23,10 @@ CuriousNode* curious_construct_policy(size_t new_rule, size_t nrules, bool predi
 
 template<class N>
 N* prefix_permutation_insert(construct_signature<N> construct_policy, size_t new_rule,
-                                                size_t nrules, bool prediction, bool default_prediction, double lower_bound,
-                                                double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
-                                                double c, CacheTree<N>* tree, VECTOR captured, std::vector<size_t> parent_prefix, PrefixPermutationMap* p) {
+                             size_t nrules, bool prediction, bool default_prediction, double lower_bound,
+                             double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
+                             double c, CacheTree<N>* tree, VECTOR captured, std::vector<size_t> parent_prefix,
+                             PrefixPermutationMap* p) {
     typename PrefixPermutationMap::iterator iter;
     parent_prefix.push_back(new_rule);
     std::set<size_t> key(parent_prefix.begin(), parent_prefix.end());
@@ -76,9 +77,10 @@ std::vector<bool> VECTOR_to_bitvector(VECTOR vec, size_t len) {
 
 template<class N>
 N* captured_permutation_insert(construct_signature<N> construct_policy, size_t new_rule,
-                                                size_t nrules, bool prediction, bool default_prediction, double lower_bound,
-                                                double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
-                                                double c, CacheTree<N>* tree, VECTOR captured, std::vector<size_t> parent_prefix, CapturedPermutationMap* p) {
+                               size_t nrules, bool prediction, bool default_prediction, double lower_bound,
+                               double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
+                               double c, CacheTree<N>* tree, VECTOR captured, std::vector<size_t> parent_prefix,
+                               CapturedPermutationMap* p) {
     typename CapturedPermutationMap::iterator iter;
     N* child = NULL;
     std::vector<bool> key = VECTOR_to_bitvector(captured, nsamples);
@@ -181,9 +183,9 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
             N* n;
             if (p) {
                 double t3 = timestamp();
-                n = permutation_insert(construct_policy, i, nrules, prediction, default_prediction, lower_bound,
-                                           objective, parent, num_not_captured, nsamples, len_prefix, c, tree,
-                                           captured, parent_prefix, p);
+                n = permutation_insert(construct_policy, i, nrules, prediction, default_prediction,
+                                       lower_bound, objective, parent, num_not_captured, nsamples,
+                                       len_prefix, c, tree, captured, parent_prefix, p);
                 times->permutation_map_insertion_time += time_diff(t3);
                 ++times->permutation_map_insertion_num;
             }
@@ -264,7 +266,8 @@ void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes,
         if (node_ordered.first) {
             double t1 = timestamp();
             evaluate_children<N, NullQueue<N>, PrefixPermutationMap>(tree, node_ordered.first, not_captured,
-                                                node_ordered.second, construct_policy, q, times, NULL, NULL);
+                                                                     node_ordered.second, construct_policy,
+                                                                     q, times, NULL, NULL);
             times->evaluate_children_time += timestamp() - t1;
             ++times->evaluate_children_num;
         }
@@ -454,27 +457,31 @@ void delete_subtree(CacheTree<N>* tree, N* node, bool destructive) {
 
 template BaseNode*
 prefix_permutation_insert(construct_signature<BaseNode> construct_policy, size_t new_rule,
-                                                size_t nrules, bool prediction, bool default_prediction, double lower_bound,
-                                                double objective, BaseNode* parent, int num_not_captured, int nsamples, int len_prefix,
-                                                double c, CacheTree<BaseNode>* tree, VECTOR captured, std::vector<size_t> parent_prefix, PrefixPermutationMap* p);
+                          size_t nrules, bool prediction, bool default_prediction, double lower_bound,
+                          double objective, BaseNode* parent, int num_not_captured, int nsamples, int len_prefix,
+                          double c, CacheTree<BaseNode>* tree, VECTOR captured, std::vector<size_t> parent_prefix,
+                          PrefixPermutationMap* p);
 
 template CuriousNode*
 prefix_permutation_insert(construct_signature<CuriousNode> construct_policy, size_t new_rule,
-                                                size_t nrules, bool prediction, bool default_prediction, double lower_bound,
-                                                double objective, CuriousNode* parent, int num_not_captured, int nsamples, int len_prefix,
-                                                double c, CacheTree<CuriousNode>* tree, VECTOR captured, std::vector<size_t> parent_prefix, PrefixPermutationMap* p);
+                          size_t nrules, bool prediction, bool default_prediction, double lower_bound,
+                          double objective, CuriousNode* parent, int num_not_captured, int nsamples, int len_prefix,
+                          double c, CacheTree<CuriousNode>* tree, VECTOR captured, std::vector<size_t> parent_prefix,
+                          PrefixPermutationMap* p);
 
 template BaseNode*
 captured_permutation_insert(construct_signature<BaseNode> construct_policy, size_t new_rule,
-                                                size_t nrules, bool prediction, bool default_prediction, double lower_bound,
-                                                double objective, BaseNode* parent, int num_not_captured, int nsamples, int len_prefix,
-                                                double c, CacheTree<BaseNode>* tree, VECTOR captured, std::vector<size_t> parent_prefix, CapturedPermutationMap* p);
+                            size_t nrules, bool prediction, bool default_prediction, double lower_bound,
+                            double objective, BaseNode* parent, int num_not_captured, int nsamples, int len_prefix,
+                            double c, CacheTree<BaseNode>* tree, VECTOR captured, std::vector<size_t> parent_prefix,
+                            CapturedPermutationMap* p);
 
 template CuriousNode*
 captured_permutation_insert(construct_signature<CuriousNode> construct_policy, size_t new_rule,
-                                                size_t nrules, bool prediction, bool default_prediction, double lower_bound,
-                                                double objective, CuriousNode* parent, int num_not_captured, int nsamples, int len_prefix,
-                                                double c, CacheTree<CuriousNode>* tree, VECTOR captured, std::vector<size_t> parent_prefix, CapturedPermutationMap* p);
+                            size_t nrules, bool prediction, bool default_prediction, double lower_bound,
+                            double objective, CuriousNode* parent, int num_not_captured, int nsamples, int len_prefix,
+                            double c, CacheTree<CuriousNode>* tree, VECTOR captured, std::vector<size_t> parent_prefix,
+                            CapturedPermutationMap* p);
 
 template void
 evaluate_children<BaseNode, NullQueue<BaseNode>, PrefixPermutationMap>(CacheTree<BaseNode>* tree,

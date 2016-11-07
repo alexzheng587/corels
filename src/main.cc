@@ -104,6 +104,32 @@ int main()
     printf("Number of tree insertions: %i\n", times->tree_insertion_num);
     printf("Permutation map insertion time: %f\n", times->permutation_map_insertion_time);
     printf("Number of permutation map insertions: %i\n", times->permutation_map_insertion_num);
+    clear_time(times);
+
+    CacheTree<CuriousNode> tree5(nsamples, nrules, c, rules, labels);
+    CuriousQueue curious_q2(curious_cmp);
+    CapturedPermutationMap p4;
+    bbound_queue<CuriousNode, CuriousQueue, CapturedPermutationMap>(&tree5, 100000,
+                                            &curious_construct_policy,
+                                            &curious_q2,
+                                            &curious_queue_front,
+                                            times, &captured_permutation_insert, &p4);
+    printf("\n\n\nCURIOUSITY\n");
+    printf("\nnum_nodes: %zu\n", tree5.num_nodes());
+    printf("num_evaluated: %zu\n", tree5.num_evaluated());
+    printf("\nmin_objective: %1.5f\n", tree5.min_objective());
+    printf("Total time: %f\n", times->total_time);
+    printf("Evaluate children time: %f\n", times->evaluate_children_time);
+    printf("Node select time: %f\n", times->node_select_time);
+    printf("Rule evaluation time: %f\n", times->rule_evaluation_time);
+    printf("Lower bound time: %f\n", times->lower_bound_time);
+    printf("Number of lower bound evaluations: %d\n", times->lower_bound_num);
+    printf("Objective time: %f\n", times->objective_time);
+    printf("Total tree insertion time: %f\n", times->tree_insertion_time);
+    printf("Number of tree insertions: %i\n", times->tree_insertion_num);
+    printf("Permutation map insertion time: %f\n", times->permutation_map_insertion_time);
+    printf("Number of permutation map insertions: %i\n", times->permutation_map_insertion_num);
+    clear_time(times);
 
     free(times);
     printf("\ndelete rules\n");

@@ -21,6 +21,55 @@ CuriousNode* curious_construct_policy(size_t new_rule, size_t nrules, bool predi
                             lower_bound, objective, curiosity, parent));
 }
 
+template<class N>
+N* prefix_permutation_insert(construct_signature<N> construct_policy, size_t new_rule,
+                                                size_t nrules, bool prediction, bool default_prediction, double lower_bound,
+                                                double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
+                                                double c, CacheTree<N>* tree, VECTOR captured, std::vector<size_t> parent_prefix, PrefixPermutationMap* p) {
+    /*
+    typename std::map<PrefixKey, N*>::iterator iter;
+    N* child = NULL;
+    key.insert(new_rule);
+    std::set<size_t>::iterator iter2;
+    iter = p.find(key);
+    if (iter != p.end()) {
+        N* permuted_node = iter->second;
+        if (lower_bound < permuted_node->lower_bound()) {
+            N* permuted_parent = permuted_node->parent();
+            permuted_parent->delete_child(permuted_node->id());
+            delete_subtree<N, PrefixPermutationMap<N> >(tree, permuted_node, this, false);
+            */
+//                                                double c, CacheTree<N>* tree, PrefixKey key, std::vector<size_t> prefix) {
+    typename PrefixPermutationMap::iterator iter;
+    parent_prefix.push_back(new_rule);
+    std::set<size_t> key(parent_prefix.begin(), parent_prefix.end());
+    N* child = NULL;
+    iter = p->find(key);
+    if (iter != p->end()) {
+        std::vector<size_t> permuted_prefix = iter->second.first;
+        double permuted_lower_bound = iter->second.second;
+        if (lower_bound < permuted_lower_bound) {
+            N* permuted_node;
+            if ((permuted_node = tree->check_prefix(permuted_prefix)) != NULL) {
+                N* permuted_parent = permuted_node->parent();
+                permuted_parent->delete_child(permuted_node->id());
+                delete_subtree<N>(tree, permuted_node, false);
+            }
+            child = construct_policy(new_rule, nrules, prediction, default_prediction,
+                                       lower_bound, objective, parent,
+                                        num_not_captured, nsamples, len_prefix, c);
+            iter->second = std::make_pair(parent_prefix, lower_bound);
+            //permutation_map_.insert(std::make_pair(key, child));
+        }
+    } else {
+        child = construct_policy(new_rule, nrules, prediction, default_prediction,
+                                    lower_bound, objective, parent,
+                                    num_not_captured, nsamples, len_prefix, c);
+        p->insert(std::make_pair(key, std::make_pair(parent_prefix, lower_bound)));
+    }
+    return child;
+};
+
 BaseNode* base_queue_front(BaseQueue* q) {
     return q->front();
 }
@@ -33,7 +82,7 @@ template<class N, class Q, class P>
 void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured,
                        std::set<size_t> ordered_parent,
                        construct_signature<N> construct_policy, Q* q, struct time* times,
-                       permutation_insert_signature<N, P>* permutation_insert, P p) {
+                       permutation_insert_signature<N, P> permutation_insert, P* p) {
     std::vector<size_t> parent_prefix = parent->get_prefix();
     VECTOR captured, captured_zeros, not_captured, not_captured_zeros;
     int num_captured, c0, c1, captured_correct;
@@ -175,7 +224,7 @@ void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes,
         ++times->node_select_num;
         if (node_ordered.first) {
             double t1 = timestamp();
-            evaluate_children<N, NullQueue<N>, NullPermutationMap<N> >(tree, node_ordered.first, not_captured,
+            evaluate_children<N, NullQueue<N>, PrefixPermutationMap>(tree, node_ordered.first, not_captured,
                                                 node_ordered.second, construct_policy, q, times, NULL, NULL);
             times->evaluate_children_time += timestamp() - t1;
             ++times->evaluate_children_num;
@@ -188,9 +237,9 @@ void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes,
     rule_vfree(&not_captured);
 }
 
-template<class N, class Q, class P>
+template<class N, class Q>
 std::pair<N*, std::set<size_t> >
-queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured, P* p) {
+queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured) {
     int cnt;
 
     N* selected_node = front(q); //q->front();
@@ -225,7 +274,9 @@ void bbound_queue(CacheTree<N>* tree,
                 size_t max_num_nodes,
                 construct_signature<N> construct_policy,
                 Q* q, N*(*front)(Q*),
-                struct time* times, P* p) {
+                struct time* times, 
+                permutation_insert_signature<N, P> permutation_insert,
+                P* p) {
     int cnt;
     double min_objective = 1.0;
     std::pair<N*, std::set<size_t> > node_ordered;
@@ -241,11 +292,11 @@ void bbound_queue(CacheTree<N>* tree,
     ++times->tree_insertion_num;
     q->push(tree->root());
     if (p)
-        p->permutation_map_.insert(std::make_pair(node_ordered.second, std::make_pair(std::vector<size_t>(), 0.0)));
+        p->insert(std::make_pair(node_ordered.second, std::make_pair(std::vector<size_t>(), 0.0)));
     while ((tree->num_nodes() < max_num_nodes) &&
            !q->empty()) {
         double t0 = timestamp();
-        node_ordered = queue_select<N, Q>(tree, q, front, captured, p);
+        node_ordered = queue_select<N, Q>(tree, q, front, captured);
         times->node_select_time += time_diff(t0);
         ++times->node_select_num;
         if (node_ordered.first) {
@@ -256,7 +307,8 @@ void bbound_queue(CacheTree<N>* tree,
                          tree->rule(tree->root()->id()).truthtable, captured,
                          tree->nsamples(), &cnt);
             evaluate_children<N, Q, P>(tree, node_ordered.first, not_captured,
-                                 node_ordered.second, construct_policy, q, times, p);
+                                 node_ordered.second, construct_policy, q, times, 
+                                 permutation_insert, p);
             times->evaluate_children_time += time_diff(t1);
             ++times->evaluate_children_num;
             if (tree->min_objective() < min_objective) {
@@ -357,79 +409,35 @@ void delete_subtree(CacheTree<N>* tree, N* node, bool destructive) {
     }
 }
 
-template<class N>
-N* prefix_permutation_insert(construct_signature<N> construct_policy, size_t new_rule,
-                                                size_t nrules, bool prediction, bool default_prediction, double lower_bound,
-                                                double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
-                                                double c, CacheTree<N>* tree, VECTOR captured, std::vector<size_t> parent_prefix, PrefixPermutationMap p) {
-    /*
-    typename std::map<PrefixKey, N*>::iterator iter;
-    N* child = NULL;
-    key.insert(new_rule);
-    std::set<size_t>::iterator iter2;
-    iter = p.find(key);
-    if (iter != p.end()) {
-        N* permuted_node = iter->second;
-        if (lower_bound < permuted_node->lower_bound()) {
-            N* permuted_parent = permuted_node->parent();
-            permuted_parent->delete_child(permuted_node->id());
-            delete_subtree<N, PrefixPermutationMap<N> >(tree, permuted_node, this, false);
-            */
-//                                                double c, CacheTree<N>* tree, PrefixKey key, std::vector<size_t> prefix) {
-    typename std::map<PrefixKey, std::pair<std::vector<size_t>, double> >::iterator iter;
-    std::set<size_t> key(prefix.begin(), prefix.end());
-    N* child = NULL;
-    key.insert(new_rule);
-    iter = p.find(key);
-    parent_prefix.push_back(new_rule);
-    if (iter != p.end()) {
-        std::vector<size_t> permuted_prefix = iter->second.first;
-        double permuted_lower_bound = iter->second.second;
-        if (lower_bound < permuted_lower_bound) {
-            N* permuted_node;
-            if ((permuted_node = tree->check_prefix(permuted_prefix)) != NULL) {
-                N* permuted_parent = permuted_node->parent();
-                permuted_parent->delete_child(permuted_node->id());
-                delete_subtree<N>(tree, permuted_node, false);
-            }
-            child = construct_policy(new_rule, nrules, prediction, default_prediction,
-                                       lower_bound, objective, parent,
-                                        num_not_captured, nsamples, len_prefix, c);
-            iter->second = std::make_pair(parent_prefix, lower_bound);
-            //permutation_map_.insert(std::make_pair(key, child));
-        }
-    } else {
-        child = construct_policy(new_rule, nrules, prediction, default_prediction,
-                                    lower_bound, objective, parent,
-                                    num_not_captured, nsamples, len_prefix, c);
-        p.insert(std::make_pair(key, std::make_pair(parent_prefix, lower_bound)));
-    }
-    return child;
-};
-
 template void
-evaluate_children<BaseNode, NullQueue<BaseNode>, NullPermutationMap<BaseNode> >(CacheTree<BaseNode>* tree,
+evaluate_children<BaseNode, NullQueue<BaseNode>, PrefixPermutationMap>(CacheTree<BaseNode>* tree,
                                                   BaseNode* parent,
                                                   VECTOR parent_not_captured,
                                                   std::set<size_t> ordered_parent,
                                                   construct_signature<BaseNode> construct_policy,
-                                                  NullQueue<BaseNode>* q, struct time*, NullPermutationMap<BaseNode>* p);
+                                                  NullQueue<BaseNode>* q, struct time*, 
+                                                  permutation_insert_signature<BaseNode, PrefixPermutationMap> permutation_insert,
+                                                  PrefixPermutationMap p);
 
 template void
-evaluate_children<BaseNode, BaseQueue, PrefixPermutationMap<BaseNode> >(CacheTree<BaseNode>* tree,
+evaluate_children<BaseNode, BaseQueue, PrefixPermutationMap>(CacheTree<BaseNode>* tree,
                                        BaseNode* parent,
                                        VECTOR parent_not_captured,
                                        std::set<size_t> ordered_parent,
                                        construct_signature<BaseNode> construct_policy,
-                                       BaseQueue* q, struct time*, PrefixPermutationMap<BaseNode>* p);
+                                       BaseQueue* q, struct time*,
+                                       permutation_insert_signature<BaseNode, PrefixPermutationMap> permutation_insert,
+                                       PrefixPermutationMap p);
 
 template void
-evaluate_children<CuriousNode, CuriousQueue, NullPermutationMap<CuriousNode> >(CacheTree<CuriousNode>* tree,
+evaluate_children<CuriousNode, CuriousQueue, PrefixPermutationMap>(CacheTree<CuriousNode>* tree,
                                              CuriousNode* parent,
                                              VECTOR parent_not_captured,
                                              std::set<size_t> ordered_parent,
                                              construct_signature<CuriousNode> construct_policy,
-                                             CuriousQueue* q, struct time*, NullPermutationMap<CuriousNode>* p);
+                                             CuriousQueue* q, struct time*,
+                                             permutation_insert_signature<CuriousNode, PrefixPermutationMap> permutation_insert,
+                                             PrefixPermutationMap p);
 
 template std::pair<BaseNode*, std::set<size_t> >
 stochastic_select<BaseNode>(CacheTree<BaseNode>* tree, VECTOR not_captured); 
@@ -441,40 +449,46 @@ bbound_stochastic<BaseNode>(CacheTree<BaseNode>* tree,
                             struct time*);
 
 template std::pair<BaseNode*, std::set<size_t> >
-queue_select<BaseNode, BaseQueue, PrefixPermutationMap<BaseNode> >(CacheTree<BaseNode>* tree,
+queue_select<BaseNode, BaseQueue>(CacheTree<BaseNode>* tree,
                                   BaseQueue* q,
                                   BaseNode*(*front)(BaseQueue*),
-                                  VECTOR captured, PrefixPermutationMap<BaseNode>* p);
+                                  VECTOR captured);
 
 template std::pair<CuriousNode*, std::set<size_t> >
-queue_select<CuriousNode, CuriousQueue, PrefixPermutationMap<CuriousNode> >(CacheTree<CuriousNode>* tree,
+queue_select<CuriousNode, CuriousQueue>(CacheTree<CuriousNode>* tree,
                                         CuriousQueue* q,
                                         CuriousNode*(*front)(CuriousQueue*),
-                                        VECTOR captured, PrefixPermutationMap<CuriousNode>* p);
+                                        VECTOR captured);
 
 template void
-bbound_queue<BaseNode, BaseQueue, PrefixPermutationMap<BaseNode> >(CacheTree<BaseNode>* tree,
+bbound_queue<BaseNode, BaseQueue, PrefixPermutationMap>(CacheTree<BaseNode>* tree,
                                   size_t max_num_nodes,
                                   construct_signature<BaseNode> construct_policy,
                                   BaseQueue* q,
                                   BaseNode*(*front)(BaseQueue*),
-                                  struct time*, PrefixPermutationMap<BaseNode>* p);
+                                  struct time*, 
+                                  permutation_insert_signature<BaseNode, PrefixPermutationMap> permutation_insert,
+                                  PrefixPermutationMap p);
 
 template void
-bbound_queue<BaseNode, BaseQueue, NullPermutationMap<BaseNode> >(CacheTree<BaseNode>* tree,
+bbound_queue<BaseNode, BaseQueue, PrefixPermutationMap>(CacheTree<BaseNode>* tree,
                                   size_t max_num_nodes,
                                   construct_signature<BaseNode> construct_policy,
                                   BaseQueue* q,
                                   BaseNode*(*front)(BaseQueue*),
-                                  struct time*, NullPermutationMap<BaseNode>* p);
+                                  struct time*, 
+                                  permutation_insert_signature<BaseNode, PrefixPermutationMap> permutation_insert,
+                                  PrefixPermutationMap p);
 
 template void
-bbound_queue<CuriousNode, CuriousQueue, PrefixPermutationMap<CuriousNode> >(CacheTree<CuriousNode>* tree,
+bbound_queue<CuriousNode, CuriousQueue, PrefixPermutationMap>(CacheTree<CuriousNode>* tree,
                                         size_t max_num_nodes,
                                         construct_signature<CuriousNode> construct_policy,
                                         CuriousQueue* q,
                                         CuriousNode*(*front)(CuriousQueue*),
-                                        struct time*, PrefixPermutationMap<CuriousNode>* p);
+                                        struct time*,
+                                        permutation_insert_signature<CuriousNode, PrefixPermutationMap> permutation_insert,
+                                        PrefixPermutationMap p);
 
 template void
 delete_subtree<BaseNode>(CacheTree<BaseNode>* tree, BaseNode* n, bool destructive);

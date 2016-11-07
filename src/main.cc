@@ -100,12 +100,12 @@ int main()
 
     CacheTree<CuriousNode> tree4(nsamples, nrules, c, rules, labels);
     CuriousQueue curious_q(curious_cmp);
-    PrefixPermutationMap<CuriousNode> p3;
-    bbound_queue<CuriousNode, CuriousQueue, PrefixPermutationMap<CuriousNode> >(&tree4, 100000,
+    PrefixPermutationMap p3;
+    bbound_queue<CuriousNode, CuriousQueue, PrefixPermutationMap>(&tree4, 100000,
                                             &curious_construct_policy,
                                             &curious_q,
                                             &curious_queue_front,
-                                            times, &p3);
+                                            times, &prefix_permutation_insert, &p3);
     printf("\n\n\nCURIOUSITY\n");
     printf("\nnum_nodes: %zu\n", tree4.num_nodes());
     printf("num_evaluated: %zu\n", tree4.num_evaluated());

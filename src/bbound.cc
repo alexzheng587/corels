@@ -25,7 +25,7 @@ template<class N>
 N* prefix_permutation_insert(construct_signature<N> construct_policy, size_t new_rule,
                              size_t nrules, bool prediction, bool default_prediction, double lower_bound,
                              double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
-                             double c, CacheTree<N>* tree, VECTOR captured, std::vector<size_t> parent_prefix,
+                             double c, CacheTree<N>* tree, VECTOR not_captured, std::vector<size_t> parent_prefix,
                              PrefixPermutationMap* p) {
     typename PrefixPermutationMap::iterator iter;
     parent_prefix.push_back(new_rule);
@@ -61,16 +61,14 @@ static
 std::vector<bool> VECTOR_to_bitvector(VECTOR vec, size_t len) {
     std::vector<bool> bitvector;
     bitvector.resize(len);
-    for(size_t i = 0; i < len / sizeof(unsigned long); ++i) {
-        for(size_t j = 0; j < sizeof(unsigned long); ++j) {
-            size_t index = (i * sizeof(unsigned long)) + j;
-            size_t bmask = (1 << j) & vec[i];
-            if (bmask == 0) {
-                bitvector[index] = false;
-            } else {
-                bitvector[index] = true;
-            }
-        }
+    for (size_t index = 0; index < len; index++) {
+        size_t i = index / BITS_PER_ENTRY;
+        size_t j = (index % BITS_PER_ENTRY);
+        size_t bmask = (1 << j) & vec[i];
+        if (bmask != 0)
+            bitvector[index] = true;
+        else
+            bitvector[index] = false;
     }
     return bitvector;
 }
@@ -79,11 +77,12 @@ template<class N>
 N* captured_permutation_insert(construct_signature<N> construct_policy, size_t new_rule,
                                size_t nrules, bool prediction, bool default_prediction, double lower_bound,
                                double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
-                               double c, CacheTree<N>* tree, VECTOR captured, std::vector<size_t> parent_prefix,
+                               double c, CacheTree<N>* tree, VECTOR not_captured, std::vector<size_t> parent_prefix,
                                CapturedPermutationMap* p) {
     typename CapturedPermutationMap::iterator iter;
+    parent_prefix.push_back(new_rule);
     N* child = NULL;
-    std::vector<bool> key = VECTOR_to_bitvector(captured, nsamples);
+    std::vector<bool> key = VECTOR_to_bitvector(not_captured, nsamples);
     iter = p->find(key);
     if (iter != p->end()) {
         std::vector<size_t> permuted_prefix = iter->second.first;
@@ -145,6 +144,7 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
         double t1 = timestamp();
         if (ordered_parent.find(i) != ordered_parent.end())
             continue;
+        // captured represents data captured by the new rule
         rule_vand(captured, parent_not_captured, tree->rule(i).truthtable, nsamples, &num_captured);
         rule_vand(captured_zeros, captured, tree->label(0).truthtable, nsamples, &c0);
         c1 = num_captured - c0;
@@ -185,7 +185,7 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
                 double t3 = timestamp();
                 n = permutation_insert(construct_policy, i, nrules, prediction, default_prediction,
                                        lower_bound, objective, parent, num_not_captured, nsamples,
-                                       len_prefix, c, tree, captured, parent_prefix, p);
+                                       len_prefix, c, tree, not_captured, parent_prefix, p);
                 times->permutation_map_insertion_time += time_diff(t3);
                 ++times->permutation_map_insertion_num;
             }

@@ -61,13 +61,13 @@ template<class N>
 N* prefix_permutation_insert(construct_signature<N> construct_policy, size_t new_rule,
                         size_t nrules, bool prediction, bool default_prediction, double lower_bound,
                         double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
-                        double c, CacheTree<N>* tree, VECTOR captured, std::vector<size_t>, PrefixPermutationMap* p);
+                        double c, CacheTree<N>* tree, VECTOR not_captured, std::vector<size_t>, PrefixPermutationMap* p);
 
 template<class N>
 N* captured_permutation_insert(construct_signature<N> construct_policy, size_t new_rule,
                         size_t nrules, bool prediction, bool default_prediction, double lower_bound,
                         double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
-                        double c, CacheTree<N>* tree, VECTOR captured, std::vector<size_t>, CapturedPermutationMap* p);
+                        double c, CacheTree<N>* tree, VECTOR not_captured, std::vector<size_t>, CapturedPermutationMap* p);
 
 
 /*

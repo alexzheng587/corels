@@ -34,7 +34,6 @@
 int ascii_to_vector(char *, size_t, int *, int *, VECTOR *);
 int make_default(VECTOR *, int);
 #define RULE_INC 100
-#define BITS_PER_ENTRY (sizeof(v_entry) * 8)
 
 /* One-counting tools */
 int bit_ones[] = {0, 1, 3, 7, 15, 31, 63, 127};

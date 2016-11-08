@@ -76,7 +76,8 @@ void CacheTree<N>::prune_up(N* node) {
             parent = node->parent();
             parent->children_.erase(id);
             --num_nodes_;
-            delete node;
+            node->set_deleted();
+            //delete node;
             node = parent;
             --depth;
         } else {

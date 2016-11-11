@@ -7,7 +7,8 @@
 #include <getopt.h>
 
 int main(int argc, char *argv[]) {
-    const char usage[] = "USAGE: %s [-s] [-b] [-c] [-p] [-v verbosity]\n";
+    const char usage[] = "USAGE: %s [-s] [-b] [-c] [-p]"
+        "[-r regularization] [-v verbosity]\n";
     int nrules, nsamples, nlabels, nsamples_chk;
     rule_t *rules, *labels;
 
@@ -23,10 +24,11 @@ int main(int argc, char *argv[]) {
     bool run_curiosity = false;
     bool use_perm_map = false;
     int verbosity = 0;
+    double c = 0.001;
     char ch;
-    bool error = false;
+    bool error = false;    
     /* only parsing happens here */
-    while ((ch = getopt(argc, argv, "sbcpv:")) != -1) {
+    while ((ch = getopt(argc, argv, "sbcpv:r:")) != -1) {
         switch (ch) {
         case 's':
             run_stochastic = true;
@@ -43,6 +45,9 @@ int main(int argc, char *argv[]) {
         case 'v':
             verbosity = atoi(optarg);
             break;
+        case 'r':
+            c = atof(optarg);
+            break;
         default:
             error = true;
         }
@@ -56,19 +61,18 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    if (verbosity >= 100) {
+    if (verbosity >= 1000) {
         printf("\n%d rules %d samples\n\n", nrules, nsamples);
         rule_print_all(rules, nrules, nsamples);
 
         printf("\nLabels (%d) for %d samples\n\n", nlabels, nsamples);
         rule_print_all(labels, nlabels, nsamples);
     }
-    if (verbosity >= 10) {
+    if (verbosity >= 100) {
         printf("\nGreedy algorithm:\n\n");
         bbound_greedy(nsamples, nrules, rules, labels, 8);
     }
 
-    double c = 0.001;
     Logger logger(verbosity); /** need to define verbosity semantics **/
     if (run_stochastic) {
         printf("BBOUND_STOCHASTIC\n");
@@ -76,9 +80,9 @@ int main(int argc, char *argv[]) {
         bbound_stochastic<BaseNode>(&tree, 100000,
                                     &base_construct_policy,
                                     logger);
-        printf("\nnum_nodes: %zu\n", tree.num_nodes());
-        printf("num_evaluated: %zu\n", tree.num_evaluated());
-        printf("\nmin_objective: %1.5f\n", tree.min_objective());
+        printf("final num_nodes: %zu\n", tree.num_nodes());
+        printf("final num_evaluated: %zu\n", tree.num_evaluated());
+        printf("final min_objective: %1.5f\n", tree.min_objective());
         logger.dumpState();
         logger.clearState();
     }
@@ -98,9 +102,9 @@ int main(int argc, char *argv[]) {
                                                           &base_queue_front,
                                                           logger, &p);
 
-            printf("\nnum_nodes: %zu\n", tree.num_nodes());
-            printf("num_evaluated: %zu\n", tree.num_evaluated());
-            printf("\nmin_objective: %1.5f\n", tree.min_objective());
+            printf("final num_nodes: %zu\n", tree.num_nodes());
+            printf("final num_evaluated: %zu\n", tree.num_evaluated());
+            printf("final min_objective: %1.5f\n", tree.min_objective());
             logger.dumpState();
             logger.clearState();
         } else {
@@ -115,9 +119,9 @@ int main(int argc, char *argv[]) {
                                                         &bfs_q_2,
                                                         &base_queue_front,
                                                         logger, NULL);
-            printf("\nnum_nodes: %zu\n", tree.num_nodes());
-            printf("num_evaluated: %zu\n", tree.num_evaluated());
-            printf("\nmin_objective: %1.5f\n", tree.min_objective());
+            printf("final num_nodes: %zu\n", tree.num_nodes());
+            printf("final num_evaluated: %zu\n", tree.num_evaluated());
+            printf("final min_objective: %1.5f\n", tree.min_objective());
             logger.dumpState();
             logger.clearState();
         }
@@ -135,9 +139,9 @@ int main(int argc, char *argv[]) {
                                                          &curious_q,
                                                          &curious_queue_front,
                                                          logger, &p3);
-        printf("\nnum_nodes: %zu\n", tree.num_nodes());
-        printf("num_evaluated: %zu\n", tree.num_evaluated());
-        printf("\nmin_objective: %1.5f\n", tree.min_objective());
+        printf("final num_nodes: %zu\n", tree.num_nodes());
+        printf("final num_evaluated: %zu\n", tree.num_evaluated());
+        printf("final min_objective: %1.5f\n", tree.min_objective());
         logger.dumpState();
         logger.clearState();
     }

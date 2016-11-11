@@ -85,8 +85,12 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
         logger.addToObjTime(time_diff(t2));
         logger.incObjNum();
         if (objective < tree->min_objective()) {
-            printf("min(objective): %1.5f -> %1.5f, length: %d, cache size: %zu\n",
-                   tree->min_objective(), objective, len_prefix, tree->num_nodes());
+            // logger.treeOldObj(tree->min_objective());
+            // logger.treeNewObj(objective);
+            // logger.prefixLenObj(len_prefix);
+            // logger.treeNumNodes(tree->num_nodes);
+            // printf("min(objective): %1.5f -> %1.5f, length: %d, cache size: %zu\n",
+            // tree->min_objective(), objective, len_prefix, tree->num_nodes());
             tree->update_min_objective(objective);
         }
         if ((lower_bound + c) < tree->min_objective()) {

@@ -6,7 +6,9 @@
 
 class Logger {
   public:
-    Logger(int verbosity): _v(verbosity) { }
+    Logger(int verbosity): _v(verbosity) {
+
+    }
 
     inline void clearState();
     void dumpState();

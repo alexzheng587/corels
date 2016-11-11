@@ -6,6 +6,8 @@
 #include <queue>
 #include <getopt.h>
 
+Logger logger;
+
 int main(int argc, char *argv[]) {
     const char usage[] = "USAGE: %s [-s] [-b] [-c] [-p] [-v verbosity]\n";
     int nrules, nsamples, nlabels, nsamples_chk;
@@ -69,13 +71,13 @@ int main(int argc, char *argv[]) {
     }
 
     double c = 0.001;
-    Logger logger(verbosity); /** need to define verbosity semantics **/
+    //logger() = new Logger();
+    logger.setVerbosity(verbosity); /** need to define verbosity semantics **/
     if (run_stochastic) {
         printf("BBOUND_STOCHASTIC\n");
         CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
         bbound_stochastic<BaseNode>(&tree, 100000,
-                                    &base_construct_policy,
-                                    logger);
+                                    &base_construct_policy);
         printf("\nnum_nodes: %zu\n", tree.num_nodes());
         printf("num_evaluated: %zu\n", tree.num_evaluated());
         printf("\nmin_objective: %1.5f\n", tree.min_objective());
@@ -96,7 +98,7 @@ int main(int argc, char *argv[]) {
                                                           &base_construct_policy,
                                                           &bfs_q,
                                                           &base_queue_front,
-                                                          logger, &p);
+                                                          &p);
 
             printf("\nnum_nodes: %zu\n", tree.num_nodes());
             printf("num_evaluated: %zu\n", tree.num_evaluated());
@@ -114,7 +116,7 @@ int main(int argc, char *argv[]) {
                                                         &base_construct_policy,
                                                         &bfs_q_2,
                                                         &base_queue_front,
-                                                        logger, NULL);
+                                                        NULL);
             printf("\nnum_nodes: %zu\n", tree.num_nodes());
             printf("num_evaluated: %zu\n", tree.num_evaluated());
             printf("\nmin_objective: %1.5f\n", tree.min_objective());
@@ -134,7 +136,7 @@ int main(int argc, char *argv[]) {
                                                          &curious_construct_policy,
                                                          &curious_q,
                                                          &curious_queue_front,
-                                                         logger, &p3);
+                                                         &p3);
         printf("\nnum_nodes: %zu\n", tree.num_nodes());
         printf("num_evaluated: %zu\n", tree.num_evaluated());
         printf("\nmin_objective: %1.5f\n", tree.min_objective());

@@ -1,16 +1,23 @@
 #include <sys/time.h>
 #include <string.h>
+#include <vector>
+#include <stdio.h>
 
 #ifndef _UTILS_H_
 #define _UTILS_H_
 
 class Logger {
   public:
-    Logger(int verbosity): _v(verbosity) { }
+//    Logger(int verbosity): _v(verbosity) { }
+    Logger();
+//    ~Logger();
 
     inline void clearState();
     void dumpState();
 
+    inline void setVerbosity(int verbosity) {
+        _v = verbosity;
+    }
     inline void setLowerBoundTime(double t) {
         _state.lower_bound_time = t;
     }
@@ -24,7 +31,7 @@ class Logger {
         ++_state.objective_num;
     }
     inline void addToTreeInsertionTime(double t) {
-_state.tree_insertion_time += t;
+        _state.tree_insertion_time += t;
     }
     inline void incTreeInsertionNum() {
         ++_state.tree_insertion_num;
@@ -56,6 +63,15 @@ _state.tree_insertion_time += t;
     inline void incPermMapInsertionNum() {
         ++_state.permutation_map_insertion_num;
     }
+    inline void incPrefixLen(size_t n) {
+        if (_state.prefix_lens.size() < n) {
+            _state.prefix_lens.resize(n);
+        }
+        ++_state.prefix_lens[n];
+    }
+    inline void decPrefixLen(size_t n) {
+        --_state.prefix_lens[n];
+    }
   private:
     struct State {
         double total_time;
@@ -73,13 +89,18 @@ _state.tree_insertion_time += t;
         int tree_insertion_num;
         double permutation_map_insertion_time;
         int permutation_map_insertion_num;
+        std::vector<size_t> prefix_lens;
     };
     State _state;
     int _v; // verbosity
     // TODO: store file handler here
 };
 inline void Logger::clearState() {
+    _state.prefix_lens.clear();
     memset(&_state, 0, sizeof(_state));
+}
+Logger::Logger() {
+    return;
 }
 
 inline double timestamp() {
@@ -91,5 +112,7 @@ inline double timestamp() {
 inline double time_diff(double t0) {
     return timestamp() - t0;
 }
+
+extern Logger logger;
 
 #endif

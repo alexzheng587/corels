@@ -6,6 +6,7 @@
 void Logger::setLogFileName(char *fname) {
     if (_v < 1) return;
 
+    printf("writing logs to: %s\n\n", fname);
     _f.open(fname, ios::out | ios::trunc);
 
     _f << "total_time,evaluate_children_time,node_select_time,"

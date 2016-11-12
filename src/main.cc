@@ -6,17 +6,13 @@
 #include <queue>
 #include <getopt.h>
 
+Logger logger;
+
 int main(int argc, char *argv[]) {
-    const char usage[] = "USAGE: %s [-s] [-b] [-c] [-p]"
-        "[-r regularization] [-v verbosity]\n";
-    int nrules, nsamples, nlabels, nsamples_chk;
-    rule_t *rules, *labels;
-
-    const char infile[] = "../data/tdata_R.out";
-    rules_init(infile, &nrules, &nsamples, &rules, 1);
-
-    const char lfile[] = "../data/tdata_R.label";
-    rules_init(lfile, &nlabels, &nsamples_chk, &labels, 0);
+    const char usage[] = "USAGE: %s [-s] [-b] [-c] [-p] "
+        "[-n max_num_nodes] [-r regularization] [-v verbosity] "
+        "data.out data.label\n"
+        "%s\n"; // for error
 
     extern char *optarg;
     bool run_stochastic = false;
@@ -24,11 +20,13 @@ int main(int argc, char *argv[]) {
     bool run_curiosity = false;
     bool use_perm_map = false;
     int verbosity = 0;
+    int max_num_nodes = 100000;
     double c = 0.001;
     char ch;
-    bool error = false;    
+    bool error = false;
+    char error_txt[512];
     /* only parsing happens here */
-    while ((ch = getopt(argc, argv, "sbcpv:r:")) != -1) {
+    while ((ch = getopt(argc, argv, "sbcpv:n:r:")) != -1) {
         switch (ch) {
         case 's':
             run_stochastic = true;
@@ -45,21 +43,49 @@ int main(int argc, char *argv[]) {
         case 'v':
             verbosity = atoi(optarg);
             break;
+        case 'n':
+            max_num_nodes = atoi(optarg);
+            break;
         case 'r':
             c = atof(optarg);
             break;
         default:
             error = true;
+            sprintf(error_txt, "unknown option: %c", ch);
         }
     }
-    if (!(run_stochastic || run_bfs || run_curiosity || use_perm_map)) {
-        run_stochastic = run_bfs = run_curiosity = use_perm_map = true;
+    if ((run_stochastic + run_bfs + run_curiosity) != 1) {
+        error = true;
+        sprintf(error_txt,
+                "you must use at least and at most one of (-s | -b | -c)");
     }
-    /** handle errors in parsing */
+    if (argc < 2 + optind) {
+        error = true;
+        sprintf(error_txt,
+                "you must specify data files for rules and labels");
+    }
     if (error) {
-        fprintf(stderr, usage, argv[0]);
+        fprintf(stderr, usage, argv[0], error_txt);
         exit(1);
     }
+
+    argc -= optind;
+    argv += optind;
+
+    int nrules, nsamples, nlabels, nsamples_chk;
+    rule_t *rules, *labels;
+    rules_init(argv[0], &nrules, &nsamples, &rules, 1);
+    rules_init(argv[1], &nlabels, &nsamples_chk, &labels, 0);
+
+    char log_fname[512];
+    const char* pch = strrchr(argv[0], '/');
+    sprintf(log_fname, "../logs/for-%s-%s%s%s-%s-max_num_nodes=%d-c=%.7f-v=%d.txt",
+            pch ? pch + 1 : "",
+            run_stochastic ? "stochastic" : "",
+            run_bfs ? "bfs" : "",
+            run_curiosity ? "curiosity" : "",
+            use_perm_map ? "with_permutation_map" : "",
+            max_num_nodes, c, verbosity);
 
     if (verbosity >= 1000) {
         printf("\n%d rules %d samples\n\n", nrules, nsamples);
@@ -73,79 +99,78 @@ int main(int argc, char *argv[]) {
         bbound_greedy(nsamples, nrules, rules, labels, 8);
     }
 
-    Logger logger(verbosity); /** need to define verbosity semantics **/
+    logger.setVerbosity(verbosity);
+    logger.setLogFileName(log_fname);
     if (run_stochastic) {
         printf("BBOUND_STOCHASTIC\n");
         CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
-        bbound_stochastic<BaseNode>(&tree, 100000,
-                                    &base_construct_policy,
-                                    logger);
+        bbound_stochastic<BaseNode>(&tree, max_num_nodes,
+                                    &base_construct_policy);
         printf("final num_nodes: %zu\n", tree.num_nodes());
         printf("final num_evaluated: %zu\n", tree.num_evaluated());
         printf("final min_objective: %1.5f\n", tree.min_objective());
         logger.dumpState();
-        logger.clearState();
     }
 
     if (run_bfs) {
         if (use_perm_map) {
-            printf("\n\n\nBFS Permutation Map\n");        
+            printf("BFS Permutation Map\n");        
             CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
             BaseQueue bfs_q;
             PrefixPermutationMap<BaseNode> p;
             bbound_queue<BaseNode,
                          BaseQueue,
                          PrefixPermutationMap<BaseNode> >(&tree,
-                                                          100000,
+                                                          max_num_nodes,
                                                           &base_construct_policy,
                                                           &bfs_q,
                                                           &base_queue_front,
-                                                          logger, &p);
+                                                          &p);
 
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
             logger.dumpState();
-            logger.clearState();
         } else {
-            printf("\n\n\nBFS No Permutation Map\n");
+            printf("BFS No Permutation Map\n");
             CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
             BaseQueue bfs_q_2;
             NullPermutationMap<BaseNode> p2;
             bbound_queue<BaseNode,
                          BaseQueue,
-                         NullPermutationMap<BaseNode> >(&tree, 100000,
+                         NullPermutationMap<BaseNode> >(&tree,
+                                                        max_num_nodes,
                                                         &base_construct_policy,
                                                         &bfs_q_2,
                                                         &base_queue_front,
-                                                        logger, NULL);
+                                                        NULL);
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
             logger.dumpState();
-            logger.clearState();
         }
     }
 
     if (run_curiosity) {
-        printf("\n\n\nCURIOUSITY\n");
+        printf("CURIOSITY\n");
         CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
         CuriousQueue curious_q(curious_cmp);
         PrefixPermutationMap<CuriousNode> p3;
         bbound_queue<CuriousNode,
                      CuriousQueue,
-                     PrefixPermutationMap<CuriousNode> >(&tree, 100000,
+                     PrefixPermutationMap<CuriousNode> >(&tree,
+                                                         max_num_nodes,
                                                          &curious_construct_policy,
                                                          &curious_q,
                                                          &curious_queue_front,
-                                                         logger, &p3);
+                                                         &p3);
         printf("final num_nodes: %zu\n", tree.num_nodes());
         printf("final num_evaluated: %zu\n", tree.num_evaluated());
         printf("final min_objective: %1.5f\n", tree.min_objective());
         logger.dumpState();
-        logger.clearState();
     }
 
+    logger.closeFile();
     printf("\ndelete rules\n");
 	rules_free(rules, nrules, 1);
 	printf("delete labels\n");

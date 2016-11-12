@@ -14,6 +14,7 @@ template<class N>
 class NullQueue {
   public:
     void push(N*) {};
+    size_t size() {};
 };
 
 typedef std::queue<BaseNode*> BaseQueue;
@@ -51,7 +52,7 @@ extern void evaluate_children(CacheTree<N>* tree, N* parent,
                               VECTOR parent_not_captured,
                               std::set<size_t> ordered_parent,
                               construct_signature<N> construct_policy,
-                              Q* q, Logger& logger, P* p);
+                              Q* q, P* p);
 
 template<class N, class P>
 extern std::pair<N*, std::set<size_t> > stochastic_select(CacheTree<N>* tree, VECTOR not_captured, P* p);
@@ -59,8 +60,7 @@ extern std::pair<N*, std::set<size_t> > stochastic_select(CacheTree<N>* tree, VE
 template<class N>
 extern void bbound_stochastic(CacheTree<N>* tree,
                               size_t max_num_nodes,
-                              construct_signature<N> construct_policy,
-                              Logger& logger);
+                              construct_signature<N> construct_policy);
 
 template<class N, class Q>
 extern std::pair<N*, std::set<size_t> >
@@ -71,7 +71,7 @@ extern void bbound_queue(CacheTree<N>* tree,
                          size_t max_num_nodes,
                          construct_signature<N> construct_policy,
                          Q* q, N*(*front)(Q*),
-                         Logger& logger, P* p);
+                         P* p);
 
 /*
  * Permutation Map

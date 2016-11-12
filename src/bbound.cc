@@ -32,7 +32,7 @@ CuriousNode* curious_queue_front(CuriousQueue* q) {
 template<class N, class Q, class P>
 void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured,
                        std::set<size_t> ordered_parent,
-                       construct_signature<N> construct_policy, Q* q, Logger& logger,
+                       construct_signature<N> construct_policy, Q* q,
                        P* p) {
     std::vector<size_t> parent_prefix = parent->get_prefix();
     VECTOR captured, captured_zeros, not_captured, not_captured_zeros;
@@ -85,12 +85,9 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
         logger.addToObjTime(time_diff(t2));
         logger.incObjNum();
         if (objective < tree->min_objective()) {
-            // logger.treeOldObj(tree->min_objective());
-            // logger.treeNewObj(objective);
-            // logger.prefixLenObj(len_prefix);
-            // logger.treeNumNodes(tree->num_nodes);
-            // printf("min(objective): %1.5f -> %1.5f, length: %d, cache size: %zu\n",
-            // tree->min_objective(), objective, len_prefix, tree->num_nodes());
+            printf("min(objective): %1.5f -> %1.5f, length: %d, cache size: %zu\n",
+                   tree->min_objective(), objective, len_prefix, tree->num_nodes());
+            logger.dumpState();
             tree->update_min_objective(objective);
         }
         if ((lower_bound + c) < tree->min_objective()) {
@@ -113,10 +110,19 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
                 logger.addToTreeInsertionTime(time_diff(t4));
                 logger.incTreeInsertionNum();
 
-                if (q) q->push(n);
+                if (q) {
+                    q->push(n);
+                    logger.setQueueSize(q->size());
+                }
             }
         }
     }
+
+    rule_vfree(&captured);
+    rule_vfree(&captured_zeros);
+    rule_vfree(&not_captured);
+    rule_vfree(&not_captured_zeros);
+
     logger.addToRuleEvalTime(time_diff(t0));
     logger.incRuleEvalNum();
     if (parent->num_children() == 0) {
@@ -125,10 +131,7 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
         parent->set_done();
         tree->increment_num_evaluated();
     }
-    rule_vfree(&captured);
-    rule_vfree(&captured_zeros);
-    rule_vfree(&not_captured);
-    rule_vfree(&not_captured_zeros);
+    logger.dumpState();
 }
 
 template<class N>
@@ -163,7 +166,7 @@ std::pair<N*, std::set<size_t> > stochastic_select(CacheTree<N>* tree, VECTOR no
 
 template<class N>
 void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes,
-                       construct_signature<N> construct_policy, Logger& logger) {
+                       construct_signature<N> construct_policy) {
     std::pair<N*, std::set<size_t> > node_ordered;
     VECTOR not_captured;
     NullQueue<N>* q = NULL;
@@ -181,15 +184,18 @@ void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes,
         if (node_ordered.first) {
             double t1 = timestamp();
             evaluate_children<N, NullQueue<N>, NullPermutationMap<N> >(tree, node_ordered.first, not_captured,
-                                                node_ordered.second, construct_policy, q, logger, p);
+                                                node_ordered.second, construct_policy, q, p);
             logger.addToEvalChildrenTime(time_diff(t1));
             logger.incEvalChildrenNum();
         }
         ++num_iter;
-        if ((num_iter % 10000) == 0)
+        if ((num_iter % 10000) == 0) {
             printf("num_iter: %zu, num_nodes: %zu\n", num_iter, tree->num_nodes());
+            logger.dumpState();
+        }
     }
     logger.setTotalTime(time_diff(tot));
+    logger.dumpState();
 
     rule_vfree(&not_captured);
 }
@@ -231,7 +237,7 @@ void bbound_queue(CacheTree<N>* tree,
                 size_t max_num_nodes,
                 construct_signature<N> construct_policy,
                 Q* q, N*(*front)(Q*),
-                Logger& logger, P* p) {
+                P* p) {
     int cnt;
     double min_objective = 1.0;
     std::pair<N*, std::set<size_t> > node_ordered;
@@ -246,6 +252,7 @@ void bbound_queue(CacheTree<N>* tree,
     tree->insert_root();
     logger.incTreeInsertionNum();
     q->push(tree->root());
+    logger.setQueueSize(q->size());
     if (p)
         p->permutation_map_.insert(std::make_pair(node_ordered.second, std::make_pair(std::vector<size_t>(), 0.0)));
     while ((tree->num_nodes() < max_num_nodes) &&
@@ -262,24 +269,27 @@ void bbound_queue(CacheTree<N>* tree,
                          tree->rule(tree->root()->id()).truthtable, captured,
                          tree->nsamples(), &cnt);
             evaluate_children<N, Q, P>(tree, node_ordered.first, not_captured,
-                                 node_ordered.second, construct_policy, q, logger, p);
+                                 node_ordered.second, construct_policy, q, p);
             logger.addToEvalChildrenTime(time_diff(t1));
             logger.incEvalChildrenNum();
             if (tree->min_objective() < min_objective) {
                 min_objective = tree->min_objective();
                 printf("num_nodes before garbage_collect: %zu\n", tree->num_nodes());
+                logger.dumpState();
                 tree->garbage_collect();
+                logger.dumpState();
                 printf("num_nodes after garbage_collect: %zu\n", tree->num_nodes());
             }
         }
         ++num_iter;
         if ((num_iter % 10000) == 0) {
-            /** TODO: decide what to log here **/
             printf("iter: %zu, tree: %zu, queue: %zu\n",
                    num_iter, tree->num_nodes(), q->size());
+            logger.dumpState();
         }
     }
     logger.setTotalTime(time_diff(tot));
+    logger.dumpState();
 
     printf("Deleting queue elements and corresponding nodes in the cache, since they may not be reachable by the tree's destructor\n");
     N* node;
@@ -291,6 +301,8 @@ void bbound_queue(CacheTree<N>* tree,
             delete node;
         }
     }
+    logger.dumpState();
+
     rule_vfree(&captured);
     rule_vfree(&not_captured);
 }
@@ -407,7 +419,6 @@ evaluate_children<BaseNode, NullQueue<BaseNode>, NullPermutationMap<BaseNode> >(
                                                   std::set<size_t> ordered_parent,
                                                   construct_signature<BaseNode> construct_policy,
                                                   NullQueue<BaseNode>* q,
-                                                  Logger& logger,
                                                   NullPermutationMap<BaseNode>* p);
 
 template void
@@ -416,7 +427,7 @@ evaluate_children<BaseNode, BaseQueue, PrefixPermutationMap<BaseNode> >(CacheTre
                                        VECTOR parent_not_captured,
                                        std::set<size_t> ordered_parent,
                                        construct_signature<BaseNode> construct_policy,
-                                       BaseQueue* q, Logger& logger, PrefixPermutationMap<BaseNode>* p);
+                                       BaseQueue* q, PrefixPermutationMap<BaseNode>* p);
 
 template void
 evaluate_children<CuriousNode, CuriousQueue, NullPermutationMap<CuriousNode> >(CacheTree<CuriousNode>* tree,
@@ -424,7 +435,7 @@ evaluate_children<CuriousNode, CuriousQueue, NullPermutationMap<CuriousNode> >(C
                                              VECTOR parent_not_captured,
                                              std::set<size_t> ordered_parent,
                                              construct_signature<CuriousNode> construct_policy,
-                                             CuriousQueue* q, Logger& logger, NullPermutationMap<CuriousNode>* p);
+                                             CuriousQueue* q, NullPermutationMap<CuriousNode>* p);
 
 template std::pair<BaseNode*, std::set<size_t> >
 stochastic_select<BaseNode>(CacheTree<BaseNode>* tree, VECTOR not_captured); 
@@ -432,8 +443,7 @@ stochastic_select<BaseNode>(CacheTree<BaseNode>* tree, VECTOR not_captured);
 template void
 bbound_stochastic<BaseNode>(CacheTree<BaseNode>* tree,
                             size_t max_num_nodes,
-                            construct_signature<BaseNode> construct_policy,
-                            Logger& logger);
+                            construct_signature<BaseNode> construct_policy);
 
 template std::pair<BaseNode*, std::set<size_t> >
 queue_select<BaseNode, BaseQueue, PrefixPermutationMap<BaseNode> >(CacheTree<BaseNode>* tree,
@@ -453,7 +463,7 @@ bbound_queue<BaseNode, BaseQueue, PrefixPermutationMap<BaseNode> >(CacheTree<Bas
                                   construct_signature<BaseNode> construct_policy,
                                   BaseQueue* q,
                                   BaseNode*(*front)(BaseQueue*),
-                                  Logger& logger, PrefixPermutationMap<BaseNode>* p);
+                                  PrefixPermutationMap<BaseNode>* p);
 
 template void
 bbound_queue<BaseNode, BaseQueue, NullPermutationMap<BaseNode> >(CacheTree<BaseNode>* tree,
@@ -461,7 +471,7 @@ bbound_queue<BaseNode, BaseQueue, NullPermutationMap<BaseNode> >(CacheTree<BaseN
                                   construct_signature<BaseNode> construct_policy,
                                   BaseQueue* q,
                                   BaseNode*(*front)(BaseQueue*),
-                                  Logger& logger, NullPermutationMap<BaseNode>* p);
+                                  NullPermutationMap<BaseNode>* p);
 
 template void
 bbound_queue<CuriousNode, CuriousQueue, PrefixPermutationMap<CuriousNode> >(CacheTree<CuriousNode>* tree,
@@ -469,7 +479,7 @@ bbound_queue<CuriousNode, CuriousQueue, PrefixPermutationMap<CuriousNode> >(Cach
                                         construct_signature<CuriousNode> construct_policy,
                                         CuriousQueue* q,
                                         CuriousNode*(*front)(CuriousQueue*),
-                                        Logger& logger, PrefixPermutationMap<CuriousNode>* p);
+                                        PrefixPermutationMap<CuriousNode>* p);
 
 template void
 delete_subtree<BaseNode>(CacheTree<BaseNode>* tree, BaseNode* n, bool destructive);

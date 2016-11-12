@@ -2,17 +2,32 @@
 
 #include <stdio.h>
 
+
+void Logger::setLogFileName(char *fname) {
+    _f.open(fname, ios::out | ios::trunc);
+
+    _f << "total_time,evaluate_children_time,node_select_time,"
+       << "rule_evaluation_time,lower_bound_time,lower_bound_num,"
+       << "objective_time,tree_insertion_time,tree_insertion_num,"
+       << "permutation_map_insertion_time,permutation_map_insertion_num,"
+       << "tree_min_objective,tree_num_nodes,tree_num_evaluated,"
+       << "queue_size" << endl;
+}
+
 void Logger::dumpState() {
-    /** TODO: redirect output to file instead of stdout **/
-    printf("Total time: %f\n", _state.total_time);
-    printf("Evaluate children time: %f\n", _state.evaluate_children_time);
-    printf("Node select time: %f\n", _state.node_select_time);
-    printf("Rule evaluation time: %f\n", _state.rule_evaluation_time);
-    printf("Lower bound time: %f\n", _state.lower_bound_time);
-    printf("Number of lower bound evaluations: %d\n", _state.lower_bound_num);
-    printf("Objective time: %f\n", _state.objective_time);
-    printf("Total tree insertion time: %f\n", _state.tree_insertion_time);
-    printf("Number of tree insertions: %i\n", _state.tree_insertion_num);
-    printf("Permutation map insertion time: %f\n", _state.permutation_map_insertion_time);
-    printf("Number of calls to permutation_insert(): %i\n", _state.permutation_map_insertion_num);
+    _f << _state.total_time << ","
+       << _state.evaluate_children_time << ","
+       << _state.node_select_time << ","
+       << _state.rule_evaluation_time << ","
+       << _state.lower_bound_time << ","
+       << _state.lower_bound_num << ","
+       << _state.objective_time << ","
+       << _state.tree_insertion_time << ","
+       << _state.tree_insertion_num << ","
+       << _state.permutation_map_insertion_time << ","
+       << _state.permutation_map_insertion_num << ","
+       << _state.tree_min_objective << ","
+       << _state.tree_num_nodes << ","
+       << _state.tree_num_evaluated << ","
+       << _state.queue_size << endl;
 }

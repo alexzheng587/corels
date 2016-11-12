@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
     bool run_curiosity = false;
     bool use_prefix_perm_map = false;
     bool use_captured_sym_map = false;
-    int verbosity = 0;
+    int verbosity = 1;
     int max_num_nodes = 100000;
     double c = 0.001;
     char ch;

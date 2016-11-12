@@ -4,6 +4,8 @@
 
 
 void Logger::setLogFileName(char *fname) {
+    if (_v < 1) return;
+
     _f.open(fname, ios::out | ios::trunc);
 
     _f << "total_time,evaluate_children_time,node_select_time,"
@@ -15,6 +17,8 @@ void Logger::setLogFileName(char *fname) {
 }
 
 void Logger::dumpState() {
+    if (_v < 1) return;
+
     _f << _state.total_time << ","
        << _state.evaluate_children_time << ","
        << _state.node_select_time << ","

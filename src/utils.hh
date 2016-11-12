@@ -9,7 +9,7 @@ using namespace std;
 
 class Logger {
   public:
-    void closeFile() { _f.close(); }
+    void closeFile() { if (_f.is_open()) _f.close(); }
     ~Logger() { closeFile(); }
 
     inline void setVerbosity(int verbosity) { _v = verbosity; }

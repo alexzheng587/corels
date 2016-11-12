@@ -64,6 +64,7 @@ typedef v_entry *VECTOR;
 #define VECTOR_ASSIGN(dest, src) dest = src
 #endif
 
+#define BITS_PER_ENTRY (sizeof(v_entry) * 8)
 
 #define RANDOM_RANGE(lo, hi) \
     (unsigned)(lo + (unsigned)((random() / (float)RAND_MAX) * (hi - lo + 1)))

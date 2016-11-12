@@ -9,16 +9,18 @@
 Logger logger;
 
 int main(int argc, char *argv[]) {
-    const char usage[] = "USAGE: %s [-s] [-b] [-c] [-p] "
+    const char usage[] = "USAGE: %s [-s] [-b] [-c] "
         "[-n max_num_nodes] [-r regularization] [-v verbosity] "
-        "data.out data.label\n"
+        "-p (1|2) "
+        "data.out data.label\n\n"
         "%s\n"; // for error
 
     extern char *optarg;
     bool run_stochastic = false;
     bool run_bfs = false;
     bool run_curiosity = false;
-    bool use_perm_map = false;
+    bool use_prefix_perm_map = false;
+    bool use_captured_sym_map = false;
     int verbosity = 0;
     int max_num_nodes = 100000;
     double c = 0.001;
@@ -26,7 +28,7 @@ int main(int argc, char *argv[]) {
     bool error = false;
     char error_txt[512];
     /* only parsing happens here */
-    while ((ch = getopt(argc, argv, "sbcpv:n:r:")) != -1) {
+    while ((ch = getopt(argc, argv, "sbcp:v:n:r:")) != -1) {
         switch (ch) {
         case 's':
             run_stochastic = true;
@@ -38,7 +40,8 @@ int main(int argc, char *argv[]) {
             run_curiosity = true;
             break;
         case 'p':
-            use_perm_map = true;
+            use_prefix_perm_map = atoi(optarg) == 1;
+            use_captured_sym_map = atoi(optarg) == 2;
             break;
         case 'v':
             verbosity = atoi(optarg);
@@ -59,11 +62,16 @@ int main(int argc, char *argv[]) {
         sprintf(error_txt,
                 "you must use at least and at most one of (-s | -b | -c)");
     }
+    if (!use_prefix_perm_map && !use_captured_sym_map) {
+        error = true;
+        sprintf(error_txt, "you must specify a permutation map type");
+    }
     if (argc < 2 + optind) {
         error = true;
         sprintf(error_txt,
                 "you must specify data files for rules and labels");
     }
+
     if (error) {
         fprintf(stderr, usage, argv[0], error_txt);
         exit(1);
@@ -84,7 +92,7 @@ int main(int argc, char *argv[]) {
             run_stochastic ? "stochastic" : "",
             run_bfs ? "bfs" : "",
             run_curiosity ? "curiosity" : "",
-            use_perm_map ? "with_permutation_map" : "",
+            use_prefix_perm_map ? "with_prefix_perm_map" : "with_captured_symmetry_map",
             max_num_nodes, c, verbosity);
 
     if (verbosity >= 1000) {
@@ -113,63 +121,84 @@ int main(int argc, char *argv[]) {
     }
 
     if (run_bfs) {
-        if (use_perm_map) {
+        if (use_prefix_perm_map) {
             printf("BFS Permutation Map\n");        
             CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
             BaseQueue bfs_q;
-            PrefixPermutationMap<BaseNode> p;
+            PrefixPermutationMap p;
             bbound_queue<BaseNode,
                          BaseQueue,
-                         PrefixPermutationMap<BaseNode> >(&tree,
-                                                          max_num_nodes,
-                                                          &base_construct_policy,
-                                                          &bfs_q,
-                                                          &base_queue_front,
-                                                          &p);
+                         PrefixPermutationMap>(&tree,
+                                               max_num_nodes,
+                                               &base_construct_policy,
+                                               &bfs_q,
+                                               &base_queue_front,
+                                               &prefix_permutation_insert,
+                                               &p);
 
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
-            logger.dumpState();
-        } else {
-            printf("BFS No Permutation Map\n");
+        } else if (use_captured_sym_map) {
+            printf("BFS Captured Symmetry Map\n");        
             CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
-            BaseQueue bfs_q_2;
-            NullPermutationMap<BaseNode> p2;
+            BaseQueue bfs_q;
+            CapturedPermutationMap p;
             bbound_queue<BaseNode,
                          BaseQueue,
-                         NullPermutationMap<BaseNode> >(&tree,
-                                                        max_num_nodes,
-                                                        &base_construct_policy,
-                                                        &bfs_q_2,
-                                                        &base_queue_front,
-                                                        NULL);
+                         CapturedPermutationMap>(&tree,
+                                                 max_num_nodes,
+                                                 &base_construct_policy,
+                                                 &bfs_q,
+                                                 &base_queue_front,
+                                                 &captured_permutation_insert,
+                                                 &p);
+
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
-            logger.dumpState();
         }
     }
 
     if (run_curiosity) {
-        printf("CURIOSITY\n");
-        CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
-        CuriousQueue curious_q(curious_cmp);
-        PrefixPermutationMap<CuriousNode> p3;
-        bbound_queue<CuriousNode,
-                     CuriousQueue,
-                     PrefixPermutationMap<CuriousNode> >(&tree,
-                                                         max_num_nodes,
-                                                         &curious_construct_policy,
-                                                         &curious_q,
-                                                         &curious_queue_front,
-                                                         &p3);
-        printf("final num_nodes: %zu\n", tree.num_nodes());
-        printf("final num_evaluated: %zu\n", tree.num_evaluated());
-        printf("final min_objective: %1.5f\n", tree.min_objective());
-        logger.dumpState();
+        if (use_prefix_perm_map) {
+            printf("CURIOSITY Prefix Permutation Map\n");
+            CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
+            CuriousQueue curious_q(curious_cmp);
+            PrefixPermutationMap p;
+            bbound_queue<CuriousNode,
+                         CuriousQueue,
+                         PrefixPermutationMap>(&tree,
+                                               max_num_nodes,
+                                               &curious_construct_policy,
+                                               &curious_q,
+                                               &curious_queue_front,
+                                               &prefix_permutation_insert,
+                                               &p);
+            printf("final num_nodes: %zu\n", tree.num_nodes());
+            printf("final num_evaluated: %zu\n", tree.num_evaluated());
+            printf("final min_objective: %1.5f\n", tree.min_objective());
+        } else if (use_captured_sym_map) {
+            printf("CURIOSITY Captured Symmetry Map\n");
+            CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
+            CuriousQueue curious_q(curious_cmp);
+            CapturedPermutationMap p;
+            bbound_queue<CuriousNode,
+                         CuriousQueue,
+                         CapturedPermutationMap>(&tree,
+                                                 max_num_nodes,
+                                                 &curious_construct_policy,
+                                                 &curious_q,
+                                                 &curious_queue_front,
+                                                 &captured_permutation_insert,
+                                                 &p);
+            printf("final num_nodes: %zu\n", tree.num_nodes());
+            printf("final num_evaluated: %zu\n", tree.num_evaluated());
+            printf("final min_objective: %1.5f\n", tree.min_objective());            
+        }
     }
 
+    logger.dumpState();
     logger.closeFile();
     printf("\ndelete rules\n");
 	rules_free(rules, nrules, 1);

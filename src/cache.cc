@@ -83,16 +83,15 @@ void CacheTree<N>::prune_up(N* node) {
             parent = node->parent();
             parent->children_.erase(id);
             --num_nodes_;
-            logger.setTreeNumNodes(num_nodes_);
-            delete node;
+            node->set_deleted();
             node = parent;
             --depth;
         } else {
             --num_nodes_;
-            logger.setTreeNumNodes(num_nodes_);
             break;
         }
     }
+    logger.setTreeNumNodes(num_nodes_);
 }
 
 template<class N>

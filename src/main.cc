@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
         sprintf(error_txt,
                 "you must use at least and at most one of (-s | -b | -c)");
     }
-    if (!use_prefix_perm_map && !use_captured_sym_map) {
+    if (!run_stochastic && !use_prefix_perm_map && !use_captured_sym_map) {
         error = true;
         sprintf(error_txt, "you must specify a permutation map type");
     }

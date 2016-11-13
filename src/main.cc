@@ -43,9 +43,6 @@ int main(int argc, char *argv[]) {
             use_prefix_perm_map = atoi(optarg) == 1;
             use_captured_sym_map = atoi(optarg) == 2;
             break;
-        case 'n':
-            iter = atoi(optarg);
-            break;
         case 'v':
             verbosity = atoi(optarg);
             break;
@@ -110,6 +107,8 @@ int main(int argc, char *argv[]) {
         bbound_greedy(nsamples, nrules, rules, labels, 8);
     }
 
+    logger.setNRules(nrules);
+    logger.initPrefixVec();
     logger.setVerbosity(verbosity);
     logger.setLogFileName(log_fname);
     if (run_stochastic) {

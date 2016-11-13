@@ -14,7 +14,7 @@ void Logger::setLogFileName(char *fname) {
        << "objective_time,tree_insertion_time,tree_insertion_num,"
        << "permutation_map_insertion_time,permutation_map_insertion_num,"
        << "tree_min_objective,tree_num_nodes,tree_num_evaluated,"
-       << "queue_size" << endl;
+       << "queue_size, prefix_lengths" << endl;
 }
 
 void Logger::dumpState() {
@@ -34,15 +34,20 @@ void Logger::dumpState() {
        << _state.tree_min_objective << ","
        << _state.tree_num_nodes << ","
        << _state.tree_num_evaluated << ","
-       << _state.queue_size << endl;
-    dumpPrefixLens();
+       << _state.queue_size << ","
+       << dumpPrefixLens().c_str() << endl;
 }
 
-void Logger::dumpPrefixLens() {
-    size_t len = _state.prefix_lens.size();
-    for(size_t i = 0; i < len; ++i) {
-        printf("Length %lu: %lu ", i, _state.prefix_lens[i]);
+std::string Logger::dumpPrefixLens() {
+    std::string s = "";
+    for(size_t i = 0; i < _state.nrules; ++i) {
+        if (_state.prefix_lens[i] > 0) {
+            s += std::to_string(i); 
+            s += ":";
+            s += std::to_string(_state.prefix_lens[i]);
+            s += ";";
+        }
     }
-    printf("\n");
+    return s;
 }
 

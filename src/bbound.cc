@@ -216,7 +216,7 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
 
     logger.addToRuleEvalTime(time_diff(t0));
     logger.incRuleEvalNum();
-    logger.decPrefixLen(len_prefix - 1);
+    logger.decPrefixLen(parent->depth());
     if (parent->num_children() == 0) {
         tree->prune_up(parent);
     } else {
@@ -347,7 +347,7 @@ void bbound_queue(CacheTree<N>* tree,
     logger.incTreeInsertionNum();
     q->push(tree->root());
     logger.setQueueSize(q->size());
-
+    logger.incPrefixLen(0);
     while ((tree->num_nodes() < max_num_nodes) &&
            !q->empty()) {
         double t0 = timestamp();

@@ -1,8 +1,9 @@
+#include <cstdlib>
 #include <sys/time.h>
 #include <string.h>
-#include <vector>
 #include <stdio.h>
 #include <fstream>
+#include <vector>
 
 #ifndef _UTILS_H_
 #define _UTILS_H_
@@ -12,11 +13,14 @@ using namespace std;
 class Logger {
   public:
     void closeFile() { if (_f.is_open()) _f.close(); }
-    ~Logger() { closeFile(); }
+    ~Logger() { 
+        free(_state.prefix_lens);
+        closeFile(); 
+    }
 
     void setLogFileName(char *fname);
     void dumpState();
-    void dumpPrefixLens();
+    std::string dumpPrefixLens();
 
     inline void setVerbosity(int verbosity) {
         _v = verbosity;
@@ -66,15 +70,6 @@ class Logger {
     inline void incPermMapInsertionNum() {
         ++_state.permutation_map_insertion_num;
     }
-    inline void incPrefixLen(size_t n) {
-        if (_state.prefix_lens.size() < n) {
-            _state.prefix_lens.resize(n);
-        }
-        ++_state.prefix_lens[n];
-    }
-    inline void decPrefixLen(size_t n) {
-        --_state.prefix_lens[n];
-    }
     inline void setTreeMinObj(double o) {
         _state.tree_min_objective = o;
     }
@@ -87,6 +82,26 @@ class Logger {
     inline void setQueueSize(size_t n) {
         _state.queue_size = n;
     }
+    inline void setNRules(size_t nrules) {
+        _state.nrules = nrules;
+    }
+    inline void initPrefixVec() {
+        _state.prefix_lens = (size_t*) calloc(_state.nrules, sizeof(size_t));
+    }
+    inline void incPrefixLen(size_t n) {
+        ++_state.prefix_lens[n];
+    }
+    inline void decPrefixLen(size_t n) {
+        --_state.prefix_lens[n];
+    }
+    inline size_t sumPrefixLens() {
+        size_t tot = 0;
+        for(size_t i = 0; i < _state.nrules; ++i) {
+            tot += _state.prefix_lens[i];
+        }
+        return tot;
+    }
+
 
   private:
     struct State {
@@ -109,7 +124,8 @@ class Logger {
         size_t tree_num_nodes;
         size_t tree_num_evaluated;
         size_t queue_size;
-        std::vector<size_t> prefix_lens;
+        size_t nrules;
+        size_t* prefix_lens;
     };
     State _state;
     int _v; // verbosity

@@ -368,6 +368,7 @@ void bbound_queue(CacheTree<N>* tree,
             logger.incEvalChildrenNum();
 
             if (tree->min_objective() < min_objective) {
+                //logger.dumpState();
                 min_objective = tree->min_objective();
                 printf("num_nodes before garbage_collect: %zu\n", tree->num_nodes());
                 logger.dumpState();
@@ -461,7 +462,6 @@ template<class N>
 void delete_subtree(CacheTree<N>* tree, N* node, bool destructive) {
     N* child;
     typename std::map<size_t, N*>::iterator iter;
-    logger.decPrefixLen(node->depth());
     if (node->done()) {
         iter = node->children_begin();
         while (iter != node->children_end()) {
@@ -475,8 +475,10 @@ void delete_subtree(CacheTree<N>* tree, N* node, bool destructive) {
         if (destructive) {  // only delete leaf nodes in destructive mode
             tree->decrement_num_nodes();
             delete node;
-        } else
+        } else {
+            logger.decPrefixLen(node->depth());
             node->set_deleted();
+        }
     }
 }
 

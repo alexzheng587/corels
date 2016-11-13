@@ -35,4 +35,14 @@ void Logger::dumpState() {
        << _state.tree_num_nodes << ","
        << _state.tree_num_evaluated << ","
        << _state.queue_size << endl;
+    dumpPrefixLens();
 }
+
+void Logger::dumpPrefixLens() {
+    size_t len = _state.prefix_lens.size();
+    for(size_t i = 0; i < len; ++i) {
+        printf("Length %lu: %lu ", i, _state.prefix_lens[i]);
+    }
+    printf("\n");
+}
+

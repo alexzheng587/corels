@@ -16,6 +16,7 @@ class Logger {
 
     void setLogFileName(char *fname);
     void dumpState();
+    void dumpPrefixLens();
 
     inline void setVerbosity(int verbosity) {
         _v = verbosity;

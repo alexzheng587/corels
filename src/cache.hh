@@ -81,9 +81,9 @@ class CacheTree {
     inline double c() const;
     inline N* root() const;
 
-    inline void update_min_objective(double objective);
-    inline void increment_num_evaluated();
-    inline void decrement_num_nodes();
+    void update_min_objective(double objective);
+    void increment_num_evaluated();
+    void decrement_num_nodes();
 
     void insert_root();
     void insert(N* node);
@@ -261,19 +261,4 @@ inline double CacheTree<N>::c() const {
 template<class N>
 inline N* CacheTree<N>::root() const {
     return root_;
-}
-
-template<class N>
-inline void CacheTree<N>::update_min_objective(double objective) {
-    min_objective_ = objective;
-}
-
-template<class N>
-inline void CacheTree<N>::increment_num_evaluated() {
-    ++num_evaluated_;
-}
-
-template<class N>
-inline void CacheTree<N>::decrement_num_nodes() {
-    --num_nodes_;
 }

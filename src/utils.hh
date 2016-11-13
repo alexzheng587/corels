@@ -2,17 +2,19 @@
 #include <string.h>
 #include <vector>
 #include <stdio.h>
+#include <fstream>
 
 #ifndef _UTILS_H_
 #define _UTILS_H_
 
+using namespace std;
+
 class Logger {
   public:
-//    Logger(int verbosity): _v(verbosity) { }
-    Logger();
-//    ~Logger();
+    void closeFile() { if (_f.is_open()) _f.close(); }
+    ~Logger() { closeFile(); }
 
-    inline void clearState();
+    void setLogFileName(char *fname);
     void dumpState();
 
     inline void setVerbosity(int verbosity) {
@@ -72,36 +74,46 @@ class Logger {
     inline void decPrefixLen(size_t n) {
         --_state.prefix_lens[n];
     }
+    inline void setTreeMinObj(double o) {
+        _state.tree_min_objective = o;
+    }
+    inline void setTreeNumNodes(size_t n) {
+        _state.tree_num_nodes = n;
+    }
+    inline void setTreeNumEvaluated(size_t n) {
+        _state.tree_num_evaluated = n;
+    }
+    inline void setQueueSize(size_t n) {
+        _state.queue_size = n;
+    }
+
   private:
     struct State {
         double total_time;
         double evaluate_children_time;
-        int evaluate_children_num;
+        size_t evaluate_children_num;
         double node_select_time;
-        int node_select_num;
+        size_t node_select_num;
         double rule_evaluation_time;
-        int rule_evaluation_num;
+        size_t rule_evaluation_num;
         double lower_bound_time;
-        int lower_bound_num;
+        size_t lower_bound_num;
         double objective_time;
-        int objective_num;
+        size_t objective_num;
         double tree_insertion_time;
-        int tree_insertion_num;
+        size_t tree_insertion_num;
         double permutation_map_insertion_time;
-        int permutation_map_insertion_num;
+        size_t permutation_map_insertion_num;
+        double tree_min_objective;
+        size_t tree_num_nodes;
+        size_t tree_num_evaluated;
+        size_t queue_size;
         std::vector<size_t> prefix_lens;
     };
     State _state;
     int _v; // verbosity
-    // TODO: store file handler here
+    ofstream _f; // output file
 };
-inline void Logger::clearState() {
-    _state.prefix_lens.clear();
-    memset(&_state, 0, sizeof(_state));
-}
-Logger::Logger() {
-    return;
-}
 
 inline double timestamp() {
     struct timeval now;

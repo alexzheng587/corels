@@ -1,5 +1,6 @@
 //#include "cache.hh"
 #include "bbound.hh"
+#include "utils.hh"
 #include <memory>
 #include <vector>
 #include <stdlib.h>
@@ -30,13 +31,16 @@ CacheTree<N>::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules,
         rules_[i] = rules[i];
     labels_[0] = labels[0];
     labels_[1] = labels[1];
+
+    logger.setTreeMinObj(min_objective_);
+    logger.setTreeNumNodes(num_nodes_);
+    logger.setTreeNumEvaluated(num_evaluated_);
 }
 
 template<class N>
 CacheTree<N>::~CacheTree() {
     if (root_)
         delete_subtree<N>(this, root_, true);
-    printf("num_nodes: %zu\n", num_nodes_);
 }
 
 template<class N>
@@ -57,13 +61,16 @@ void CacheTree<N>::insert_root() {
     }
     root_ = new N(nrules_, default_prediction, objective);
     min_objective_ = objective;
+    logger.setTreeMinObj(objective);
     ++num_nodes_;
+    logger.setTreeNumNodes(num_nodes_);
 }
 
 template<class N>
 void CacheTree<N>::insert(N* node) {
     node->parent()->children_.insert(std::make_pair(node->id(), node));
     ++num_nodes_;
+    logger.setTreeNumNodes(num_nodes_);
 }
 
 template<class N>
@@ -76,7 +83,7 @@ void CacheTree<N>::prune_up(N* node) {
             parent = node->parent();
             parent->children_.erase(id);
             --num_nodes_;
-            delete node;
+            node->set_deleted();
             node = parent;
             --depth;
         } else {
@@ -84,6 +91,7 @@ void CacheTree<N>::prune_up(N* node) {
             break;
         }
     }
+    logger.setTreeNumNodes(num_nodes_);
 }
 
 template<class N>
@@ -117,6 +125,25 @@ template<class N>
 void CacheTree<N>::garbage_collect() {
     gc_helper(root_);
 }
+
+template<class N>
+inline void CacheTree<N>::update_min_objective(double objective) {
+    min_objective_ = objective;
+    logger.setTreeMinObj(objective);
+}
+
+template<class N>
+inline void CacheTree<N>::increment_num_evaluated() {
+    ++num_evaluated_;
+    logger.setTreeNumEvaluated(num_evaluated_);
+}
+
+template<class N>
+inline void CacheTree<N>::decrement_num_nodes() {
+    --num_nodes_;
+    logger.setTreeNumNodes(num_nodes_);
+}
+
 
 template class Node<bool>; // BaseNode
 

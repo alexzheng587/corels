@@ -22,7 +22,7 @@ Node<T>::Node(size_t id, size_t nrules, bool prediction,
 
 template<class N>
 CacheTree<N>::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules, rule_t *labels)
-    : root_(0), nsamples_(nsamples), nrules_(nrules), c_(c), min_objective_(1.),
+    : root_(0), nsamples_(nsamples), nrules_(nrules), c_(c), min_objective_(0.5),
       num_nodes_(0), num_evaluated_(0) {
     rules_.resize(nrules);
     labels_.resize(2);

@@ -20,6 +20,8 @@ void Logger::setLogFileName(char *fname) {
 void Logger::dumpState() {
     if (_v < 1) return;
 
+    setTotalTime(time_diff(_state.initial_time));   // update timestamp here
+
     _f << _state.total_time << ","
        << _state.evaluate_children_time << ","
        << _state.node_select_time << ","

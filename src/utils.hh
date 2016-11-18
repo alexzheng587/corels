@@ -61,6 +61,9 @@ class Logger {
     inline void incEvalChildrenNum() {
         ++_state.evaluate_children_num;
     }
+    inline void setInitialTime(double t) {
+        _state.initial_time = t;
+    }
     inline void setTotalTime(double t) {
         _state.total_time = t;
     }
@@ -101,10 +104,31 @@ class Logger {
         }
         return tot;
     }
+    inline void initializeState() { // initialize so we can write a log record immediately
+        _state.total_time = 0.;
+        _state.evaluate_children_time = 0.;
+        _state.evaluate_children_num = 0;
+        _state.node_select_time = 0.;
+        _state.node_select_num = 0;
+        _state.rule_evaluation_time = 0.;
+        _state.rule_evaluation_num = 0;
+        _state.lower_bound_time = 0.;
+        _state.lower_bound_num = 0;
+        _state.objective_time = 0.;
+        _state.objective_num = 0;
+        _state.tree_insertion_time = 0.;
+        _state.tree_insertion_num = 0;
+        _state.permutation_map_insertion_time = 0.;
+        _state.permutation_map_insertion_num = 0;
+        _state.tree_num_nodes = 0;
+        _state.tree_num_evaluated = 0;
+        _state.queue_size = 0;
+    }
 
 
   private:
     struct State {
+        double initial_time;            // initial time stamp
         double total_time;
         double evaluate_children_time;
         size_t evaluate_children_num;

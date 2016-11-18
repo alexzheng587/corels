@@ -177,8 +177,8 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
         if (objective < tree->min_objective()) {
             printf("min(objective): %1.5f -> %1.5f, length: %d, cache size: %zu\n",
                    tree->min_objective(), objective, len_prefix, tree->num_nodes());
-            logger.dumpState();
             tree->update_min_objective(objective);
+            logger.dumpState(); // dump state when min objective is updated (keep this)
         }
         if ((lower_bound + c) < tree->min_objective()) {
             N* n;
@@ -223,7 +223,7 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
         parent->set_done();
         tree->increment_num_evaluated();
     }
-    logger.dumpState();
+    logger.dumpState(); // dump state at least once for each call to evaluate_children (possibly too frequent)
 }
 
 template<class N>
@@ -259,11 +259,11 @@ std::pair<N*, std::set<size_t> > stochastic_select(CacheTree<N>* tree, VECTOR no
 template<class N>
 void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes,
                        construct_signature<N> construct_policy) {
+    logger.setInitialTime(timestamp());
     std::pair<N*, std::set<size_t> > node_ordered;
     VECTOR not_captured;
     NullQueue<N>* q = NULL;
 
-    double tot = timestamp();
     size_t num_iter = 0;
     rule_vinit(tree->nsamples(), &not_captured);
     tree->insert_root();
@@ -287,9 +287,7 @@ void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes,
             logger.dumpState();
         }
     }
-    logger.setTotalTime(time_diff(tot));
     logger.dumpState();
-
     rule_vfree(&not_captured);
 }
 
@@ -332,6 +330,9 @@ void bbound_queue(CacheTree<N>* tree,
                 Q* q, N*(*front)(Q*),
                 permutation_insert_signature<N, P> permutation_insert,
                 P* p) {
+    logger.setInitialTime(timestamp());
+    logger.dumpState();         // initial log record --> set initial values so this doesn't segfault
+
     int cnt;
     double min_objective = 1.0;
     std::pair<N*, std::set<size_t> > node_ordered;
@@ -340,14 +341,13 @@ void bbound_queue(CacheTree<N>* tree,
     rule_vinit(tree->nsamples(), &captured);
     rule_vinit(tree->nsamples(), &not_captured);
 
-    double tot = timestamp();
     size_t num_iter = 0;
-
     tree->insert_root();
     logger.incTreeInsertionNum();
     q->push(tree->root());
     logger.setQueueSize(q->size());
     logger.incPrefixLen(0);
+    logger.dumpState();
     while ((tree->num_nodes() < max_num_nodes) &&
            !q->empty()) {
         double t0 = timestamp();
@@ -368,7 +368,6 @@ void bbound_queue(CacheTree<N>* tree,
             logger.incEvalChildrenNum();
 
             if (tree->min_objective() < min_objective) {
-                //logger.dumpState();
                 min_objective = tree->min_objective();
                 printf("num_nodes before garbage_collect: %zu\n", tree->num_nodes());
                 logger.dumpState();
@@ -378,21 +377,18 @@ void bbound_queue(CacheTree<N>* tree,
             }
         }
         ++num_iter;
-        if ((num_iter % 10000) == 0) {
+        if ((num_iter % 10000) == 0) {              // make dump state frequency a parameter
             printf("iter: %zu, tree: %zu, queue: %zu\n",
-                   num_iter, tree->num_nodes(), q->size());
+                   num_iter, tree->num_nodes(), q->size());     // add time stamp to print message here
             logger.dumpState();
         }
     }
-    logger.setTotalTime(time_diff(tot));
-    logger.dumpState();
+    logger.dumpState(); // second last log record (before queue elements deleted)
 
     if (q->empty())
         printf("Exited because queue empty\n");
     else
-        printf("Exited because max number of nodes in the tree was reached\n"); 
-
-    logger.setTotalTime(time_diff(tot));
+        printf("Exited because max number of nodes in the tree was reached\n");
 
     printf("Deleting queue elements and corresponding nodes in the cache, since they may not be reachable by the tree's destructor\n");
     N* node;
@@ -404,7 +400,7 @@ void bbound_queue(CacheTree<N>* tree,
             delete node;
         }
     }
-    logger.dumpState();
+    logger.dumpState(); // last log record (before cache deleted)
 
     rule_vfree(&captured);
     rule_vfree(&not_captured);

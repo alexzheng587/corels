@@ -223,7 +223,7 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
         parent->set_done();
         tree->increment_num_evaluated();
     }
-    logger.dumpState(); // dump state at least once for each call to evaluate_children (possibly too frequent)
+    //logger.dumpState(); // dump state at least once for each call to evaluate_children (possibly too frequent)
 }
 
 template<class N>
@@ -377,11 +377,12 @@ void bbound_queue(CacheTree<N>* tree,
             }
         }
         ++num_iter;
-        if ((num_iter % 10000) == 0) {              // make dump state frequency a parameter
+        if ((num_iter % 10000) == 0) {
             printf("iter: %zu, tree: %zu, queue: %zu\n",
-                   num_iter, tree->num_nodes(), q->size());     // add time stamp to print message here
-            logger.dumpState();
+                   num_iter, tree->num_nodes(), q->size()); // add time stamp to print message here
         }
+        if ((num_iter % 50) == 0)   // make dump state frequency a parameter
+            logger.dumpState();     // want ~1000 records for detailed figures
     }
     logger.dumpState(); // second last log record (before queue elements deleted)
 

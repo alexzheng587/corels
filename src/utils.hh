@@ -25,6 +25,12 @@ class Logger {
     inline void setVerbosity(int verbosity) {
         _v = verbosity;
     }
+    inline void setFrequency(int frequency) {
+        _freq = frequency;
+    }
+    inline int getFrequency() {
+        return _freq;
+    }
     inline void setLowerBoundTime(double t) {
         _state.lower_bound_time = t;
     }
@@ -153,6 +159,7 @@ class Logger {
     };
     State _state;
     int _v; // verbosity
+    int _freq; // frequency of logging
     ofstream _f; // output file
 };
 

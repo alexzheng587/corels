@@ -348,6 +348,7 @@ void bbound_queue(CacheTree<N>* tree,
     logger.setQueueSize(q->size());
     logger.incPrefixLen(0);
     logger.dumpState();
+    double start = timestamp();
     while ((tree->num_nodes() < max_num_nodes) &&
            !q->empty()) {
         double t0 = timestamp();
@@ -378,10 +379,10 @@ void bbound_queue(CacheTree<N>* tree,
         }
         ++num_iter;
         if ((num_iter % 10000) == 0) {
-            printf("iter: %zu, tree: %zu, queue: %zu\n",
-                   num_iter, tree->num_nodes(), q->size()); // add time stamp to print message here
+            printf("iter: %zu, tree: %zu, queue: %zu, time elapsed: %f\n",
+                   num_iter, tree->num_nodes(), q->size(), time_diff(start));
         }
-        if ((num_iter % 50) == 0)   // make dump state frequency a parameter
+        if ((num_iter % logger.getFrequency()) == 0)   // make dump state frequency a parameter
             logger.dumpState();     // want ~1000 records for detailed figures
     }
     logger.dumpState(); // second last log record (before queue elements deleted)

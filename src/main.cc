@@ -11,7 +11,7 @@ Logger logger;
 int main(int argc, char *argv[]) {
     const char usage[] = "USAGE: %s [-s] [-b] [-c] "
         "[-n max_num_nodes] [-r regularization] [-v verbosity] "
-        "-p (1|2) "
+        "-p (1|2) [-f logging_frequency]"
         "data.out data.label\n\n"
         "%s\n"; // for error
 
@@ -23,12 +23,13 @@ int main(int argc, char *argv[]) {
     bool use_captured_sym_map = false;
     int verbosity = 1;
     int max_num_nodes = 100000;
-    double c = 0.001;
+    double c = 0.01;
     char ch;
     bool error = false;
     char error_txt[512];
+    int freq = 50;
     /* only parsing happens here */
-    while ((ch = getopt(argc, argv, "sbcp:v:n:r:")) != -1) {
+    while ((ch = getopt(argc, argv, "sbcp:v:n:r:f:")) != -1) {
         switch (ch) {
         case 's':
             run_stochastic = true;
@@ -51,6 +52,9 @@ int main(int argc, char *argv[]) {
             break;
         case 'r':
             c = atof(optarg);
+            break;
+        case 'f':
+            freq = atoi(optarg);
             break;
         default:
             error = true;
@@ -87,13 +91,13 @@ int main(int argc, char *argv[]) {
 
     char log_fname[512];
     const char* pch = strrchr(argv[0], '/');
-    sprintf(log_fname, "../logs/for-%s-%s%s%s-%s-max_num_nodes=%d-c=%.7f-v=%d.txt",
+    sprintf(log_fname, "../logs/for-%s-%s%s%s-%s-max_num_nodes=%d-c=%.7f-v=%d-f=%d.txt",
             pch ? pch + 1 : "",
             run_stochastic ? "stochastic" : "",
             run_bfs ? "bfs" : "",
             run_curiosity ? "curiosity" : "",
             use_prefix_perm_map ? "with_prefix_perm_map" : "with_captured_symmetry_map",
-            max_num_nodes, c, verbosity);
+            max_num_nodes, c, verbosity, freq);
 
     if (verbosity >= 1000) {
         printf("\n%d rules %d samples\n\n", nrules, nsamples);
@@ -111,6 +115,8 @@ int main(int argc, char *argv[]) {
     logger.initPrefixVec();
     logger.setVerbosity(verbosity);
     logger.setLogFileName(log_fname);
+    logger.setFrequency(freq);
+    double init = timestamp();
     if (run_stochastic) {
         printf("BBOUND_STOCHASTIC\n");
         CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
@@ -200,6 +206,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    printf("final total time: %f\n", time_diff(init));
     logger.dumpState();
     logger.closeFile();
     printf("\ndelete rules\n");

@@ -27,6 +27,9 @@
 #include <gmp.h>
 #endif
 
+#ifndef _RULE_H_
+#define _RULE_H_
+
 /*
  * This library implements rule set management for Bayesian rule lists.
  */
@@ -165,3 +168,5 @@ ruleset_t *run_mcmc(int, int, int, rule_t *, rule_t *, params_t *, double);
 ruleset_t *run_simulated_annealing(int,
     int, int, int, rule_t *, rule_t *, params_t *);
 pred_model_t *train(data_t *, int, int, params_t *);
+
+#endif

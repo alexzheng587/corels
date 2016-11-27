@@ -123,7 +123,10 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
                        std::set<size_t> ordered_parent,
                        construct_signature<N> construct_policy, Q* q,
                        permutation_insert_signature<N, P> permutation_insert, P* p) {
-    std::vector<size_t> parent_prefix = parent->get_prefix();
+    auto pp_pair = parent->get_prefix_and_predictions();
+    std::vector<size_t> parent_prefix = std::move(pp_pair.first);
+    std::vector<bool> parent_predictions = std::move(pp_pair.second);
+
     VECTOR captured, captured_zeros, not_captured, not_captured_zeros;
     int num_captured, c0, c1, captured_correct;
     int num_not_captured, d0, d1, default_correct;
@@ -177,7 +180,11 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
         if (objective < tree->min_objective()) {
             printf("min(objective): %1.5f -> %1.5f, length: %d, cache size: %zu\n",
                    tree->min_objective(), objective, len_prefix, tree->num_nodes());
+
             tree->update_min_objective(objective);
+            tree->update_opt_rulelist(parent_prefix, i);
+            tree->update_opt_predictions(parent_predictions, prediction, default_prediction);
+
             logger.dumpState(); // dump state when min objective is updated (keep this)
         }
         if ((lower_bound + c) < tree->min_objective()) {

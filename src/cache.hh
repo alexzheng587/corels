@@ -31,7 +31,11 @@ class Node {
     inline void set_done();
     inline bool deleted() const;
     inline void set_deleted();
-    inline std::vector<size_t> get_prefix();
+
+    // Returns pair of prefixes and predictions for the path from this
+    // node to the root
+    inline std::pair<std::vector<size_t>, std::vector<bool>>
+        get_prefix_and_predictions();
 
     inline size_t depth() const;
     inline Node<T>* child(size_t idx);
@@ -72,6 +76,9 @@ class CacheTree {
     ~CacheTree();
 
     inline double min_objective() const;
+    inline std::vector<size_t> opt_rulelist() const;
+    inline std::vector<bool> opt_predictions() const;
+
     inline size_t num_nodes() const;
     inline size_t num_evaluated() const;
     inline rule_t rule(size_t idx) const;
@@ -82,6 +89,12 @@ class CacheTree {
     inline N* root() const;
 
     void update_min_objective(double objective);
+    void update_opt_rulelist(std::vector<size_t>& parent_prefix,
+                             size_t new_rule_id);
+    void update_opt_predictions(std::vector<bool>& parent_predictions,
+                                bool new_pred,
+                                bool new_default_pred);
+
     void increment_num_evaluated();
     void decrement_num_nodes();
 
@@ -90,14 +103,18 @@ class CacheTree {
     void prune_up(N* node);
     void garbage_collect();
     void play_with_rules();
-    N* check_prefix(std::vector<size_t> prefix);
+    N* check_prefix(std::vector<size_t>& prefix);
 
   private:
     N* root_;
     size_t nsamples_;
     size_t nrules_;
     double c_;
+
     double min_objective_;
+    std::vector<size_t> opt_rulelist_;
+    std::vector<bool> opt_predictions_;
+
     size_t num_nodes_;
     size_t num_evaluated_;
     std::vector<rule_t> rules_;
@@ -152,15 +169,19 @@ inline void Node<T>::set_deleted() {
 }
 
 template <class T>
-inline std::vector<size_t> Node<T>::get_prefix() {
-    std::vector<size_t> prefix(depth_);
-    auto it = prefix.begin();
+inline std::pair<std::vector<size_t>, std::vector<bool>>
+    Node<T>::get_prefix_and_predictions() {
+    std::vector<size_t> prefix;
+    std::vector<bool> predictions;
+    auto it1 = prefix.begin();
+    auto it2 = predictions.begin();
     Node<T>* node = this;
     for(size_t i = depth_; i > 0; --i) {
-        it = prefix.insert(it, node->id());
+        it1 = prefix.insert(it1, node->id());
+        it2 = predictions.insert(it2, node->prediction());
         node = node->parent();
     }
-    return prefix;
+    return std::make_pair(prefix, predictions);
 }
 
 template <class T>
@@ -221,6 +242,16 @@ inline T& Node<T>::get_storage() {
 template<class N>
 inline double CacheTree<N>::min_objective() const {
     return min_objective_;
+}
+
+template<class N>
+inline std::vector<size_t> CacheTree<N>::opt_rulelist() const {
+    return opt_rulelist_;
+}
+
+template<class N>
+inline std::vector<bool> CacheTree<N>::opt_predictions() const {
+    return opt_predictions_;
 }
 
 template<class N>

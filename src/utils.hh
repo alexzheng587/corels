@@ -1,3 +1,5 @@
+#include "rule.h"
+
 #include <cstdlib>
 #include <sys/time.h>
 #include <string.h>
@@ -172,6 +174,13 @@ inline double timestamp() {
 inline double time_diff(double t0) {
     return timestamp() - t0;
 }
+
+// rulelist -- rule ids of optimal rulelist
+// preds -- corresponding predictions of rules (+ default prediction)
+void print_final_rulelist(const std::vector<size_t>& rulelist,
+                          const std::vector<bool>& preds,
+                          const rule_t rules[],
+                          const rule_t labels[]);
 
 extern Logger logger;
 

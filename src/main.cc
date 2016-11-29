@@ -125,6 +125,9 @@ int main(int argc, char *argv[]) {
         printf("final num_nodes: %zu\n", tree.num_nodes());
         printf("final num_evaluated: %zu\n", tree.num_evaluated());
         printf("final min_objective: %1.5f\n", tree.min_objective());
+        print_final_rulelist(tree.opt_rulelist(), tree.opt_predictions(),
+                             rules, labels);
+
         logger.dumpState();
     }
 
@@ -147,6 +150,8 @@ int main(int argc, char *argv[]) {
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
+            print_final_rulelist(tree.opt_rulelist(), tree.opt_predictions(),
+                                 rules, labels);
         } else if (use_captured_sym_map) {
             printf("BFS Captured Symmetry Map\n");        
             CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
@@ -165,6 +170,8 @@ int main(int argc, char *argv[]) {
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
+            print_final_rulelist(tree.opt_rulelist(), tree.opt_predictions(),
+                                 rules, labels);
         }
     }
 
@@ -186,6 +193,8 @@ int main(int argc, char *argv[]) {
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
+            print_final_rulelist(tree.opt_rulelist(), tree.opt_predictions(),
+                                 rules, labels);
         } else if (use_captured_sym_map) {
             printf("CURIOSITY Captured Symmetry Map\n");
             CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
@@ -202,7 +211,9 @@ int main(int argc, char *argv[]) {
                                                  &p);
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
-            printf("final min_objective: %1.5f\n", tree.min_objective());            
+            printf("final min_objective: %1.5f\n", tree.min_objective());
+            print_final_rulelist(tree.opt_rulelist(), tree.opt_predictions(),
+                                 rules, labels);
         }
     }
 

@@ -1,6 +1,7 @@
 #include "utils.hh"
 
 #include <stdio.h>
+#include <assert.h>
 
 
 void Logger::setLogFileName(char *fname) {
@@ -53,3 +54,18 @@ std::string Logger::dumpPrefixLens() {
     return s;
 }
 
+void print_final_rulelist(const std::vector<size_t>& rulelist,
+                          const std::vector<bool>& preds,
+                          const rule_t rules[],
+                          const rule_t labels[]) {
+    assert(rulelist.size() == preds.size() - 1);
+
+    printf("\nOPTIMAL RULE LIST\n");
+    printf("if (%s) then (%s)\n", rules[rulelist[0]].features,
+           labels[preds[0]].features);
+    for (size_t i = 1; i < rulelist.size(); ++i) {
+        printf("else if (%s) then (%s)\n", rules[rulelist[i]].features,
+               labels[preds[i]].features);
+    }
+    printf("else (%s)\n\n", labels[preds.back()].features);
+}

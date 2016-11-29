@@ -23,7 +23,8 @@ Node<T>::Node(size_t id, size_t nrules, bool prediction,
 template<class N>
 CacheTree<N>::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules, rule_t *labels)
     : root_(0), nsamples_(nsamples), nrules_(nrules), c_(c), min_objective_(0.5),
-      num_nodes_(0), num_evaluated_(0) {
+      num_nodes_(0), num_evaluated_(0),
+      opt_rulelist_({}), opt_predictions_({}) {
     rules_.resize(nrules);
     labels_.resize(2);
     size_t i;
@@ -95,7 +96,7 @@ void CacheTree<N>::prune_up(N* node) {
 }
 
 template<class N>
-N* CacheTree<N>::check_prefix(std::vector<size_t> prefix) {
+N* CacheTree<N>::check_prefix(std::vector<size_t>& prefix) {
     N* node = this->root_;
     for(std::vector<size_t>::iterator it = prefix.begin(); it != prefix.end(); ++it) {
         node = node->child(*it);
@@ -130,6 +131,24 @@ template<class N>
 inline void CacheTree<N>::update_min_objective(double objective) {
     min_objective_ = objective;
     logger.setTreeMinObj(objective);
+}
+
+template<class N>
+inline void
+CacheTree<N>::update_opt_rulelist(std::vector<size_t>& parent_prefix,
+                                  size_t new_rule_id) {
+    opt_rulelist_.assign(parent_prefix.begin(), parent_prefix.end());
+    opt_rulelist_.push_back(new_rule_id);
+}
+
+template<class N>
+inline void
+CacheTree<N>::update_opt_predictions(std::vector<bool>& parent_predictions,
+                                     bool new_pred,
+                                     bool new_default_pred) {
+    opt_predictions_.assign(parent_predictions.begin(), parent_predictions.end());
+    opt_predictions_.push_back(new_pred);
+    opt_predictions_.push_back(new_default_pred);
 }
 
 template<class N>

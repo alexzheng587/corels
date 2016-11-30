@@ -184,4 +184,6 @@ void print_final_rulelist(const std::vector<size_t>& rulelist,
 
 extern Logger logger;
 
+void print_machine_info();
+
 #endif

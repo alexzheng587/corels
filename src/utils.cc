@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 #include <assert.h>
-
+#include <sys/utsname.h>
 
 void Logger::setLogFileName(char *fname) {
     if (_v < 1) return;
@@ -68,4 +68,19 @@ void print_final_rulelist(const std::vector<size_t>& rulelist,
                labels[preds[i]].features);
     }
     printf("else (%s)\n\n", labels[preds.back()].features);
+}
+
+void print_machine_info() {
+    struct utsname buffer;
+
+    if (uname(&buffer) == 0) {
+        printf("System information:\n"
+               "system name-> %s; node name-> %s; release-> %s; "
+               "version-> %s; machine-> %s\n\n",
+               buffer.sysname,
+               buffer.nodename,
+               buffer.release,
+               buffer.version,
+               buffer.machine);
+    }
 }

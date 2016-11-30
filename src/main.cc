@@ -89,6 +89,7 @@ int main(int argc, char *argv[]) {
     rules_init(argv[0], &nrules, &nsamples, &rules, 1);
     rules_init(argv[1], &nlabels, &nsamples_chk, &labels, 0);
 
+    print_machine_info();
     char log_fname[512];
     const char* pch = strrchr(argv[0], '/');
     sprintf(log_fname, "../logs/for-%s-%s%s%s-%s-max_num_nodes=%d-c=%.7f-v=%d-f=%d.txt",

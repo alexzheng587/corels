@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
     char ch;
     bool error = false;
     char error_txt[512];
-    int freq = 50;
+    int freq = 1000;
     /* only parsing happens here */
     while ((ch = getopt(argc, argv, "sbcp:v:n:r:f:")) != -1) {
         switch (ch) {

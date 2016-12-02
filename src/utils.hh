@@ -179,6 +179,7 @@ inline double time_diff(double t0) {
 // preds -- corresponding predictions of rules (+ default prediction)
 void print_final_rulelist(const std::vector<size_t>& rulelist,
                           const std::vector<bool>& preds,
+                          const bool latex_out,
                           const rule_t rules[],
                           const rule_t labels[]);
 

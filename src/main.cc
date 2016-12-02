@@ -19,6 +19,7 @@ int main(int argc, char *argv[]) {
     bool run_stochastic = false;
     bool run_bfs = false;
     bool run_curiosity = false;
+    bool latex_out = false;
     bool use_prefix_perm_map = false;
     bool use_captured_sym_map = false;
     int verbosity = 1;
@@ -29,7 +30,7 @@ int main(int argc, char *argv[]) {
     char error_txt[512];
     int freq = 1000;
     /* only parsing happens here */
-    while ((ch = getopt(argc, argv, "sbcp:v:n:r:f:")) != -1) {
+    while ((ch = getopt(argc, argv, "sbcLp:v:n:r:f:")) != -1) {
         switch (ch) {
         case 's':
             run_stochastic = true;
@@ -39,6 +40,9 @@ int main(int argc, char *argv[]) {
             break;
         case 'c':
             run_curiosity = true;
+            break;
+        case 'L':
+            latex_out = true;
             break;
         case 'p':
             use_prefix_perm_map = atoi(optarg) == 1;
@@ -123,7 +127,7 @@ int main(int argc, char *argv[]) {
         printf("final num_evaluated: %zu\n", tree.num_evaluated());
         printf("final min_objective: %1.5f\n", tree.min_objective());
         print_final_rulelist(tree.opt_rulelist(), tree.opt_predictions(),
-                             rules, labels);
+                             latex_out, rules, labels);
 
         logger.dumpState();
     }
@@ -148,7 +152,7 @@ int main(int argc, char *argv[]) {
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
             print_final_rulelist(tree.opt_rulelist(), tree.opt_predictions(),
-                                 rules, labels);
+                                 latex_out, rules, labels);
         } else if (use_captured_sym_map) {
             printf("BFS Captured Symmetry Map\n");        
             CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
@@ -168,7 +172,7 @@ int main(int argc, char *argv[]) {
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
             print_final_rulelist(tree.opt_rulelist(), tree.opt_predictions(),
-                                 rules, labels);
+                                 latex_out, rules, labels);
         }
         else {
             printf("BFS No Permutation Map\n");        
@@ -188,7 +192,7 @@ int main(int argc, char *argv[]) {
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
             print_final_rulelist(tree.opt_rulelist(), tree.opt_predictions(),
-                                 rules, labels);
+                                 latex_out, rules, labels);
         }
     }
 
@@ -211,7 +215,7 @@ int main(int argc, char *argv[]) {
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
             print_final_rulelist(tree.opt_rulelist(), tree.opt_predictions(),
-                                 rules, labels);
+                                 latex_out, rules, labels);
         } else if (use_captured_sym_map) {
             printf("CURIOSITY Captured Symmetry Map\n");
             CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
@@ -230,7 +234,7 @@ int main(int argc, char *argv[]) {
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
             print_final_rulelist(tree.opt_rulelist(), tree.opt_predictions(),
-                                 rules, labels);
+                                 latex_out, rules, labels);
         }
         else {
             printf("CURIOSITY No Permutation Map\n");
@@ -249,8 +253,7 @@ int main(int argc, char *argv[]) {
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
             print_final_rulelist(tree.opt_rulelist(), tree.opt_predictions(),
-                                 rules, labels);
-
+                                 latex_out, rules, labels);
         }
     }
 

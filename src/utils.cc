@@ -59,7 +59,7 @@ void print_final_rulelist(const std::vector<size_t>& rulelist,
                           const bool latex_out,
                           const rule_t rules[],
                           const rule_t labels[]) {
-    assert(rulelist.size() > 1 && rulelist.size() == preds.size() - 1);
+    assert(rulelist.size() > 0 && rulelist.size() == preds.size() - 1);
 
     printf("\nOPTIMAL RULE LIST\n");
     printf("if (%s) then (%s)\n", rules[rulelist[0]].features,

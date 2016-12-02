@@ -126,7 +126,10 @@ int main(int argc, char *argv[]) {
         printf("final num_nodes: %zu\n", tree.num_nodes());
         printf("final num_evaluated: %zu\n", tree.num_evaluated());
         printf("final min_objective: %1.5f\n", tree.min_objective());
-        print_final_rulelist(tree.opt_rulelist(), tree.opt_predictions(),
+        const std::vector<size_t>& r_list = tree.opt_rulelist();
+        printf("final accuracy: %1.5f\n",
+               1 - tree.min_objective() + c*r_list.size());
+        print_final_rulelist(r_list, tree.opt_predictions(),
                              latex_out, rules, labels);
 
         logger.dumpState();
@@ -151,7 +154,10 @@ int main(int argc, char *argv[]) {
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
-            print_final_rulelist(tree.opt_rulelist(), tree.opt_predictions(),
+            const std::vector<size_t>& r_list = tree.opt_rulelist();
+            printf("final accuracy: %1.5f\n",
+                   1 - tree.min_objective() + c*r_list.size());
+            print_final_rulelist(r_list, tree.opt_predictions(),
                                  latex_out, rules, labels);
         } else if (use_captured_sym_map) {
             printf("BFS Captured Symmetry Map\n");        
@@ -171,7 +177,10 @@ int main(int argc, char *argv[]) {
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
-            print_final_rulelist(tree.opt_rulelist(), tree.opt_predictions(),
+            const std::vector<size_t>& r_list = tree.opt_rulelist();
+            printf("final accuracy: %1.5f\n",
+                   1 - tree.min_objective() + c*r_list.size());
+            print_final_rulelist(r_list, tree.opt_predictions(),
                                  latex_out, rules, labels);
         }
         else {
@@ -191,7 +200,10 @@ int main(int argc, char *argv[]) {
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
-            print_final_rulelist(tree.opt_rulelist(), tree.opt_predictions(),
+            const std::vector<size_t>& r_list = tree.opt_rulelist();
+            printf("final accuracy: %1.5f\n",
+                   1 - tree.min_objective() + c*r_list.size());
+            print_final_rulelist(r_list, tree.opt_predictions(),
                                  latex_out, rules, labels);
         }
     }
@@ -214,7 +226,10 @@ int main(int argc, char *argv[]) {
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
-            print_final_rulelist(tree.opt_rulelist(), tree.opt_predictions(),
+            const std::vector<size_t>& r_list = tree.opt_rulelist();
+            printf("final accuracy: %1.5f\n",
+                   1 - tree.min_objective() + c*r_list.size());
+            print_final_rulelist(r_list, tree.opt_predictions(),
                                  latex_out, rules, labels);
         } else if (use_captured_sym_map) {
             printf("CURIOSITY Captured Symmetry Map\n");
@@ -233,7 +248,10 @@ int main(int argc, char *argv[]) {
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
-            print_final_rulelist(tree.opt_rulelist(), tree.opt_predictions(),
+            const std::vector<size_t>& r_list = tree.opt_rulelist();
+            printf("final accuracy: %1.5f\n",
+                   1 - tree.min_objective() + c*r_list.size());
+            print_final_rulelist(r_list, tree.opt_predictions(),
                                  latex_out, rules, labels);
         }
         else {
@@ -252,7 +270,10 @@ int main(int argc, char *argv[]) {
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
-            print_final_rulelist(tree.opt_rulelist(), tree.opt_predictions(),
+            const std::vector<size_t>& r_list = tree.opt_rulelist();
+            printf("final accuracy: %1.5f\n",
+                   1 - tree.min_objective() + c*r_list.size());
+            print_final_rulelist(r_list, tree.opt_predictions(),
                                  latex_out, rules, labels);
         }
     }

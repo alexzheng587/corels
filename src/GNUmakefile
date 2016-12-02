@@ -1,6 +1,6 @@
 CFLAGS := -g -W -Wall -O$(O) -I.
 LDFLAGS :=
-LIBS :=
+LIBS := -lbsd
 
 CC = gcc
 CXX = g++ -std=c++11

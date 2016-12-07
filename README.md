@@ -448,9 +448,9 @@ permutation, and if so, determine which is better.
 We couple ICM and cache updates:  cache insertions and deletions trigger
 corresponding ICM operations.
 
-## small datasets with rule expansion
+## small and other datasets with rule expansion
 
-The last three columns report the number of rules mined for (max cardinality, min support)
+The last column reports the number of rules mined for (max cardinality, min support)
 
 | dataset | # data | # 0 | # 1 | f. 0 | f. 1 | # dim | (2, 0.01) |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -461,7 +461,8 @@ The last three columns report the number of rules mined for (max cardinality, mi
 | monks2 | 432 | 290 | 142 | 0.67 | 0.33 | 18 | 396 |
 | monks3 | 432 | 204 | 228 | 0.47 | 0.53 | 18 | 396 |
 | votes | 435 | 168 | 267 | 0.39 | 0.61 | 17 | 512 |
-| compas | 7214 | 3743 | 3471 | 0.52 | 0.48 | 30 | 1,037 |
+| compas | 7,214 | 3,743 | 3,471 | 0.52 | 0.48 | 30 | 1,037 |
+| telco | 7,043 | 5,174 | 1,869 | 0.73 | 0.27 | 19 | 957 |
 
 ## implemented but not explained
 

@@ -25,6 +25,8 @@ CacheTree<N>::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules,
     : root_(0), nsamples_(nsamples), nrules_(nrules), c_(c), min_objective_(0.5),
       num_nodes_(0), num_evaluated_(0),
       opt_rulelist_({}), opt_predictions_({}) {
+    opt_rulelist_.resize(0);
+    opt_predictions_.resize(0);
     rules_.resize(nrules);
     labels_.resize(2);
     size_t i;
@@ -65,6 +67,7 @@ void CacheTree<N>::insert_root() {
     logger.setTreeMinObj(objective);
     ++num_nodes_;
     logger.setTreeNumNodes(num_nodes_);
+    opt_predictions_.push_back(default_prediction);
 }
 
 template<class N>

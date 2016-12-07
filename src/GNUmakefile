@@ -1,6 +1,10 @@
 CFLAGS := -g -W -Wall -O$(O) -I.
 LDFLAGS :=
+LIBS :=
+
+ifneq ($(shell uname),Darwin)
 LIBS := -lbsd
+endif
 
 CC = gcc
 CXX = g++ -std=c++11

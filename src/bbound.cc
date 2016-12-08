@@ -21,6 +21,21 @@ CuriousNode* curious_construct_policy(size_t new_rule, size_t nrules, bool predi
                             lower_bound, objective, curiosity, parent));
 }
 
+void prefix_map_garbage_collect(PrefixPermutationMap* p, size_t queue_min_length) {
+    typename PrefixPermutationMap::iterator iter;
+    printf("pmap gc for length %zu: %zu -> ", queue_min_length, p->size());
+    for (iter = p->begin(); iter != p->end(); ) {
+        if (iter->first.size() <= queue_min_length)
+            iter = p->erase(iter);
+        else
+            ++iter;
+    }
+    printf("%zu\n", p->size());
+}
+
+void captured_map_garbage_collect(CapturedPermutationMap* p, size_t min_length) {
+}
+
 template<class N>
 N* prefix_permutation_insert(construct_signature<N> construct_policy, size_t new_rule,
                              size_t nrules, bool prediction, bool default_prediction, double lower_bound,
@@ -336,6 +351,7 @@ void bbound_queue(CacheTree<N>* tree,
                 construct_signature<N> construct_policy,
                 Q* q, N*(*front)(Q*),
                 permutation_insert_signature<N, P> permutation_insert,
+                pmap_garbage_collect_signature<P> pmap_garbage_collect,
                 P* p) {
     logger.setInitialTime(timestamp());
     logger.dumpState();         // initial log record --> set initial values so this doesn't segfault
@@ -343,6 +359,7 @@ void bbound_queue(CacheTree<N>* tree,
     int cnt;
     double min_objective = 1.0;
     std::pair<N*, std::set<size_t> > node_ordered;
+    size_t queue_min_length = logger.getQueueMinLen();
 
     VECTOR captured, not_captured;
     rule_vinit(tree->nsamples(), &captured);
@@ -384,6 +401,11 @@ void bbound_queue(CacheTree<N>* tree,
                 logger.dumpState();
                 printf("num_nodes after garbage_collect: %zu\n", tree->num_nodes());
             }
+        }
+        if (queue_min_length < logger.getQueueMinLen()) {
+            // garbage collect the permutation map: can be simplified for the case of BFS
+            queue_min_length = logger.getQueueMinLen();
+            pmap_garbage_collect(p, queue_min_length);
         }
         ++num_iter;
         if ((num_iter % 10000) == 0) {
@@ -583,6 +605,7 @@ bbound_queue<BaseNode, BaseQueue, PrefixPermutationMap>(CacheTree<BaseNode>* tre
                                   BaseQueue* q,
                                   BaseNode*(*front)(BaseQueue*),
                                   permutation_insert_signature<BaseNode, PrefixPermutationMap> permutation_insert,
+                                  pmap_garbage_collect_signature<PrefixPermutationMap> pmap_garbage_collect,
                                   PrefixPermutationMap* p);
 
 template void
@@ -592,6 +615,7 @@ bbound_queue<BaseNode, BaseQueue, CapturedPermutationMap>(CacheTree<BaseNode>* t
                                   BaseQueue* q,
                                   BaseNode*(*front)(BaseQueue*),
                                   permutation_insert_signature<BaseNode, CapturedPermutationMap> permutation_insert,
+                                  pmap_garbage_collect_signature<CapturedPermutationMap> pmap_garbage_collect,
                                   CapturedPermutationMap* p);
 
 template void
@@ -601,6 +625,7 @@ bbound_queue<CuriousNode, CuriousQueue, PrefixPermutationMap>(CacheTree<CuriousN
                                         CuriousQueue* q,
                                         CuriousNode*(*front)(CuriousQueue*),
                                         permutation_insert_signature<CuriousNode, PrefixPermutationMap> permutation_insert,
+                                        pmap_garbage_collect_signature<PrefixPermutationMap> pmap_garbage_collect,
                                         PrefixPermutationMap* p);
 
 template void
@@ -610,6 +635,7 @@ bbound_queue<CuriousNode, CuriousQueue, CapturedPermutationMap>(CacheTree<Curiou
                                         CuriousQueue* q,
                                         CuriousNode*(*front)(CuriousQueue*),
                                         permutation_insert_signature<CuriousNode, CapturedPermutationMap> permutation_insert,
+                                        pmap_garbage_collect_signature<CapturedPermutationMap> pmap_garbage_collect,
                                         CapturedPermutationMap* p);
 
 template void

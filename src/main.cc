@@ -158,6 +158,7 @@ int main(int argc, char *argv[]) {
                                                &bfs_q,
                                                &base_queue_front,
                                                &prefix_permutation_insert,
+                                               &prefix_map_garbage_collect,
                                                &p);
 
             printf("final num_nodes: %zu\n", tree.num_nodes());
@@ -181,6 +182,7 @@ int main(int argc, char *argv[]) {
                                                  &bfs_q,
                                                  &base_queue_front,
                                                  &captured_permutation_insert,
+                                                 &captured_map_garbage_collect,
                                                  &p);
 
             printf("final num_nodes: %zu\n", tree.num_nodes());
@@ -204,6 +206,7 @@ int main(int argc, char *argv[]) {
                                                  &bfs_q,
                                                  &base_queue_front,
                                                  &captured_permutation_insert,
+                                                 &captured_map_garbage_collect,
                                                  NULL);
 
             printf("final num_nodes: %zu\n", tree.num_nodes());
@@ -232,6 +235,7 @@ int main(int argc, char *argv[]) {
                                                    &curious_q,
                                                    &curious_queue_front,
                                                    &prefix_permutation_insert,
+                                                   &prefix_map_garbage_collect,
                                                    &p);
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());
@@ -254,6 +258,7 @@ int main(int argc, char *argv[]) {
                                                      &curious_q,
                                                      &curious_queue_front,
                                                      &captured_permutation_insert,
+                                                     &captured_map_garbage_collect,
                                                      &p);
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());
@@ -276,6 +281,7 @@ int main(int argc, char *argv[]) {
                                                      &curious_q,
                                                      &curious_queue_front,
                                                      &captured_permutation_insert,
+                                                     &captured_map_garbage_collect,
                                                      NULL);
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());
@@ -300,6 +306,7 @@ int main(int argc, char *argv[]) {
                                                    &curious_q,
                                                    &curious_queue_front,
                                                    &prefix_permutation_insert,
+                                                   &prefix_map_garbage_collect,
                                                    &p);
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());
@@ -322,6 +329,7 @@ int main(int argc, char *argv[]) {
                                                      &curious_q,
                                                      &curious_queue_front,
                                                      &captured_permutation_insert,
+                                                     &captured_map_garbage_collect,
                                                      &p);
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());
@@ -344,6 +352,7 @@ int main(int argc, char *argv[]) {
                                                      &curious_q,
                                                      &curious_queue_front,
                                                      &captured_permutation_insert,
+                                                     &captured_map_garbage_collect,
                                                      NULL);
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());

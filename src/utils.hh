@@ -107,16 +107,33 @@ class Logger {
     }
     inline void incPrefixLen(size_t n) {
         ++_state.prefix_lens[n];
+        if (_state.prefix_lens[n] == 1)
+            updateQueueMinLen();
     }
     inline void decPrefixLen(size_t n) {
         --_state.prefix_lens[n];
+        if (_state.prefix_lens[n] == 0)
+            updateQueueMinLen();
     }
-    inline size_t sumPrefixLens() {
+    inline size_t sumPrefixLens() { // size of logical queue
         size_t tot = 0;
         for(size_t i = 0; i < _state.nrules; ++i) {
             tot += _state.prefix_lens[i];
         }
         return tot;
+    }
+    inline void updateQueueMinLen() {
+        size_t min_length = 0; // note that min length is logically undefined when queue size is 0
+        for(size_t i = 0; i < _state.nrules; ++i) {
+            if (_state.prefix_lens[i] > 0) {
+                min_length = i;
+                break;
+            }
+        }
+        _state.queue_min_length = min_length;
+    }
+    inline size_t getQueueMinLen() {
+        return _state.queue_min_length;
     }
     inline void initializeState() { // initialize so we can write a log record immediately
         _state.total_time = 0.;
@@ -140,6 +157,7 @@ class Logger {
         _state.tree_num_nodes = 0;
         _state.tree_num_evaluated = 0;
         _state.queue_size = 0;
+        _state.queue_min_length = 0;
     }
 
 
@@ -167,6 +185,7 @@ class Logger {
         size_t tree_num_nodes;
         size_t tree_num_evaluated;
         size_t queue_size;
+        size_t queue_min_length; // monotonically increases
         size_t nrules;
         size_t* prefix_lens;
     };

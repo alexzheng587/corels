@@ -58,6 +58,12 @@ typedef std::vector<bool> CapturedKey;
 typedef std::map<PrefixKey, std::pair<std::vector<size_t>, double> > PrefixPermutationMap;
 typedef std::map<CapturedKey, std::pair<std::vector<size_t>, double> > CapturedPermutationMap;
 
+template<class P>
+using pmap_garbage_collect_signature = void (*)(P*, size_t);
+
+void prefix_map_garbage_collect(PrefixPermutationMap* p, size_t min_length);
+void captured_map_garbage_collect(CapturedPermutationMap* p, size_t min_length);
+
 template<class N, class P>
 using permutation_insert_signature = N* (*)(construct_signature<N>, size_t, size_t, bool, bool, 
                                             double, double, N* parent, int, int, int, double, CacheTree<N>*, VECTOR,
@@ -93,6 +99,7 @@ extern void bbound_queue(CacheTree<N>* tree,
                          construct_signature<N> construct_policy,
                          Q* q, N*(*front)(Q*),
                          permutation_insert_signature<N, P> permutation_insert,
+                         pmap_garbage_collect_signature<P> pmap_garbage_collect,
                          P* p);
 
 template<class N, class Q, class P>

@@ -81,6 +81,9 @@ class Logger {
     inline void incPermMapInsertionNum() {
         ++_state.permutation_map_insertion_num;
     }
+    inline void setCurrentLowerBound(double lb) {
+        _state.current_lower_bound = lb;
+    }
     inline void setTreeMinObj(double o) {
         _state.tree_min_objective = o;
     }
@@ -131,6 +134,9 @@ class Logger {
         _state.tree_insertion_num = 0;
         _state.permutation_map_insertion_time = 0.;
         _state.permutation_map_insertion_num = 0;
+        _state.current_lower_bound = 0.;
+        _state.tree_min_objective = 1.;
+        _state.tree_prefix_length = 0;
         _state.tree_num_nodes = 0;
         _state.tree_num_evaluated = 0;
         _state.queue_size = 0;
@@ -155,6 +161,7 @@ class Logger {
         size_t tree_insertion_num;
         double permutation_map_insertion_time;
         size_t permutation_map_insertion_num;
+        double current_lower_bound; // monotonically decreases for curious lower bound policy
         double tree_min_objective;
         size_t tree_prefix_length;
         size_t tree_num_nodes;

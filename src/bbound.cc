@@ -364,6 +364,7 @@ void bbound_queue(CacheTree<N>* tree,
         logger.incNodeSelectNum();
         if (node_ordered.first) {
             double t1 = timestamp();
+            logger.setCurrentLowerBound(node_ordered.first->lower_bound() + tree->c());
             min_objective = tree->min_objective();
             /* not_captured = default rule truthtable & ~ captured */
             rule_vandnot(not_captured,

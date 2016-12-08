@@ -14,8 +14,9 @@ void Logger::setLogFileName(char *fname) {
        << "rule_evaluation_time,lower_bound_time,lower_bound_num,"
        << "objective_time,tree_insertion_time,tree_insertion_num,"
        << "permutation_map_insertion_time,permutation_map_insertion_num,"
-       << "tree_min_objective,tree_num_nodes,tree_num_evaluated,"
-       << "queue_size, prefix_lengths" << endl;
+       << "tree_min_objective,tree_prefix_length,"
+       << "tree_num_nodes,tree_num_evaluated,"
+       << "queue_size,prefix_lengths" << endl;
 }
 
 void Logger::dumpState() {
@@ -35,6 +36,7 @@ void Logger::dumpState() {
        << _state.permutation_map_insertion_time << ","
        << _state.permutation_map_insertion_num << ","
        << _state.tree_min_objective << ","
+       << _state.tree_prefix_length << ","
        << _state.tree_num_nodes << ","
        << _state.tree_num_evaluated << ","
        << _state.queue_size << ","

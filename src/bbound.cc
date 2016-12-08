@@ -389,7 +389,7 @@ void bbound_queue(CacheTree<N>* tree,
             printf("iter: %zu, tree: %zu, queue: %zu, time elapsed: %f\n",
                    num_iter, tree->num_nodes(), q->size(), time_diff(start));
         }
-        if ((num_iter % logger.getFrequency()) == 0)   // make dump state frequency a parameter
+        if ((num_iter % logger.getFrequency()) == 0)
             logger.dumpState();     // want ~1000 records for detailed figures
     }
     logger.dumpState(); // second last log record (before queue elements deleted)

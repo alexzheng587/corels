@@ -84,6 +84,9 @@ class Logger {
     inline void setTreeMinObj(double o) {
         _state.tree_min_objective = o;
     }
+    inline void setTreePrefixLen(size_t n) {
+        _state.tree_prefix_length = n;
+    }
     inline void setTreeNumNodes(size_t n) {
         _state.tree_num_nodes = n;
     }
@@ -153,6 +156,7 @@ class Logger {
         double permutation_map_insertion_time;
         size_t permutation_map_insertion_num;
         double tree_min_objective;
+        size_t tree_prefix_length;
         size_t tree_num_nodes;
         size_t tree_num_evaluated;
         size_t queue_size;

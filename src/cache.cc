@@ -68,6 +68,7 @@ void CacheTree<N>::insert_root() {
     ++num_nodes_;
     logger.setTreeNumNodes(num_nodes_);
     opt_predictions_.push_back(default_prediction);
+    logger.setTreePrefixLen(0);
 }
 
 template<class N>
@@ -142,6 +143,7 @@ CacheTree<N>::update_opt_rulelist(std::vector<size_t>& parent_prefix,
                                   size_t new_rule_id) {
     opt_rulelist_.assign(parent_prefix.begin(), parent_prefix.end());
     opt_rulelist_.push_back(new_rule_id);
+    logger.setTreePrefixLen(opt_rulelist_.size());
 }
 
 template<class N>

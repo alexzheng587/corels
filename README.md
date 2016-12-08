@@ -464,11 +464,6 @@ The last column reports the number of rules mined for (max cardinality, min supp
 | compas | 7,214 | 3,743 | 3,471 | 0.52 | 0.48 | 30 | 1,037 |
 | telco | 7,043 | 5,174 | 1,869 | 0.73 | 0.27 | 19 | 957 |
 
-## implemented but not explained
-
-If `c > 0`, don't add prefix to priority queue or cache if
-`c * (len(prefix) + 1) >= min_objective`.
-
 ## todo
 
 Semantics should buy us more than we're already achieving.  Let's optimize the crap out of tic-tac-toe!

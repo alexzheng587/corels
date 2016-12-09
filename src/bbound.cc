@@ -37,6 +37,14 @@ void prefix_map_garbage_collect(PrefixPermutationMap* p, size_t queue_min_length
     logger.decreasePmapSize(num_deleted);
 }
 
+void bfs_prefix_map_garbage_collect(PrefixPermutationMap* p, size_t queue_min_length) {
+    size_t pmap_size = p->size();
+    printf("bfs pmap gc for length %zu: %zu -> ", queue_min_length, pmap_size);
+    p->clear();
+    printf("%zu\n", p->size());
+    logger.decreasePmapSize(pmap_size);
+}
+
 void captured_map_garbage_collect(CapturedPermutationMap* p, size_t min_length) {
 }
 

@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
                                                &bfs_q,
                                                &base_queue_front,
                                                &prefix_permutation_insert,
-                                               &prefix_map_garbage_collect,
+                                               &bfs_prefix_map_garbage_collect,
                                                &p);
 
             printf("final num_nodes: %zu\n", tree.num_nodes());

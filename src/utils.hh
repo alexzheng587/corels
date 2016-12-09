@@ -141,8 +141,11 @@ class Logger {
     inline void decreasePmapSize(size_t n) {
         _state.pmap_size -= n;
     }
-    inline void incPmapNullLookup() {
-        ++_state.pmap_null_lookup;
+    inline void incPmapNullNum() {
+        ++_state.pmap_null_num;
+    }
+    inline void incPmapDiscardNum() {
+        ++_state.pmap_discard_num;
     }
     inline void initializeState() { // initialize so we can write a log record immediately
         _state.total_time = 0.;
@@ -168,7 +171,8 @@ class Logger {
         _state.queue_size = 0;
         _state.queue_min_length = 0;
         _state.pmap_size = 0;
-        _state.pmap_null_lookup = 0;
+        _state.pmap_null_num = 0;
+        _state.pmap_discard_num = 0;
     }
 
 
@@ -198,7 +202,8 @@ class Logger {
         size_t queue_size;
         size_t queue_min_length; // monotonically increases
         size_t pmap_size; // size of pmap
-        size_t pmap_null_lookup; // number of pmap lookup operations that return null
+        size_t pmap_null_num; // number of pmap lookup operations that return null
+        size_t pmap_discard_num; // number of pmap lookup operations that trigger discard
         size_t nrules;
         size_t* prefix_lens;
     };

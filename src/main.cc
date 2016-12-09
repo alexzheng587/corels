@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
             pch ? pch + 1 : "",
             run_stochastic ? "stochastic" : "",
             run_bfs ? "bfs" : "",
-            use_curious_cmp ? "curiosity" : "curious_lb",
+            run_curiosity ? (use_curious_cmp ? "curiosity" : "curious_lb") : "",
             use_prefix_perm_map ? "with_prefix_perm_map" : "with_captured_symmetry_map",
             max_num_nodes, c, verbosity, freq);
 

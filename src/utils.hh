@@ -141,6 +141,9 @@ class Logger {
     inline void decreasePmapSize(size_t n) {
         _state.pmap_size -= n;
     }
+    inline void incPmapNullLookup() {
+        ++_state.pmap_null_lookup;
+    }
     inline void initializeState() { // initialize so we can write a log record immediately
         _state.total_time = 0.;
         _state.evaluate_children_time = 0.;
@@ -165,6 +168,7 @@ class Logger {
         _state.queue_size = 0;
         _state.queue_min_length = 0;
         _state.pmap_size = 0;
+        _state.pmap_null_lookup = 0;
     }
 
 
@@ -185,7 +189,7 @@ class Logger {
         double tree_insertion_time;
         size_t tree_insertion_num;
         double permutation_map_insertion_time;
-        size_t permutation_map_insertion_num;
+        size_t permutation_map_insertion_num; // number of calls to `permutation_insert` function
         double current_lower_bound; // monotonically decreases for curious lower bound policy
         double tree_min_objective;
         size_t tree_prefix_length;
@@ -193,7 +197,8 @@ class Logger {
         size_t tree_num_evaluated;
         size_t queue_size;
         size_t queue_min_length; // monotonically increases
-        size_t pmap_size;
+        size_t pmap_size; // size of pmap
+        size_t pmap_null_lookup; // number of pmap lookup operations that return null
         size_t nrules;
         size_t* prefix_lens;
     };

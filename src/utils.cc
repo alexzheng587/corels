@@ -17,7 +17,7 @@ void Logger::setLogFileName(char *fname) {
        << "current_lower_bound,tree_min_objective,tree_prefix_length,"
        << "tree_num_nodes,tree_num_evaluated,"
        << "queue_size,queue_min_length,"
-       << "pmap_size,prefix_lengths" << endl;
+       << "pmap_size,pmap_null_lookup,prefix_lengths" << endl;
 }
 
 void Logger::dumpState() {
@@ -43,6 +43,8 @@ void Logger::dumpState() {
        << _state.tree_num_evaluated << ","
        << _state.queue_size << ","
        << _state.queue_min_length << ","
+       << _state.pmap_size << ","
+       << _state.pmap_null_lookup << ","
        << dumpPrefixLens().c_str() << endl;
 }
 

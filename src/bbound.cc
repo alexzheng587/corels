@@ -60,6 +60,8 @@ N* prefix_permutation_insert(construct_signature<N> construct_policy, size_t new
                 N* permuted_parent = permuted_node->parent();
                 permuted_parent->delete_child(permuted_node->id());
                 delete_subtree<N>(tree, permuted_node, false);
+            } else {
+                logger.incPmapNullLookup();
             }
             child = construct_policy(new_rule, nrules, prediction, default_prediction,
                                        lower_bound, objective, parent,
@@ -113,6 +115,8 @@ N* captured_permutation_insert(construct_signature<N> construct_policy, size_t n
                 N* permuted_parent = permuted_node->parent();
                 permuted_parent->delete_child(permuted_node->id());
                 delete_subtree<N>(tree, permuted_node, false);
+            } else {
+                logger.incPmapNullLookup();
             }
             child = construct_policy(new_rule, nrules, prediction, default_prediction,
                                        lower_bound, objective, parent,
@@ -125,6 +129,7 @@ N* captured_permutation_insert(construct_signature<N> construct_policy, size_t n
                                     lower_bound, objective, parent,
                                     num_not_captured, nsamples, len_prefix, c);
         p->insert(std::make_pair(key, std::make_pair(parent_prefix, lower_bound)));
+        logger.incPmapSize();
     }
     return child;
 };

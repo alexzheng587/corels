@@ -37,6 +37,14 @@ void prefix_map_garbage_collect(PrefixPermutationMap* p, size_t queue_min_length
     logger.decreasePmapSize(num_deleted);
 }
 
+void bfs_prefix_map_garbage_collect(PrefixPermutationMap* p, size_t queue_min_length) {
+    size_t pmap_size = p->size();
+    printf("bfs pmap gc for length %zu: %zu -> ", queue_min_length, pmap_size);
+    p->clear();
+    printf("%zu\n", p->size());
+    logger.decreasePmapSize(pmap_size);
+}
+
 void captured_map_garbage_collect(CapturedPermutationMap* p, size_t min_length) {
 }
 
@@ -421,9 +429,13 @@ void bbound_queue(CacheTree<N>* tree,
         }
         ++num_iter;
         if ((num_iter % 10000) == 0) {
-            printf("iter: %zu, tree: %zu, queue: %zu, time elapsed: %f\n",
-                   num_iter, tree->num_nodes(), q->size(), time_diff(start));
-        }
+	    if (p)
+                printf("iter: %zu, tree: %zu, queue: %zu, pmap: %zu, time elapsed: %f\n",
+                       num_iter, tree->num_nodes(), q->size(), p->size(), time_diff(start));
+            else
+                printf("iter: %zu, tree: %zu, queue: %zu, time elapsed: %f\n",
+                       num_iter, tree->num_nodes(), q->size(), time_diff(start));
+	}
         if ((num_iter % logger.getFrequency()) == 0)
             logger.dumpState();     // want ~1000 records for detailed figures
     }

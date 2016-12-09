@@ -61,6 +61,7 @@ typedef std::map<CapturedKey, std::pair<std::vector<size_t>, double> > CapturedP
 template<class P>
 using pmap_garbage_collect_signature = void (*)(P*, size_t);
 
+void bfs_prefix_map_garbage_collect(PrefixPermutationMap* p, size_t min_length);
 void prefix_map_garbage_collect(PrefixPermutationMap* p, size_t min_length);
 void captured_map_garbage_collect(CapturedPermutationMap* p, size_t min_length);
 

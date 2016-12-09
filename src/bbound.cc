@@ -23,14 +23,18 @@ CuriousNode* curious_construct_policy(size_t new_rule, size_t nrules, bool predi
 
 void prefix_map_garbage_collect(PrefixPermutationMap* p, size_t queue_min_length) {
     typename PrefixPermutationMap::iterator iter;
+    size_t num_deleted = 0;
     printf("pmap gc for length %zu: %zu -> ", queue_min_length, p->size());
     for (iter = p->begin(); iter != p->end(); ) {
-        if (iter->first.size() <= queue_min_length)
+        if (iter->first.size() <= queue_min_length) {
             iter = p->erase(iter);
-        else
+            ++num_deleted;
+        } else {
             ++iter;
+        }
     }
     printf("%zu\n", p->size());
+    logger.decreasePmapSize(num_deleted);
 }
 
 void captured_map_garbage_collect(CapturedPermutationMap* p, size_t min_length) {
@@ -68,6 +72,7 @@ N* prefix_permutation_insert(construct_signature<N> construct_policy, size_t new
                                     lower_bound, objective, parent,
                                     num_not_captured, nsamples, len_prefix, c);
         p->insert(std::make_pair(key, std::make_pair(parent_prefix, lower_bound)));
+        logger.incPmapSize();
     }
     return child;
 };

@@ -135,6 +135,12 @@ class Logger {
     inline size_t getQueueMinLen() {
         return _state.queue_min_length;
     }
+    inline void incPmapSize() {
+        ++_state.pmap_size;
+    }
+    inline void decreasePmapSize(size_t n) {
+        _state.pmap_size -= n;
+    }
     inline void initializeState() { // initialize so we can write a log record immediately
         _state.total_time = 0.;
         _state.evaluate_children_time = 0.;
@@ -158,6 +164,7 @@ class Logger {
         _state.tree_num_evaluated = 0;
         _state.queue_size = 0;
         _state.queue_min_length = 0;
+        _state.pmap_size = 0;
     }
 
 
@@ -186,6 +193,7 @@ class Logger {
         size_t tree_num_evaluated;
         size_t queue_size;
         size_t queue_min_length; // monotonically increases
+        size_t pmap_size;
         size_t nrules;
         size_t* prefix_lens;
     };

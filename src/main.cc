@@ -22,6 +22,7 @@ int main(int argc, char *argv[]) {
     bool use_curious_cmp = false;
     bool use_lower_bound_cmp = false;
     bool latex_out = false;
+    bool run_pmap = false;
     bool use_prefix_perm_map = false;
     bool use_captured_sym_map = false;
     int verbosity = 1;
@@ -49,6 +50,7 @@ int main(int argc, char *argv[]) {
             latex_out = true;
             break;
         case 'p':
+	    run_pmap = true;
             use_prefix_perm_map = atoi(optarg) == 1;
             use_captured_sym_map = atoi(optarg) == 2;
             break;
@@ -106,7 +108,7 @@ int main(int argc, char *argv[]) {
             run_stochastic ? "stochastic" : "",
             run_bfs ? "bfs" : "",
             run_curiosity ? (use_curious_cmp ? "curiosity" : "curious_lb") : "",
-            use_prefix_perm_map ? "with_prefix_perm_map" : "with_captured_symmetry_map",
+            run_pmap ? (use_prefix_perm_map ? "with_prefix_perm_map" : "with_captured_symmetry_map") : "no_pmap",
             max_num_nodes, c, verbosity, freq);
 
     if (verbosity >= 1000) {

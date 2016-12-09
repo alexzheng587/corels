@@ -421,9 +421,13 @@ void bbound_queue(CacheTree<N>* tree,
         }
         ++num_iter;
         if ((num_iter % 10000) == 0) {
-            printf("iter: %zu, tree: %zu, queue: %zu, time elapsed: %f\n",
-                   num_iter, tree->num_nodes(), q->size(), time_diff(start));
-        }
+	    if (p)
+                printf("iter: %zu, tree: %zu, queue: %zu, pmap: %zu, time elapsed: %f\n",
+                       num_iter, tree->num_nodes(), q->size(), p->size(), time_diff(start));
+            else
+                printf("iter: %zu, tree: %zu, queue: %zu, time elapsed: %f\n",
+                       num_iter, tree->num_nodes(), q->size(), time_diff(start));
+	}
         if ((num_iter % logger.getFrequency()) == 0)
             logger.dumpState();     // want ~1000 records for detailed figures
     }

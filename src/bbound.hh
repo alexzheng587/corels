@@ -82,13 +82,16 @@ N* captured_permutation_insert(construct_signature<N> construct_policy, size_t n
                         double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
                         double c, CacheTree<N>* tree, VECTOR not_captured, std::vector<size_t>, CapturedPermutationMap* p);
 
-template<class N, class P>
-extern std::pair<N*, std::set<size_t> > stochastic_select(CacheTree<N>* tree, VECTOR not_captured, P* p);
-
 template<class N>
+extern std::pair<N*, std::set<size_t> > stochastic_select(CacheTree<N>* tree, VECTOR not_captured);
+
+template<class N, class P>
 extern void bbound_stochastic(CacheTree<N>* tree,
                               size_t max_num_nodes,
-                              construct_signature<N> construct_policy);
+                              construct_signature<N> construct_policy,
+                              permutation_insert_signature<N, P> permutation_insert,
+                              pmap_garbage_collect_signature<P> pmap_garbage_collect,
+                              P* p);
 
 template<class N, class Q>
 extern std::pair<N*, std::set<size_t> >

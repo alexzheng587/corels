@@ -242,8 +242,8 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
                 logger.addToTreeInsertionTime(time_diff(t4));
                 logger.incTreeInsertionNum();
 
+                logger.incPrefixLen(len_prefix);
                 if (q) {
-                    logger.incPrefixLen(len_prefix);
                     q->push(n);
                     logger.setQueueSize(q->size());
                 }
@@ -295,20 +295,33 @@ std::pair<N*, std::set<size_t> > stochastic_select(CacheTree<N>* tree, VECTOR no
         ordered_prefix.insert(iter->first);
         rule_vandnot(not_captured, not_captured, tree->rule(iter->first).truthtable, tree->nsamples(), &cnt);
     }
+    logger.setCurrentLowerBound(node->lower_bound() + tree->c());
     return std::make_pair(node, ordered_prefix);
 }
 
-template<class N>
+template<class N, class P>
 void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes,
-                       construct_signature<N> construct_policy) {
-    logger.setInitialTime(timestamp());
+                       construct_signature<N> construct_policy,
+                       permutation_insert_signature<N, P> permutation_insert,
+                       pmap_garbage_collect_signature<P> pmap_garbage_collect,
+                       P* p) {
+    double start = timestamp();
+    logger.setInitialTime(start);
+    logger.dumpState();         // initial log record
+
+    double min_objective = 1.0;
     std::pair<N*, std::set<size_t> > node_ordered;
     VECTOR not_captured;
     NullQueue<N>* q = NULL;
+    logger.incPrefixLen(0);
+
+    rule_vinit(tree->nsamples(), &not_captured);
 
     size_t num_iter = 0;
-    rule_vinit(tree->nsamples(), &not_captured);
     tree->insert_root();
+    logger.incTreeInsertionNum();
+    q->push(tree->root());
+    logger.dumpState();         // log record for empty rule list
     while ((tree->num_nodes() < max_num_nodes) and (tree->num_nodes() > 0)) {
         double t0 = timestamp();
         node_ordered = stochastic_select<N>(tree, not_captured);
@@ -316,18 +329,33 @@ void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes,
         logger.incNodeSelectNum();
         if (node_ordered.first) {
             double t1 = timestamp();
-
-            evaluate_children<N, NullQueue<N>, PrefixPermutationMap>(tree, node_ordered.first, not_captured,
-                                                                     node_ordered.second, construct_policy,
-                                                                     q, NULL, NULL);
+            min_objective = tree->min_objective();
+            evaluate_children<N, NullQueue<N>, P>(tree, node_ordered.first, not_captured,
+                                                  node_ordered.second, construct_policy,
+                                                  q, permutation_insert, p);
             logger.addToEvalChildrenTime(time_diff(t1));
             logger.incEvalChildrenNum();
+
+            if (tree->min_objective() < min_objective) {
+                min_objective = tree->min_objective();
+                printf("num_nodes before garbage_collect: %zu\n", tree->num_nodes());
+                logger.dumpState();
+                tree->garbage_collect();
+                logger.dumpState();
+                printf("num_nodes after garbage_collect: %zu\n", tree->num_nodes());
+            }
         }
         ++num_iter;
         if ((num_iter % 10000) == 0) {
-            printf("num_iter: %zu, num_nodes: %zu\n", num_iter, tree->num_nodes());
-            logger.dumpState();
+            if (p)
+                printf("iter: %zu, tree: %zu, queue: %zu, pmap: %zu, time elapsed: %f\n",
+                       num_iter, tree->num_nodes(), q->size(), p->size(), time_diff(start));
+            else
+                printf("iter: %zu, tree: %zu, queue: %zu, time elapsed: %f\n",
+                       num_iter, tree->num_nodes(), q->size(), time_diff(start));
         }
+        if ((num_iter % logger.getFrequency()) == 0)
+            logger.dumpState();     // want ~1000 records for detailed figures
     }
     logger.dumpState();
     rule_vfree(&not_captured);
@@ -340,6 +368,7 @@ queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured) {
 
     N* selected_node = front(q); //q->front();
     q->pop();
+    logger.setCurrentLowerBound(selected_node->lower_bound() + tree->c());
 
     N* node = selected_node;
     if (node->deleted()) {  // lazily delete leaf nodes
@@ -373,8 +402,9 @@ void bbound_queue(CacheTree<N>* tree,
                 permutation_insert_signature<N, P> permutation_insert,
                 pmap_garbage_collect_signature<P> pmap_garbage_collect,
                 P* p) {
-    logger.setInitialTime(timestamp());
-    logger.dumpState();         // initial log record --> set initial values so this doesn't segfault
+    double start = timestamp();
+    logger.setInitialTime(start);
+    logger.dumpState();         // initial log record
 
     int cnt;
     double min_objective = 1.0;
@@ -391,8 +421,7 @@ void bbound_queue(CacheTree<N>* tree,
     q->push(tree->root());
     logger.setQueueSize(q->size());
     logger.incPrefixLen(0);
-    logger.dumpState();
-    double start = timestamp();
+    logger.dumpState();         // log record for empty rule list
     while ((tree->num_nodes() < max_num_nodes) &&
            !q->empty()) {
         double t0 = timestamp();
@@ -401,15 +430,14 @@ void bbound_queue(CacheTree<N>* tree,
         logger.incNodeSelectNum();
         if (node_ordered.first) {
             double t1 = timestamp();
-            logger.setCurrentLowerBound(node_ordered.first->lower_bound() + tree->c());
             min_objective = tree->min_objective();
             /* not_captured = default rule truthtable & ~ captured */
             rule_vandnot(not_captured,
                          tree->rule(tree->root()->id()).truthtable, captured,
                          tree->nsamples(), &cnt);
             evaluate_children<N, Q, P>(tree, node_ordered.first, not_captured,
-                                 node_ordered.second, construct_policy, q,
-                                 permutation_insert, p);
+                                       node_ordered.second, construct_policy, q,
+                                       permutation_insert, p);
             logger.addToEvalChildrenTime(time_diff(t1));
             logger.incEvalChildrenNum();
 
@@ -429,13 +457,13 @@ void bbound_queue(CacheTree<N>* tree,
         }
         ++num_iter;
         if ((num_iter % 10000) == 0) {
-	    if (p)
+            if (p)
                 printf("iter: %zu, tree: %zu, queue: %zu, pmap: %zu, time elapsed: %f\n",
                        num_iter, tree->num_nodes(), q->size(), p->size(), time_diff(start));
             else
                 printf("iter: %zu, tree: %zu, queue: %zu, time elapsed: %f\n",
                        num_iter, tree->num_nodes(), q->size(), time_diff(start));
-	}
+        }
         if ((num_iter % logger.getFrequency()) == 0)
             logger.dumpState();     // want ~1000 records for detailed figures
     }
@@ -528,7 +556,7 @@ void delete_subtree(CacheTree<N>* tree, N* node, bool destructive) {
             tree->decrement_num_nodes();
             delete node;
         } else {
-            logger.decPrefixLen(node->depth());
+            logger.decPrefixLen(node->depth()); // this should only happen if there's a queue
             node->set_deleted();
         }
     }
@@ -606,9 +634,20 @@ template std::pair<BaseNode*, std::set<size_t> >
 stochastic_select<BaseNode>(CacheTree<BaseNode>* tree, VECTOR not_captured); 
 
 template void
-bbound_stochastic<BaseNode>(CacheTree<BaseNode>* tree,
-                            size_t max_num_nodes,
-                            construct_signature<BaseNode> construct_policy);
+bbound_stochastic<BaseNode, PrefixPermutationMap>(CacheTree<BaseNode>* tree,
+                                                  size_t max_num_nodes,
+                                                  construct_signature<BaseNode> construct_policy,
+                                                  permutation_insert_signature<BaseNode, PrefixPermutationMap> permutation_insert,
+                                                  pmap_garbage_collect_signature<PrefixPermutationMap> pmap_garbage_collect,
+                                                  PrefixPermutationMap* p);
+
+template void
+bbound_stochastic<BaseNode, CapturedPermutationMap>(CacheTree<BaseNode>* tree,
+                                                    size_t max_num_nodes,
+                                                    construct_signature<BaseNode> construct_policy,
+                                                    permutation_insert_signature<BaseNode, CapturedPermutationMap> permutation_insert,
+                                                    pmap_garbage_collect_signature<CapturedPermutationMap> pmap_garbage_collect,
+                                                    CapturedPermutationMap* p);
 
 template std::pair<BaseNode*, std::set<size_t> >
 queue_select<BaseNode, BaseQueue>(CacheTree<BaseNode>* tree,

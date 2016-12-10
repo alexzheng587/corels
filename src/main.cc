@@ -102,8 +102,17 @@ int main(int argc, char *argv[]) {
 
     print_machine_info();
     char log_fname[512];
+    char opt_fname[512];
     const char* pch = strrchr(argv[0], '/');
     sprintf(log_fname, "../logs/for-%s-%s%s%s-%s-max_num_nodes=%d-c=%.7f-v=%d-f=%d.txt",
+            pch ? pch + 1 : "",
+            run_stochastic ? "stochastic" : "",
+            run_bfs ? "bfs" : "",
+            run_curiosity ? (use_curious_cmp ? "curiosity" : "curious_lb") : "",
+            run_pmap ? (use_prefix_perm_map ? "with_prefix_perm_map" : "with_captured_symmetry_map") : "no_pmap",
+            max_num_nodes, c, verbosity, freq);
+
+    sprintf(opt_fname, "../logs/for-%s-%s%s%s-%s-max_num_nodes=%d-c=%.7f-v=%d-f=%d-opt.txt",
             pch ? pch + 1 : "",
             run_stochastic ? "stochastic" : "",
             run_bfs ? "bfs" : "",
@@ -141,9 +150,7 @@ int main(int argc, char *argv[]) {
         printf("final accuracy: %1.5f\n",
                1 - tree.min_objective() + c*r_list.size());
         print_final_rulelist(r_list, tree.opt_predictions(),
-                             latex_out, rules, labels);
-
-        logger.dumpState();
+                             latex_out, rules, labels, opt_fname);
     }
 
     if (run_bfs) {
@@ -170,7 +177,7 @@ int main(int argc, char *argv[]) {
             printf("final accuracy: %1.5f\n",
                    1 - tree.min_objective() + c*r_list.size());
             print_final_rulelist(r_list, tree.opt_predictions(),
-                                 latex_out, rules, labels);
+                                 latex_out, rules, labels, opt_fname);
         } else if (use_captured_sym_map) {
             printf("BFS Captured Symmetry Map\n");        
             CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
@@ -194,7 +201,7 @@ int main(int argc, char *argv[]) {
             printf("final accuracy: %1.5f\n",
                    1 - tree.min_objective() + c*r_list.size());
             print_final_rulelist(r_list, tree.opt_predictions(),
-                                 latex_out, rules, labels);
+                                 latex_out, rules, labels, opt_fname);
         }
         else {
             printf("BFS No Permutation Map\n");        
@@ -218,7 +225,7 @@ int main(int argc, char *argv[]) {
             printf("final accuracy: %1.5f\n",
                    1 - tree.min_objective() + c*r_list.size());
             print_final_rulelist(r_list, tree.opt_predictions(),
-                                 latex_out, rules, labels);
+                                 latex_out, rules, labels, opt_fname);
         }
     }
 
@@ -246,7 +253,7 @@ int main(int argc, char *argv[]) {
                 printf("final accuracy: %1.5f\n",
                        1 - tree.min_objective() + c*r_list.size());
                 print_final_rulelist(r_list, tree.opt_predictions(),
-                                     latex_out, rules, labels);
+                                     latex_out, rules, labels, opt_fname);
             } else if (use_captured_sym_map) {
                 printf("CURIOSITY Captured Symmetry Map\n");
                 CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
@@ -269,7 +276,7 @@ int main(int argc, char *argv[]) {
                 printf("final accuracy: %1.5f\n",
                        1 - tree.min_objective() + c*r_list.size());
                 print_final_rulelist(r_list, tree.opt_predictions(),
-                                     latex_out, rules, labels);
+                                     latex_out, rules, labels, opt_fname);
             }
             else {
                 printf("CURIOSITY No Permutation Map\n");
@@ -292,7 +299,7 @@ int main(int argc, char *argv[]) {
                 printf("final accuracy: %1.5f\n",
                        1 - tree.min_objective() + c*r_list.size());
                 print_final_rulelist(r_list, tree.opt_predictions(),
-                                     latex_out, rules, labels);
+                                     latex_out, rules, labels, opt_fname);
             }
         } else if (use_lower_bound_cmp) {
             if (use_prefix_perm_map) {
@@ -317,7 +324,7 @@ int main(int argc, char *argv[]) {
                 printf("final accuracy: %1.5f\n",
                        1 - tree.min_objective() + c*r_list.size());
                 print_final_rulelist(r_list, tree.opt_predictions(),
-                                     latex_out, rules, labels);
+                                     latex_out, rules, labels, opt_fname);
             } else if (use_captured_sym_map) {
                 printf("CURIOUS LOWER BOUND Captured Symmetry Map\n");
                 CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
@@ -340,7 +347,7 @@ int main(int argc, char *argv[]) {
                 printf("final accuracy: %1.5f\n",
                        1 - tree.min_objective() + c*r_list.size());
                 print_final_rulelist(r_list, tree.opt_predictions(),
-                                     latex_out, rules, labels);
+                                     latex_out, rules, labels, opt_fname);
             }
             else {
                 printf("CURIOUS LOWER BOUND No Permutation Map\n");
@@ -363,7 +370,7 @@ int main(int argc, char *argv[]) {
                 printf("final accuracy: %1.5f\n",
                        1 - tree.min_objective() + c*r_list.size());
                 print_final_rulelist(r_list, tree.opt_predictions(),
-                                     latex_out, rules, labels);
+                                     latex_out, rules, labels, opt_fname);
             }
         }
     }

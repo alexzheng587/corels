@@ -229,7 +229,8 @@ void print_final_rulelist(const std::vector<size_t>& rulelist,
                           const std::vector<bool>& preds,
                           const bool latex_out,
                           const rule_t rules[],
-                          const rule_t labels[]);
+                          const rule_t labels[],
+                          char fname[]);
 
 extern Logger logger;
 

@@ -66,7 +66,8 @@ void print_final_rulelist(const std::vector<size_t>& rulelist,
                           const std::vector<bool>& preds,
                           const bool latex_out,
                           const rule_t rules[],
-                          const rule_t labels[]) {
+                          const rule_t labels[], 
+                          char fname[]) {
     assert(rulelist.size() >= 0 && rulelist.size() == preds.size() - 1);
 
     printf("\nOPTIMAL RULE LIST\n");
@@ -103,6 +104,16 @@ void print_final_rulelist(const std::vector<size_t>& rulelist,
             printf("\\end{algorithmic}\n\n");
         }
     }
+
+    ofstream f;
+    printf("writing optimal rule list to: %s\n\n", fname);
+    f.open(fname, ios::out | ios::trunc);
+    for(size_t i = 0; i < rulelist.size(); ++i) {
+        f << rules[rulelist[i]].features << "~"
+          << preds[i] << ";";
+    }
+    f << "default~" << preds.back();
+    f.close();
 }
 
 void print_machine_info() {

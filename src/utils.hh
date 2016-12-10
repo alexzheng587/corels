@@ -178,7 +178,7 @@ class Logger {
 
   private:
     struct State {
-        double initial_time;            // initial time stamp
+        double initial_time;                    // initial time stamp
         double total_time;
         double evaluate_children_time;
         size_t evaluate_children_num;
@@ -193,17 +193,17 @@ class Logger {
         double tree_insertion_time;
         size_t tree_insertion_num;
         double permutation_map_insertion_time;
-        size_t permutation_map_insertion_num; // number of calls to `permutation_insert` function
-        double current_lower_bound; // monotonically decreases for curious lower bound policy
+        size_t permutation_map_insertion_num;   // number of calls to `permutation_insert` function
+        double current_lower_bound;             // monotonically decreases for curious lower bound policy
         double tree_min_objective;
         size_t tree_prefix_length;
         size_t tree_num_nodes;
         size_t tree_num_evaluated;
         size_t queue_size;
-        size_t queue_min_length; // monotonically increases
-        size_t pmap_size; // size of pmap
-        size_t pmap_null_num; // number of pmap lookup operations that return null
-        size_t pmap_discard_num; // number of pmap lookup operations that trigger discard
+        size_t queue_min_length;                // monotonically increases
+        size_t pmap_size;                       // size of pmap
+        size_t pmap_null_num;                   // number of pmap lookup operations that return null
+        size_t pmap_discard_num;                // number of pmap lookup operations that trigger discard
         size_t nrules;
         size_t* prefix_lens;
     };

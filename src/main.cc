@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
             latex_out = true;
             break;
         case 'p':
-	    run_pmap = true;
+	        run_pmap = true;
             use_prefix_perm_map = atoi(optarg) == 1;
             use_captured_sym_map = atoi(optarg) == 2;
             break;
@@ -130,20 +130,66 @@ int main(int argc, char *argv[]) {
     logger.setFrequency(freq);
     double init = timestamp();
     if (run_stochastic) {
-        printf("BBOUND_STOCHASTIC\n");
-        CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
-        bbound_stochastic<BaseNode>(&tree, max_num_nodes,
-                                    &base_construct_policy);
-        printf("final num_nodes: %zu\n", tree.num_nodes());
-        printf("final num_evaluated: %zu\n", tree.num_evaluated());
-        printf("final min_objective: %1.5f\n", tree.min_objective());
-        const std::vector<size_t>& r_list = tree.opt_rulelist();
-        printf("final accuracy: %1.5f\n",
-               1 - tree.min_objective() + c*r_list.size());
-        print_final_rulelist(r_list, tree.opt_predictions(),
-                             latex_out, rules, labels);
+        if (use_prefix_perm_map) {
+            printf("BBOUND_STOCHASTIC Permutation Map\n");
+            CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
+            PrefixPermutationMap p;
+            bbound_stochastic<BaseNode,
+                              PrefixPermutationMap>(&tree, max_num_nodes,
+                                                    &base_construct_policy,
+                                                    &prefix_permutation_insert,
+                                                    &prefix_map_garbage_collect,
+                                                    &p);
+            printf("final num_nodes: %zu\n", tree.num_nodes());
+            printf("final num_evaluated: %zu\n", tree.num_evaluated());
+            printf("final min_objective: %1.5f\n", tree.min_objective());
+            const std::vector<size_t>& r_list = tree.opt_rulelist();
+            printf("final accuracy: %1.5f\n",
+                   1 - tree.min_objective() + c*r_list.size());
+            print_final_rulelist(r_list, tree.opt_predictions(),
+                                 latex_out, rules, labels);
 
-        logger.dumpState();
+            logger.dumpState();
+        } else if (use_captured_sym_map) {
+            printf("BBOUND_STOCHASTIC Captured Symmetry Map\n");
+            CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
+            CapturedPermutationMap p;
+            bbound_stochastic<BaseNode,
+                              CapturedPermutationMap>(&tree, max_num_nodes,
+                                                      &base_construct_policy,
+                                                      &captured_permutation_insert,
+                                                      &captured_map_garbage_collect,
+                                                      &p);
+            printf("final num_nodes: %zu\n", tree.num_nodes());
+            printf("final num_evaluated: %zu\n", tree.num_evaluated());
+            printf("final min_objective: %1.5f\n", tree.min_objective());
+            const std::vector<size_t>& r_list = tree.opt_rulelist();
+            printf("final accuracy: %1.5f\n",
+                   1 - tree.min_objective() + c*r_list.size());
+            print_final_rulelist(r_list, tree.opt_predictions(),
+                                 latex_out, rules, labels);
+
+            logger.dumpState();
+        } else {
+            printf("BBOUND_STOCHASTIC No Permutation Map \n");
+            CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
+            bbound_stochastic<BaseNode,
+                              CapturedPermutationMap>(&tree, max_num_nodes,
+                                                      &base_construct_policy,
+                                                      &captured_permutation_insert,
+                                                      &captured_map_garbage_collect,
+                                                      NULL);
+            printf("final num_nodes: %zu\n", tree.num_nodes());
+            printf("final num_evaluated: %zu\n", tree.num_evaluated());
+            printf("final min_objective: %1.5f\n", tree.min_objective());
+            const std::vector<size_t>& r_list = tree.opt_rulelist();
+            printf("final accuracy: %1.5f\n",
+                   1 - tree.min_objective() + c*r_list.size());
+            print_final_rulelist(r_list, tree.opt_predictions(),
+                                 latex_out, rules, labels);
+
+            logger.dumpState();
+        }
     }
 
     if (run_bfs) {

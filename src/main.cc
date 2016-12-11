@@ -194,11 +194,10 @@ int main(int argc, char *argv[]) {
             printf("final accuracy: %1.5f\n",
                    1 - tree.min_objective() + c*r_list.size());
             print_final_rulelist(r_list, tree.opt_predictions(),
-                                 latex_out, rules, labels);
+                                 latex_out, rules, labels, opt_fname);
 
             logger.dumpState();
         }
->>>>>>> 8ad394d679a8c9cf422b464beb635da278f4fb22
     }
 
     if (run_bfs) {

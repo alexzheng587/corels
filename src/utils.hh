@@ -25,6 +25,7 @@ class Logger {
     void dumpState();
     std::string dumpPrefixLens();
     std::string dumpRemainingSpaceSize();
+    size_t dumpLogRemainingSpaceSize();
 
     inline void setVerbosity(int verbosity) {
         _v = verbosity;
@@ -152,7 +153,7 @@ class Logger {
     inline void incPmapDiscardNum() {
         ++_state.pmap_discard_num;
     }
-    inline void addQueueElement(unsigned int len_prefix, double lower_bound) {
+    inline void subtreeSize(mpz_t tot, unsigned int len_prefix, double lower_bound) {
         // theorem 4 (fine-grain upper bound on number of remaining prefix evaluations)
         unsigned int f_naive = _state.nrules - len_prefix;
         unsigned int f = (_state.tree_min_objective - lower_bound) / _state.c;
@@ -165,28 +166,24 @@ class Logger {
         for (unsigned int k = 1; k <= f; k++) {
             mpz_fac_ui(d, _state.nrules - len_prefix - k);
             mpz_cdiv_q(d, n, d);
-            mpz_add(_state.remaining_space_size, _state.remaining_space_size, d);
+            mpz_add(tot, tot, d);
         }
         mpz_clear(n);
         mpz_clear(d);
     }
+    inline void addQueueElement(unsigned int len_prefix, double lower_bound) {
+        mpz_t tot;
+        mpz_init(tot);
+        subtreeSize(tot, len_prefix, lower_bound);
+        mpz_add(_state.remaining_space_size, _state.remaining_space_size, tot);
+        mpz_clear(tot);
+    }
     inline void removeQueueElement(unsigned int len_prefix, double lower_bound) {
-        // theorem 4 (fine-grain upper bound on number of remaining prefix evaluations)
-        unsigned int f_naive = _state.nrules - len_prefix;
-        unsigned int f = (_state.tree_min_objective - lower_bound) / _state.c;
-        if (f_naive < f)
-            f = f_naive;
-        mpz_t n, d;
-        mpz_init(n);
-        mpz_init(d);
-        mpz_fac_ui(n, _state.nrules - len_prefix);
-        for (unsigned int k = 1; k <= f; k++) {
-            mpz_fac_ui(d, _state.nrules - len_prefix - k);
-            mpz_cdiv_q(d, n, d);
-            mpz_sub(_state.remaining_space_size, _state.remaining_space_size, d);
-        }
-        mpz_clear(n);
-        mpz_clear(d);
+        mpz_t tot;
+        mpz_init(tot);
+        subtreeSize(tot, len_prefix, lower_bound);
+        mpz_sub(_state.remaining_space_size, _state.remaining_space_size, tot);
+        mpz_clear(tot);
     }
     inline void initRemainingSpaceSize() {
         // proposition 2 (upper bound on total number of prefix evaluations)
@@ -198,6 +195,9 @@ class Logger {
     }
     inline void clearRemainingSpaceSize() {
         mpz_set_ui(_state.remaining_space_size, 0);
+    }
+    inline size_t getLogRemainingSpaceSize() {
+        return mpz_sizeinbase(_state.remaining_space_size, 10); // this is approximate
     }
     inline void initializeState() { // initialize so we can write a log record immediately
         _state.total_time = 0.;

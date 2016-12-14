@@ -1,9 +1,9 @@
 CFLAGS := -g -W -Wall -O$(O) -I.
 LDFLAGS :=
-LIBS :=
+LIBS := -lgmpxx -lgmp
 
 ifneq ($(shell uname),Darwin)
-LIBS := -lbsd
+LIBS += -lbsd
 endif
 
 CC = gcc

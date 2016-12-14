@@ -132,6 +132,7 @@ int main(int argc, char *argv[]) {
         bbound_greedy(nsamples, nrules, rules, labels, 8);
     }
 
+    logger.setC(c);
     logger.setNRules(nrules);
     logger.initPrefixVec();
     logger.setVerbosity(verbosity);

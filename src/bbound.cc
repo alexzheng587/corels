@@ -67,7 +67,7 @@ N* prefix_permutation_insert(construct_signature<N> construct_policy, size_t new
             if ((permuted_node = tree->check_prefix(permuted_prefix)) != NULL) {
                 N* permuted_parent = permuted_node->parent();
                 permuted_parent->delete_child(permuted_node->id());
-                delete_subtree<N>(tree, permuted_node, false);
+                delete_subtree<N>(tree, permuted_node, false, true);
                 logger.incPmapDiscardNum();
             } else {
                 logger.incPmapNullNum();
@@ -123,7 +123,7 @@ N* captured_permutation_insert(construct_signature<N> construct_policy, size_t n
             if ((permuted_node = tree->check_prefix(permuted_prefix)) != NULL) {
                 N* permuted_parent = permuted_node->parent();
                 permuted_parent->delete_child(permuted_node->id());
-                delete_subtree<N>(tree, permuted_node, false);
+                delete_subtree<N>(tree, permuted_node, false, true);
                 logger.incPmapDiscardNum();
             } else {
                 logger.incPmapNullNum();
@@ -241,11 +241,11 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
                 tree->insert(n);
                 logger.addToTreeInsertionTime(time_diff(t4));
                 logger.incTreeInsertionNum();
-
                 logger.incPrefixLen(len_prefix);
                 if (q) {
                     q->push(n);
                     logger.setQueueSize(q->size());
+                    logger.addQueueElement(len_prefix, lower_bound);
                 }
             }
         }
@@ -259,6 +259,7 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
     logger.addToRuleEvalTime(time_diff(t0));
     logger.incRuleEvalNum();
     logger.decPrefixLen(parent->depth());
+    logger.removeQueueElement(len_prefix - 1, parent_lower_bound);
     if (parent->num_children() == 0) {
         tree->prune_up(parent);
     } else {
@@ -280,7 +281,7 @@ std::pair<N*, std::set<size_t> > stochastic_select(CacheTree<N>* tree, VECTOR no
             if (node->depth() > 0) {
                 N* parent = node->parent();
                 parent->delete_child(node->id());
-                delete_subtree<N>(tree, node, true);
+                delete_subtree<N>(tree, node, true, true);
                 if (parent->num_children() == 0)
                     tree->prune_up(parent);
             }
@@ -415,6 +416,7 @@ int bbound_queue(CacheTree<N>* tree,
     if (tree->num_nodes() == 0) {
         start = timestamp();
         logger.setInitialTime(start);
+        logger.initializeState();
         logger.dumpState();         // initial log record
 
         min_objective = 1.0;
@@ -424,6 +426,7 @@ int bbound_queue(CacheTree<N>* tree,
         logger.setQueueSize(q->size());
         logger.incPrefixLen(0);
         logger.dumpState();         // log record for empty rule list
+        logger.initRemainingSpaceSize();
     } else {
         start = logger.getInitialTime();
         min_objective = tree->min_objective();
@@ -449,11 +452,11 @@ int bbound_queue(CacheTree<N>* tree,
 
             if (tree->min_objective() < min_objective) {
                 min_objective = tree->min_objective();
-                printf("num_nodes before garbage_collect: %zu\n", tree->num_nodes());
+                printf("before garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", tree->num_nodes(), logger.getLogRemainingSpaceSize());
                 logger.dumpState();
                 tree->garbage_collect();
                 logger.dumpState();
-                printf("num_nodes after garbage_collect: %zu\n", tree->num_nodes());
+                printf("after garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", tree->num_nodes(), logger.getLogRemainingSpaceSize());
             }
         }
         if (queue_min_length < logger.getQueueMinLen()) {
@@ -464,11 +467,11 @@ int bbound_queue(CacheTree<N>* tree,
         ++num_iter;
         if ((num_iter % 10000) == 0) {
             if (p)
-                printf("iter: %zu, tree: %zu, queue: %zu, pmap: %zu, time elapsed: %f\n",
-                       num_iter, tree->num_nodes(), q->size(), p->size(), time_diff(start));
+                printf("iter: %zu, tree: %zu, queue: %zu, pmap: %zu, log10(remaining): %zu, time elapsed: %f\n",
+                       num_iter, tree->num_nodes(), q->size(), p->size(), logger.getLogRemainingSpaceSize(), time_diff(start));
             else
-                printf("iter: %zu, tree: %zu, queue: %zu, time elapsed: %f\n",
-                       num_iter, tree->num_nodes(), q->size(), time_diff(start));
+                printf("iter: %zu, tree: %zu, queue: %zu, log10(remaining): %zu, time elapsed: %f\n",
+                       num_iter, tree->num_nodes(), q->size(), logger.getLogRemainingSpaceSize(), time_diff(start));
         }
         if ((num_iter % logger.getFrequency()) == 0)
             logger.dumpState();     // want ~1000 records for detailed figures
@@ -477,6 +480,12 @@ int bbound_queue(CacheTree<N>* tree,
         }
     }
     logger.dumpState(); // second last log record (before queue elements deleted)
+    if (p)
+        printf("iter: %zu, tree: %zu, queue: %zu, pmap: %zu, log10(remaining): %zu, time elapsed: %f\n",
+               num_iter, tree->num_nodes(), q->size(), p->size(), logger.getLogRemainingSpaceSize(), time_diff(start));
+    else
+        printf("iter: %zu, tree: %zu, queue: %zu, log10(remaining): %zu, time elapsed: %f\n",
+               num_iter, tree->num_nodes(), q->size(), logger.getLogRemainingSpaceSize(), time_diff(start));
 
     if (q->empty())
         printf("Exited because queue empty\n");
@@ -549,14 +558,14 @@ void bbound_greedy(size_t nsamples, size_t nrules, rule_t *rules, rule_t *labels
 }
 
 template<class N>
-void delete_subtree(CacheTree<N>* tree, N* node, bool destructive) {
+void delete_subtree(CacheTree<N>* tree, N* node, bool destructive, bool update_remaining_state_space) {
     N* child;
     typename std::map<size_t, N*>::iterator iter;
     if (node->done()) {
         iter = node->children_begin();
         while (iter != node->children_end()) {
             child = iter->second;
-            delete_subtree<N>(tree, child, destructive);
+            delete_subtree<N>(tree, child, destructive, update_remaining_state_space);
             ++iter;
         }
         tree->decrement_num_nodes(); // always delete interior (non-leaf) nodes
@@ -566,7 +575,9 @@ void delete_subtree(CacheTree<N>* tree, N* node, bool destructive) {
             tree->decrement_num_nodes();
             delete node;
         } else {
-            logger.decPrefixLen(node->depth()); // this should only happen if there's a queue
+            logger.decPrefixLen(node->depth());
+            if (update_remaining_state_space)
+                logger.removeQueueElement(node->depth(), node->lower_bound());
             node->set_deleted();
         }
     }
@@ -712,7 +723,7 @@ bbound_queue<CuriousNode, CuriousQueue, CapturedPermutationMap>(CacheTree<Curiou
                                         CapturedPermutationMap* p, size_t num_iter);
 
 template void
-delete_subtree<BaseNode>(CacheTree<BaseNode>* tree, BaseNode* n, bool destructive);
+delete_subtree<BaseNode>(CacheTree<BaseNode>* tree, BaseNode* n, bool destructive, bool update_remaining_state_space);
 
 template void
-delete_subtree<CuriousNode>(CacheTree<CuriousNode>* tree, CuriousNode* n, bool destructive);
+delete_subtree<CuriousNode>(CacheTree<CuriousNode>* tree, CuriousNode* n, bool destructive, bool update_remaining_state_space);

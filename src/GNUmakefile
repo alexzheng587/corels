@@ -1,9 +1,9 @@
 CFLAGS := -g -W -Wall -O$(O) -I. -fno-omit-frame-pointer
 LDFLAGS := -Wl,-no_pie
-LIBS := -lprofiler -ltcmalloc
+LIBS := -lgmpxx -lgmp -lprofiler -ltcmalloc
 
 ifneq ($(shell uname),Darwin)
-LIBS := -lbsd
+LIBS += -lbsd
 endif
 
 CC = gcc

@@ -43,7 +43,7 @@ CacheTree<N>::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules,
 template<class N>
 CacheTree<N>::~CacheTree() {
     if (root_)
-        delete_subtree<N>(this, root_, true);
+        delete_subtree<N>(this, root_, true, false);
 }
 
 template<class N>
@@ -112,6 +112,8 @@ N* CacheTree<N>::check_prefix(std::vector<size_t>& prefix) {
 
 template<class N>
 void CacheTree<N>::gc_helper(N* node) {
+    if (!node->done())
+        logger.addQueueElement(node->depth(), node->lower_bound());
     N* child;
     std::vector<N*> children;
     for (typename std::map<size_t, N*>::iterator cit = node->children_.begin(); cit != node->children_.end(); ++cit)
@@ -120,7 +122,7 @@ void CacheTree<N>::gc_helper(N* node) {
         child = *cit;
         if ((child->lower_bound() + c_) >= min_objective_) {
             node->delete_child(child->id());
-            delete_subtree<N>(this, child, false);
+            delete_subtree<N>(this, child, false, false);
         } else
             gc_helper(child);
     }
@@ -128,6 +130,7 @@ void CacheTree<N>::gc_helper(N* node) {
 
 template<class N>
 void CacheTree<N>::garbage_collect() {
+    logger.clearRemainingSpaceSize();
     gc_helper(root_);
 }
 

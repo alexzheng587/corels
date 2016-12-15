@@ -116,6 +116,6 @@ extern void evaluate_children(CacheTree<N>* tree, N* parent,
                               P* p);
 
 template<class N>
-extern void delete_subtree(CacheTree<N>* tree, N* node, bool destructive);
+extern void delete_subtree(CacheTree<N>* tree, N* node, bool destructive, bool update_remaining_state_space);
 
 void bbound_greedy(size_t nsamples, size_t nrules, rule_t *rules, rule_t *labels, size_t max_prefix_length);

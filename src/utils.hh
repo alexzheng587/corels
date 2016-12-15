@@ -172,18 +172,22 @@ class Logger {
         mpz_clear(d);
     }
     inline void addQueueElement(unsigned int len_prefix, double lower_bound) {
+        /*
         mpz_t tot;
         mpz_init(tot);
         subtreeSize(tot, len_prefix, lower_bound);
         mpz_add(_state.remaining_space_size, _state.remaining_space_size, tot);
         mpz_clear(tot);
+        */
     }
     inline void removeQueueElement(unsigned int len_prefix, double lower_bound) {
+        /*
         mpz_t tot;
         mpz_init(tot);
         subtreeSize(tot, len_prefix, lower_bound);
         mpz_sub(_state.remaining_space_size, _state.remaining_space_size, tot);
         mpz_clear(tot);
+        */
     }
     inline void initRemainingSpaceSize() {
         // proposition 2 (upper bound on total number of prefix evaluations)

@@ -446,11 +446,11 @@ void bbound_queue(CacheTree<N>* tree,
 
             if (tree->min_objective() < min_objective) {
                 min_objective = tree->min_objective();
-                printf("before garbage_collect. num_nodes: %zu, log(remaining): %zu\n", tree->num_nodes(), logger.getLogRemainingSpaceSize());
+                printf("before garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", tree->num_nodes(), logger.getLogRemainingSpaceSize());
                 logger.dumpState();
                 tree->garbage_collect();
                 logger.dumpState();
-                printf("after garbage_collect. num_nodes: %zu, log(remaining): %zu\n", tree->num_nodes(), logger.getLogRemainingSpaceSize());
+                printf("after garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", tree->num_nodes(), logger.getLogRemainingSpaceSize());
             }
         }
         if (queue_min_length < logger.getQueueMinLen()) {
@@ -461,10 +461,10 @@ void bbound_queue(CacheTree<N>* tree,
         ++num_iter;
         if ((num_iter % 10000) == 0) {
             if (p)
-                printf("iter: %zu, tree: %zu, queue: %zu, pmap: %zu, log(remaining): %zu, time elapsed: %f\n",
+                printf("iter: %zu, tree: %zu, queue: %zu, pmap: %zu, log10(remaining): %zu, time elapsed: %f\n",
                        num_iter, tree->num_nodes(), q->size(), p->size(), logger.getLogRemainingSpaceSize(), time_diff(start));
             else
-                printf("iter: %zu, tree: %zu, queue: %zu, log(remaining): %zu, time elapsed: %f\n",
+                printf("iter: %zu, tree: %zu, queue: %zu, log10(remaining): %zu, time elapsed: %f\n",
                        num_iter, tree->num_nodes(), q->size(), logger.getLogRemainingSpaceSize(), time_diff(start));
         }
         if ((num_iter % logger.getFrequency()) == 0)
@@ -472,10 +472,10 @@ void bbound_queue(CacheTree<N>* tree,
     }
     logger.dumpState(); // second last log record (before queue elements deleted)
     if (p)
-        printf("iter: %zu, tree: %zu, queue: %zu, pmap: %zu, log(remaining): %zu, time elapsed: %f\n",
+        printf("iter: %zu, tree: %zu, queue: %zu, pmap: %zu, log10(remaining): %zu, time elapsed: %f\n",
                num_iter, tree->num_nodes(), q->size(), p->size(), logger.getLogRemainingSpaceSize(), time_diff(start));
     else
-        printf("iter: %zu, tree: %zu, queue: %zu, log(remaining): %zu, time elapsed: %f\n",
+        printf("iter: %zu, tree: %zu, queue: %zu, log10(remaining): %zu, time elapsed: %f\n",
                num_iter, tree->num_nodes(), q->size(), logger.getLogRemainingSpaceSize(), time_diff(start));
 
     if (q->empty())

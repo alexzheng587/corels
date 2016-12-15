@@ -1,6 +1,6 @@
-CFLAGS := -g -W -Wall -O$(O) -I.
-LDFLAGS :=
-LIBS :=
+CFLAGS := -g -W -Wall -O$(O) -I. -fno-omit-frame-pointer
+LDFLAGS := -Wl,-no_pie
+LIBS := -lprofiler -ltcmalloc
 
 ifneq ($(shell uname),Darwin)
 LIBS := -lbsd

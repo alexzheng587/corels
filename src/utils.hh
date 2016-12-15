@@ -72,6 +72,9 @@ class Logger {
     inline void setInitialTime(double t) {
         _state.initial_time = t;
     }
+    inline double getInitialTime() {
+        return _state.initial_time;
+    }
     inline void setTotalTime(double t) {
         _state.total_time = t;
     }

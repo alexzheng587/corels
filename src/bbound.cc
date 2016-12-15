@@ -395,33 +395,39 @@ queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured) {
 }
 
 template<class N, class Q, class P>
-void bbound_queue(CacheTree<N>* tree,
+int bbound_queue(CacheTree<N>* tree,
                 size_t max_num_nodes,
                 construct_signature<N> construct_policy,
                 Q* q, N*(*front)(Q*),
                 permutation_insert_signature<N, P> permutation_insert,
                 pmap_garbage_collect_signature<P> pmap_garbage_collect,
-                P* p) {
-    double start = timestamp();
-    logger.setInitialTime(start);
-    logger.dumpState();         // initial log record
-
+                P* p, size_t num_iter) {
+    double start;
     int cnt;
-    double min_objective = 1.0;
+    double min_objective;
     std::pair<N*, std::set<size_t> > node_ordered;
-    size_t queue_min_length = logger.getQueueMinLen();
-
     VECTOR captured, not_captured;
     rule_vinit(tree->nsamples(), &captured);
     rule_vinit(tree->nsamples(), &not_captured);
 
-    size_t num_iter = 0;
-    tree->insert_root();
-    logger.incTreeInsertionNum();
-    q->push(tree->root());
-    logger.setQueueSize(q->size());
-    logger.incPrefixLen(0);
-    logger.dumpState();         // log record for empty rule list
+    size_t queue_min_length = logger.getQueueMinLen();
+
+    if (tree->num_nodes() == 0) {
+        start = timestamp();
+        logger.setInitialTime(start);
+        logger.dumpState();         // initial log record
+
+        min_objective = 1.0;
+        tree->insert_root();
+        logger.incTreeInsertionNum();
+        q->push(tree->root());
+        logger.setQueueSize(q->size());
+        logger.incPrefixLen(0);
+        logger.dumpState();         // log record for empty rule list
+    } else {
+        start = logger.getInitialTime();
+        min_objective = tree->min_objective();
+    }
     while ((tree->num_nodes() < max_num_nodes) &&
            !q->empty()) {
         double t0 = timestamp();
@@ -466,6 +472,9 @@ void bbound_queue(CacheTree<N>* tree,
         }
         if ((num_iter % logger.getFrequency()) == 0)
             logger.dumpState();     // want ~1000 records for detailed figures
+        if (num_iter == 20000) {
+            return num_iter;
+        }
     }
     logger.dumpState(); // second last log record (before queue elements deleted)
 
@@ -488,6 +497,7 @@ void bbound_queue(CacheTree<N>* tree,
 
     rule_vfree(&captured);
     rule_vfree(&not_captured);
+    return num_iter;
 }
 
 void bbound_greedy(size_t nsamples, size_t nrules, rule_t *rules, rule_t *labels,
@@ -661,7 +671,7 @@ queue_select<CuriousNode, CuriousQueue>(CacheTree<CuriousNode>* tree,
                                         CuriousNode*(*front)(CuriousQueue*),
                                         VECTOR captured);
 
-template void
+template int
 bbound_queue<BaseNode, BaseQueue, PrefixPermutationMap>(CacheTree<BaseNode>* tree,
                                   size_t max_num_nodes,
                                   construct_signature<BaseNode> construct_policy,
@@ -669,9 +679,9 @@ bbound_queue<BaseNode, BaseQueue, PrefixPermutationMap>(CacheTree<BaseNode>* tre
                                   BaseNode*(*front)(BaseQueue*),
                                   permutation_insert_signature<BaseNode, PrefixPermutationMap> permutation_insert,
                                   pmap_garbage_collect_signature<PrefixPermutationMap> pmap_garbage_collect,
-                                  PrefixPermutationMap* p);
+                                  PrefixPermutationMap* p, size_t num_iter);
 
-template void
+template int
 bbound_queue<BaseNode, BaseQueue, CapturedPermutationMap>(CacheTree<BaseNode>* tree,
                                   size_t max_num_nodes,
                                   construct_signature<BaseNode> construct_policy,
@@ -679,9 +689,9 @@ bbound_queue<BaseNode, BaseQueue, CapturedPermutationMap>(CacheTree<BaseNode>* t
                                   BaseNode*(*front)(BaseQueue*),
                                   permutation_insert_signature<BaseNode, CapturedPermutationMap> permutation_insert,
                                   pmap_garbage_collect_signature<CapturedPermutationMap> pmap_garbage_collect,
-                                  CapturedPermutationMap* p);
+                                  CapturedPermutationMap* p, size_t num_iter);
 
-template void
+template int
 bbound_queue<CuriousNode, CuriousQueue, PrefixPermutationMap>(CacheTree<CuriousNode>* tree,
                                         size_t max_num_nodes,
                                         construct_signature<CuriousNode> construct_policy,
@@ -689,9 +699,9 @@ bbound_queue<CuriousNode, CuriousQueue, PrefixPermutationMap>(CacheTree<CuriousN
                                         CuriousNode*(*front)(CuriousQueue*),
                                         permutation_insert_signature<CuriousNode, PrefixPermutationMap> permutation_insert,
                                         pmap_garbage_collect_signature<PrefixPermutationMap> pmap_garbage_collect,
-                                        PrefixPermutationMap* p);
+                                        PrefixPermutationMap* p, size_t num_iter);
 
-template void
+template int
 bbound_queue<CuriousNode, CuriousQueue, CapturedPermutationMap>(CacheTree<CuriousNode>* tree,
                                         size_t max_num_nodes,
                                         construct_signature<CuriousNode> construct_policy,
@@ -699,7 +709,7 @@ bbound_queue<CuriousNode, CuriousQueue, CapturedPermutationMap>(CacheTree<Curiou
                                         CuriousNode*(*front)(CuriousQueue*),
                                         permutation_insert_signature<CuriousNode, CapturedPermutationMap> permutation_insert,
                                         pmap_garbage_collect_signature<CapturedPermutationMap> pmap_garbage_collect,
-                                        CapturedPermutationMap* p);
+                                        CapturedPermutationMap* p, size_t num_iter);
 
 template void
 delete_subtree<BaseNode>(CacheTree<BaseNode>* tree, BaseNode* n, bool destructive);

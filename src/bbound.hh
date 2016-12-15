@@ -98,13 +98,13 @@ extern std::pair<N*, std::set<size_t> >
 queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured);
 
 template<class N, class Q, class P>
-extern void bbound_queue(CacheTree<N>* tree,
+extern int bbound_queue(CacheTree<N>* tree,
                          size_t max_num_nodes,
                          construct_signature<N> construct_policy,
                          Q* q, N*(*front)(Q*),
                          permutation_insert_signature<N, P> permutation_insert,
                          pmap_garbage_collect_signature<P> pmap_garbage_collect,
-                         P* p);
+                         P* p, size_t num_iter);
 
 template<class N, class Q, class P>
 extern void evaluate_children(CacheTree<N>* tree, N* parent,

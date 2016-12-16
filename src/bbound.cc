@@ -6,9 +6,10 @@ BaseNode* base_construct_policy(size_t new_rule, size_t nrules, bool prediction,
                                 double objective, BaseNode* parent,
                                 int num_not_captured, int nsamples,
                                 int len_prefix, double c) {
-    (void) num_not_captured, nsamples, len_prefix, c;
+    (void) len_prefix, c;
+    size_t num_captured = nsamples - num_not_captured; // number captured by the new rule
     return (new BaseNode(new_rule, nrules, prediction, default_prediction,
-                         lower_bound, objective, 0, parent));
+                         lower_bound, objective, 0, parent, num_captured));
 }
 
 CuriousNode* curious_construct_policy(size_t new_rule, size_t nrules, bool prediction,
@@ -16,9 +17,10 @@ CuriousNode* curious_construct_policy(size_t new_rule, size_t nrules, bool predi
                                       double objective, CuriousNode* parent,
                                       int num_not_captured, int nsamples,
                                       int len_prefix, double c) {
-    double curiosity = (lower_bound - c * len_prefix + c) * nsamples / (double)(nsamples - num_not_captured);
+    size_t num_captured = nsamples - num_not_captured; // number captured by the new rule
+    double curiosity = (lower_bound - c * len_prefix + c) * nsamples / (double)(num_captured);
     return (new CuriousNode(new_rule, nrules, prediction, default_prediction,
-                            lower_bound, objective, curiosity, parent));
+                            lower_bound, objective, curiosity, parent, num_captured));
 }
 
 void prefix_map_garbage_collect(PrefixPermutationMap* p, size_t queue_min_length) {

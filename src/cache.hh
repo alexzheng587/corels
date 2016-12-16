@@ -20,7 +20,8 @@ class Node {
     explicit Node(size_t nrules, bool default_prediction, double objective);
 
     Node(size_t id, size_t nrules, bool prediction, bool default_prediction,
-         double lower_bound, double objective, T storage, Node<T>* parent);
+         double lower_bound, double objective, T storage, Node<T>* parent,
+         size_t num_captured);
 
     inline size_t id() const;
     inline bool prediction() const;
@@ -65,6 +66,7 @@ class Node {
     std::map<size_t, Node<T>*> children_;
 
     T storage_;  // space for something extra, like curiosity or a bit vector
+    size_t num_captured_;
 
     friend class CacheTree<Node<T> >;
 };
@@ -111,12 +113,13 @@ class CacheTree {
     size_t nrules_;
     double c_;
 
+    size_t num_nodes_;
+    size_t num_evaluated_;
+
     double min_objective_;
     std::vector<size_t> opt_rulelist_;
     std::vector<bool> opt_predictions_;
 
-    size_t num_nodes_;
-    size_t num_evaluated_;
     std::vector<rule_t> rules_;
     std::vector<rule_t> labels_;
 

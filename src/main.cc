@@ -295,7 +295,7 @@ int main(int argc, char *argv[]) {
                                                                    &prefix_permutation_insert,
                                                                    &prefix_map_garbage_collect,
                                                                    p, 0);
-
+                printf("Switching to curious lower bound policy... \n");
                 CuriousQueue curious_lb_q(lower_bound_cmp);
                 while(!curious_q.empty()) {
                     CuriousNode* selected_node = curious_queue_front(&curious_q); //q->front();

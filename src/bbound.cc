@@ -512,9 +512,10 @@ int bbound_queue(CacheTree<N>* tree,
             auto pp_pair = node->get_prefix_and_predictions();
             std::vector<size_t> prefix = std::move(pp_pair.first);
             std::vector<bool> predictions = std::move(pp_pair.second);
+            f << node->lower_bound() << " " << node->depth() << " "
+              << node->num_captured() << " ";
             for(size_t i = 0; i < prefix.size(); ++i) {
-                f << node->lower_bound() << " " << node->depth() << " "
-                  << node->num_captured() << " " << tree->rule_features(prefix[i]) << "~"
+                f << tree->rule_features(prefix[i]) << "~"
                   << predictions[i] << ";";
             }
             f << "default~" << predictions.back() << "\n";

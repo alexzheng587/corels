@@ -109,7 +109,7 @@ extern int bbound_queue(CacheTree<N>* tree,
                          Q* q, N*(*front)(Q*),
                          permutation_insert_signature<N, P> permutation_insert,
                          pmap_garbage_collect_signature<P> pmap_garbage_collect,
-                         P* p, size_t num_iter);
+                         P* p, size_t num_iter, size_t switch_iter);
 
 template<class N, class Q, class P>
 extern void evaluate_children(CacheTree<N>* tree, N* parent,

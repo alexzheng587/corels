@@ -32,8 +32,9 @@ int main(int argc, char *argv[]) {
     bool error = false;
     char error_txt[512];
     int freq = 1000;
+    size_t switch_iter = 0;
     /* only parsing happens here */
-    while ((ch = getopt(argc, argv, "sbLc:p:v:n:r:f:")) != -1) {
+    while ((ch = getopt(argc, argv, "sbLc:p:v:n:r:f:w:")) != -1) {
         switch (ch) {
         case 's':
             run_stochastic = true;
@@ -65,6 +66,9 @@ int main(int argc, char *argv[]) {
             break;
         case 'f':
             freq = atoi(optarg);
+            break;
+        case 'w':
+            switch_iter = atoi(optarg);
             break;
         default:
             error = true;
@@ -216,7 +220,7 @@ int main(int argc, char *argv[]) {
                                                &base_queue_front,
                                                &prefix_permutation_insert,
                                                &bfs_prefix_map_garbage_collect,
-                                               &p, 0);
+                                               &p, 0, 0);
 
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
@@ -240,7 +244,7 @@ int main(int argc, char *argv[]) {
                                                  &base_queue_front,
                                                  &captured_permutation_insert,
                                                  &captured_map_garbage_collect,
-                                                 &p, 0);
+                                                 &p, 0, 0);
 
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
@@ -264,7 +268,7 @@ int main(int argc, char *argv[]) {
                                                  &base_queue_front,
                                                  &captured_permutation_insert,
                                                  &captured_map_garbage_collect,
-                                                 NULL, 0);
+                                                 NULL, 0, 0);
 
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
@@ -294,7 +298,7 @@ int main(int argc, char *argv[]) {
                                                                    &curious_queue_front,
                                                                    &prefix_permutation_insert,
                                                                    &prefix_map_garbage_collect,
-                                                                   p, 0);
+                                                                   p, 0, switch_iter);
                 if (curious_q.size() > 0) {
                     printf("Switching to curious lower bound policy... \n");
                     CuriousQueue curious_lb_q(lower_bound_cmp);
@@ -312,7 +316,7 @@ int main(int argc, char *argv[]) {
                                                        &curious_queue_front,
                                                        &prefix_permutation_insert,
                                                        &prefix_map_garbage_collect,
-                                                       p, num_iter);
+                                                       p, num_iter, 0);
                 }
                 printf("final num_nodes: %zu\n", tree->num_nodes());
                 printf("final num_evaluated: %zu\n", tree->num_evaluated());
@@ -336,7 +340,7 @@ int main(int argc, char *argv[]) {
                                                      &curious_queue_front,
                                                      &captured_permutation_insert,
                                                      &captured_map_garbage_collect,
-                                                     &p, 0);
+                                                     &p, 0, 0);
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());
                 printf("final min_objective: %1.5f\n", tree.min_objective());
@@ -359,7 +363,7 @@ int main(int argc, char *argv[]) {
                                                      &curious_queue_front,
                                                      &captured_permutation_insert,
                                                      &captured_map_garbage_collect,
-                                                     NULL, 0);
+                                                     NULL, 0, 0);
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());
                 printf("final min_objective: %1.5f\n", tree.min_objective());
@@ -384,7 +388,7 @@ int main(int argc, char *argv[]) {
                                                    &curious_queue_front,
                                                    &prefix_permutation_insert,
                                                    &prefix_map_garbage_collect,
-                                                   &p, 0);
+                                                   &p, 0, 0);
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());
                 printf("final min_objective: %1.5f\n", tree.min_objective());
@@ -407,7 +411,7 @@ int main(int argc, char *argv[]) {
                                                      &curious_queue_front,
                                                      &captured_permutation_insert,
                                                      &captured_map_garbage_collect,
-                                                     &p, 0);
+                                                     &p, 0, 0);
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());
                 printf("final min_objective: %1.5f\n", tree.min_objective());
@@ -430,7 +434,7 @@ int main(int argc, char *argv[]) {
                                                      &curious_queue_front,
                                                      &captured_permutation_insert,
                                                      &captured_map_garbage_collect,
-                                                     NULL, 0);
+                                                     NULL, 0, 0);
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());
                 printf("final min_objective: %1.5f\n", tree.min_objective());

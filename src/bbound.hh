@@ -32,6 +32,11 @@ auto objective_cmp = [](CuriousNode* left, CuriousNode* right) {
     return left->objective() > right->objective();
 };
 
+// lambda function for priority queue metric implementing depth-first
+auto depth_first_cmp = [](CuriousNode* left, CuriousNode* right) {
+    return left->depth() < right->depth();
+};
+
 typedef std::priority_queue<CuriousNode*, std::vector<CuriousNode*>,
                             std::function<bool(CuriousNode*, CuriousNode*)> > CuriousQueue;
 

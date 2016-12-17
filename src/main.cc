@@ -21,6 +21,8 @@ int main(int argc, char *argv[]) {
     bool run_curiosity = false;
     bool use_curious_cmp = false;
     bool use_lower_bound_cmp = false;
+    bool use_objective_cmp = false;
+    bool use_depth_first_cmp = false;   // alternately implement via std::stack ?
     bool latex_out = false;
     bool run_pmap = false;
     bool use_prefix_perm_map = false;
@@ -46,6 +48,8 @@ int main(int argc, char *argv[]) {
             run_curiosity = true;
             use_curious_cmp = atoi(optarg) == 1;
             use_lower_bound_cmp = atoi(optarg) == 2;
+            use_objective_cmp = atoi(optarg) == 3;
+            use_depth_first_cmp = atoi(optarg) == 4;
             break;
         case 'L':
             latex_out = true;
@@ -85,10 +89,10 @@ int main(int argc, char *argv[]) {
         sprintf(error_txt,
                 "you must specify data files for rules and labels");
     }
-    if (run_curiosity && ((use_curious_cmp + use_lower_bound_cmp) != 1)) {
+    if (run_curiosity && ((use_curious_cmp + use_lower_bound_cmp + use_objective_cmp + use_depth_first_cmp) != 1)) {
         error = true;
         sprintf(error_txt,
-                "you must specify a curiosity type (1|2)");
+                "you must specify a curiosity type (1|2|3|4)");
     }
 
     if (error) {
@@ -420,11 +424,150 @@ int main(int argc, char *argv[]) {
                        1 - tree.min_objective() + c*r_list.size());
                 print_final_rulelist(r_list, tree.opt_predictions(),
                                      latex_out, rules, labels, opt_fname);
-            }
-            else {
+            } else {
                 printf("CURIOUS LOWER BOUND No Permutation Map\n");
                 CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
                 CuriousQueue curious_q(lower_bound_cmp);
+                bbound_queue<CuriousNode,
+                             CuriousQueue,
+                             CapturedPermutationMap>(&tree,
+                                                     max_num_nodes,
+                                                     &curious_construct_policy,
+                                                     &curious_q,
+                                                     &curious_queue_front,
+                                                     &captured_permutation_insert,
+                                                     &captured_map_garbage_collect,
+                                                     NULL, 0, 0);
+                printf("final num_nodes: %zu\n", tree.num_nodes());
+                printf("final num_evaluated: %zu\n", tree.num_evaluated());
+                printf("final min_objective: %1.5f\n", tree.min_objective());
+                const std::vector<size_t>& r_list = tree.opt_rulelist();
+                printf("final accuracy: %1.5f\n",
+                       1 - tree.min_objective() + c*r_list.size());
+                print_final_rulelist(r_list, tree.opt_predictions(),
+                                     latex_out, rules, labels, opt_fname);
+            }
+        } else if (use_objective_cmp) {
+            if (use_prefix_perm_map) {
+                printf("CURIOUS OBJECTIVE Prefix Permutation Map\n");
+                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
+                CuriousQueue curious_q(objective_cmp);
+                PrefixPermutationMap p;
+                bbound_queue<CuriousNode,
+                             CuriousQueue,
+                             PrefixPermutationMap>(&tree,
+                                                   max_num_nodes,
+                                                   &curious_construct_policy,
+                                                   &curious_q,
+                                                   &curious_queue_front,
+                                                   &prefix_permutation_insert,
+                                                   &prefix_map_garbage_collect,
+                                                   &p, 0, 0);
+                printf("final num_nodes: %zu\n", tree.num_nodes());
+                printf("final num_evaluated: %zu\n", tree.num_evaluated());
+                printf("final min_objective: %1.5f\n", tree.min_objective());
+                const std::vector<size_t>& r_list = tree.opt_rulelist();
+                printf("final accuracy: %1.5f\n",
+                       1 - tree.min_objective() + c*r_list.size());
+                print_final_rulelist(r_list, tree.opt_predictions(),
+                                     latex_out, rules, labels, opt_fname);
+            } else if (use_captured_sym_map) {
+                printf("CURIOUS OBJECTIVE Captured Symmetry Map\n");
+                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
+                CuriousQueue curious_q(objective_cmp);
+                CapturedPermutationMap p;
+                bbound_queue<CuriousNode,
+                             CuriousQueue,
+                             CapturedPermutationMap>(&tree,
+                                                     max_num_nodes,
+                                                     &curious_construct_policy,
+                                                     &curious_q,
+                                                     &curious_queue_front,
+                                                     &captured_permutation_insert,
+                                                     &captured_map_garbage_collect,
+                                                     &p, 0, 0);
+                printf("final num_nodes: %zu\n", tree.num_nodes());
+                printf("final num_evaluated: %zu\n", tree.num_evaluated());
+                printf("final min_objective: %1.5f\n", tree.min_objective());
+                const std::vector<size_t>& r_list = tree.opt_rulelist();
+                printf("final accuracy: %1.5f\n",
+                       1 - tree.min_objective() + c*r_list.size());
+                print_final_rulelist(r_list, tree.opt_predictions(),
+                                     latex_out, rules, labels, opt_fname);
+            } else {
+                printf("CURIOUS OBJECTIVE No Permutation Map\n");
+                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
+                CuriousQueue curious_q(objective_cmp);
+                bbound_queue<CuriousNode,
+                             CuriousQueue,
+                             CapturedPermutationMap>(&tree,
+                                                     max_num_nodes,
+                                                     &curious_construct_policy,
+                                                     &curious_q,
+                                                     &curious_queue_front,
+                                                     &captured_permutation_insert,
+                                                     &captured_map_garbage_collect,
+                                                     NULL, 0, 0);
+                printf("final num_nodes: %zu\n", tree.num_nodes());
+                printf("final num_evaluated: %zu\n", tree.num_evaluated());
+                printf("final min_objective: %1.5f\n", tree.min_objective());
+                const std::vector<size_t>& r_list = tree.opt_rulelist();
+                printf("final accuracy: %1.5f\n",
+                       1 - tree.min_objective() + c*r_list.size());
+                print_final_rulelist(r_list, tree.opt_predictions(),
+                                     latex_out, rules, labels, opt_fname);
+            }
+        } else if (use_depth_first_cmp) {
+            if (use_prefix_perm_map) {
+                printf("DFS Prefix Permutation Map\n");
+                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
+                CuriousQueue curious_q(depth_first_cmp);
+                PrefixPermutationMap p;
+                bbound_queue<CuriousNode,
+                             CuriousQueue,
+                             PrefixPermutationMap>(&tree,
+                                                   max_num_nodes,
+                                                   &curious_construct_policy,
+                                                   &curious_q,
+                                                   &curious_queue_front,
+                                                   &prefix_permutation_insert,
+                                                   &prefix_map_garbage_collect,
+                                                   &p, 0, 0);
+                printf("final num_nodes: %zu\n", tree.num_nodes());
+                printf("final num_evaluated: %zu\n", tree.num_evaluated());
+                printf("final min_objective: %1.5f\n", tree.min_objective());
+                const std::vector<size_t>& r_list = tree.opt_rulelist();
+                printf("final accuracy: %1.5f\n",
+                       1 - tree.min_objective() + c*r_list.size());
+                print_final_rulelist(r_list, tree.opt_predictions(),
+                                     latex_out, rules, labels, opt_fname);
+            } else if (use_captured_sym_map) {
+                printf("DFS Captured Symmetry Map\n");
+                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
+                CuriousQueue curious_q(depth_first_cmp);
+                CapturedPermutationMap p;
+                bbound_queue<CuriousNode,
+                             CuriousQueue,
+                             CapturedPermutationMap>(&tree,
+                                                     max_num_nodes,
+                                                     &curious_construct_policy,
+                                                     &curious_q,
+                                                     &curious_queue_front,
+                                                     &captured_permutation_insert,
+                                                     &captured_map_garbage_collect,
+                                                     &p, 0, 0);
+                printf("final num_nodes: %zu\n", tree.num_nodes());
+                printf("final num_evaluated: %zu\n", tree.num_evaluated());
+                printf("final min_objective: %1.5f\n", tree.min_objective());
+                const std::vector<size_t>& r_list = tree.opt_rulelist();
+                printf("final accuracy: %1.5f\n",
+                       1 - tree.min_objective() + c*r_list.size());
+                print_final_rulelist(r_list, tree.opt_predictions(),
+                                     latex_out, rules, labels, opt_fname);
+            } else {
+                printf("DFS No Permutation Map\n");
+                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
+                CuriousQueue curious_q(depth_first_cmp);
                 bbound_queue<CuriousNode,
                              CuriousQueue,
                              CapturedPermutationMap>(&tree,

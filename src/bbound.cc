@@ -498,7 +498,7 @@ int bbound_queue(CacheTree<N>* tree,
     ofstream f;
     printf("Writing queue elements to: %s\n", fname);
     f.open(fname, ios::out | ios::trunc);
-    f << "lower_bound length frac_captured rule_list\n";
+    f << "lower_bound objective length frac_captured rule_list\n";
 
     printf("Deleting queue elements and corresponding nodes in the cache, since they may not be reachable by the tree's destructor\n");
     N* node;
@@ -512,7 +512,7 @@ int bbound_queue(CacheTree<N>* tree,
             auto pp_pair = node->get_prefix_and_predictions();
             std::vector<size_t> prefix = std::move(pp_pair.first);
             std::vector<bool> predictions = std::move(pp_pair.second);
-            f << node->lower_bound() << " " << node->depth() << " "
+            f << node->lower_bound() << " " << node->objective() << " " << node->depth() << " "
               << (double) node->num_captured() / (double) tree->nsamples() << " ";
             for(size_t i = 0; i < prefix.size(); ++i) {
                 f << tree->rule_features(prefix[i]) << "~"

@@ -45,6 +45,7 @@ class Node {
     inline size_t num_children() const;
 
     inline T& get_storage(); // can this be const?
+    inline size_t num_captured() const;
 
     inline typename std::map<size_t, Node<T>*>::iterator children_begin();
     inline typename std::map<size_t, Node<T>*>::iterator children_end();
@@ -84,6 +85,7 @@ class CacheTree {
     inline size_t num_nodes() const;
     inline size_t num_evaluated() const;
     inline rule_t rule(size_t idx) const;
+    inline char* rule_features(size_t idx) const;
     inline rule_t label(size_t idx) const;
     inline size_t nsamples() const;
     inline size_t nrules() const;
@@ -242,6 +244,11 @@ inline T& Node<T>::get_storage() {
     return storage_;
 }
 
+template<class T>
+inline size_t Node<T>::num_captured() const {
+    return num_captured_;
+}
+
 template<class N>
 inline double CacheTree<N>::min_objective() const {
     return min_objective_;
@@ -270,6 +277,11 @@ inline size_t CacheTree<N>::num_evaluated() const {
 template<class N>
 inline rule_t CacheTree<N>::rule(size_t idx) const{
     return rules_[idx];
+}
+
+template<class N>
+inline char* CacheTree<N>::rule_features(size_t idx) const{
+    return rules_[idx].features;
 }
 
 template<class N>

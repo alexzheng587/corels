@@ -494,6 +494,12 @@ int bbound_queue(CacheTree<N>* tree,
     else
         printf("Exited because max number of nodes in the tree was reached\n");
 
+    char fname[] = "queue.txt";
+    ofstream f;
+    printf("Writing queue elements to: %s\n", fname);
+    f.open(fname, ios::out | ios::trunc);
+    f << "lower_bound length num_captured rule_list\n";
+
     printf("Deleting queue elements and corresponding nodes in the cache, since they may not be reachable by the tree's destructor\n");
     N* node;
     while (!q->empty()) {
@@ -502,8 +508,19 @@ int bbound_queue(CacheTree<N>* tree,
         if (node->deleted()) {
             tree->decrement_num_nodes();
             delete node;
+        } else {
+            auto pp_pair = node->get_prefix_and_predictions();
+            std::vector<size_t> prefix = std::move(pp_pair.first);
+            std::vector<bool> predictions = std::move(pp_pair.second);
+            for(size_t i = 0; i < prefix.size(); ++i) {
+                f << node->lower_bound() << " " << node->depth() << " "
+                  << node->num_captured() << " " << tree->rule_features(prefix[i]) << "~"
+                  << predictions[i] << ";";
+            }
+            f << "default~" << predictions.back() << "\n";
         }
     }
+    f.close();
     logger.dumpState(); // last log record (before cache deleted)
 
     rule_vfree(&captured);

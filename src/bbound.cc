@@ -404,7 +404,7 @@ int bbound_queue(CacheTree<N>* tree,
                 Q* q, N*(*front)(Q*),
                 permutation_insert_signature<N, P> permutation_insert,
                 pmap_garbage_collect_signature<P> pmap_garbage_collect,
-                P* p, size_t num_iter) {
+                P* p, size_t num_iter, size_t switch_iter) {
     double start;
     int cnt;
     double min_objective;
@@ -477,7 +477,7 @@ int bbound_queue(CacheTree<N>* tree,
         }
         if ((num_iter % logger.getFrequency()) == 0)
             logger.dumpState();     // want ~1000 records for detailed figures
-        if (num_iter == 20000) {
+        if (num_iter == switch_iter) {
             return num_iter;
         }
     }
@@ -710,7 +710,7 @@ bbound_queue<BaseNode, BaseQueue, PrefixPermutationMap>(CacheTree<BaseNode>* tre
                                   BaseNode*(*front)(BaseQueue*),
                                   permutation_insert_signature<BaseNode, PrefixPermutationMap> permutation_insert,
                                   pmap_garbage_collect_signature<PrefixPermutationMap> pmap_garbage_collect,
-                                  PrefixPermutationMap* p, size_t num_iter);
+                                  PrefixPermutationMap* p, size_t num_iter, size_t switch_iter);
 
 template int
 bbound_queue<BaseNode, BaseQueue, CapturedPermutationMap>(CacheTree<BaseNode>* tree,
@@ -720,7 +720,7 @@ bbound_queue<BaseNode, BaseQueue, CapturedPermutationMap>(CacheTree<BaseNode>* t
                                   BaseNode*(*front)(BaseQueue*),
                                   permutation_insert_signature<BaseNode, CapturedPermutationMap> permutation_insert,
                                   pmap_garbage_collect_signature<CapturedPermutationMap> pmap_garbage_collect,
-                                  CapturedPermutationMap* p, size_t num_iter);
+                                  CapturedPermutationMap* p, size_t num_iter, size_t switch_iter);
 
 template int
 bbound_queue<CuriousNode, CuriousQueue, PrefixPermutationMap>(CacheTree<CuriousNode>* tree,
@@ -730,7 +730,7 @@ bbound_queue<CuriousNode, CuriousQueue, PrefixPermutationMap>(CacheTree<CuriousN
                                         CuriousNode*(*front)(CuriousQueue*),
                                         permutation_insert_signature<CuriousNode, PrefixPermutationMap> permutation_insert,
                                         pmap_garbage_collect_signature<PrefixPermutationMap> pmap_garbage_collect,
-                                        PrefixPermutationMap* p, size_t num_iter);
+                                        PrefixPermutationMap* p, size_t num_iter, size_t switch_iter);
 
 template int
 bbound_queue<CuriousNode, CuriousQueue, CapturedPermutationMap>(CacheTree<CuriousNode>* tree,
@@ -740,7 +740,7 @@ bbound_queue<CuriousNode, CuriousQueue, CapturedPermutationMap>(CacheTree<Curiou
                                         CuriousNode*(*front)(CuriousQueue*),
                                         permutation_insert_signature<CuriousNode, CapturedPermutationMap> permutation_insert,
                                         pmap_garbage_collect_signature<CapturedPermutationMap> pmap_garbage_collect,
-                                        CapturedPermutationMap* p, size_t num_iter);
+                                        CapturedPermutationMap* p, size_t num_iter, size_t switch_iter);
 
 template void
 delete_subtree<BaseNode>(CacheTree<BaseNode>* tree, BaseNode* n, bool destructive, bool update_remaining_state_space);

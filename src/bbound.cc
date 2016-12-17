@@ -494,11 +494,11 @@ int bbound_queue(CacheTree<N>* tree,
     else
         printf("Exited because max number of nodes in the tree was reached\n");
 
-    char fname[] = "queue.txt";
+    char fname[] = "queue.txt"; // make this optional
     ofstream f;
     printf("Writing queue elements to: %s\n", fname);
     f.open(fname, ios::out | ios::trunc);
-    f << "lower_bound length num_captured rule_list\n";
+    f << "lower_bound length frac_captured rule_list\n";
 
     printf("Deleting queue elements and corresponding nodes in the cache, since they may not be reachable by the tree's destructor\n");
     N* node;
@@ -513,7 +513,7 @@ int bbound_queue(CacheTree<N>* tree,
             std::vector<size_t> prefix = std::move(pp_pair.first);
             std::vector<bool> predictions = std::move(pp_pair.second);
             f << node->lower_bound() << " " << node->depth() << " "
-              << node->num_captured() << " ";
+              << (double) node->num_captured() / (double) tree->nsamples() << " ";
             for(size_t i = 0; i < prefix.size(); ++i) {
                 f << tree->rule_features(prefix[i]) << "~"
                   << predictions[i] << ";";

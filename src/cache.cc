@@ -19,7 +19,7 @@ Node<T>::Node(size_t id, size_t nrules, bool prediction,
     : id_(id), prediction_(prediction), default_prediction_(default_prediction),
       lower_bound_(lower_bound), objective_(objective),
       done_(0), deleted_(0), depth_(1 + parent->depth_), parent_(parent),
-      storage_(storage), num_captured_(num_captured + parent->num_captured_) {
+      storage_(storage), num_captured_(num_captured) {
 }
 
 template<class N>

@@ -295,23 +295,25 @@ int main(int argc, char *argv[]) {
                                                                    &prefix_permutation_insert,
                                                                    &prefix_map_garbage_collect,
                                                                    p, 0);
-                printf("Switching to curious lower bound policy... \n");
-                CuriousQueue curious_lb_q(lower_bound_cmp);
-                while(!curious_q.empty()) {
-                    CuriousNode* selected_node = curious_queue_front(&curious_q); //q->front();
-                    curious_q.pop();
-                    curious_lb_q.push(selected_node);
+                if (curious_q.size() > 0) {
+                    printf("Switching to curious lower bound policy... \n");
+                    CuriousQueue curious_lb_q(lower_bound_cmp);
+                    while(!curious_q.empty()) {
+                        CuriousNode* selected_node = curious_queue_front(&curious_q); //q->front();
+                        curious_q.pop();
+                        curious_lb_q.push(selected_node);
+                    }
+                    num_iter = bbound_queue<CuriousNode,
+                                 CuriousQueue,
+                                 PrefixPermutationMap>(tree,
+                                                       max_num_nodes,
+                                                       &curious_construct_policy,
+                                                       &curious_lb_q,
+                                                       &curious_queue_front,
+                                                       &prefix_permutation_insert,
+                                                       &prefix_map_garbage_collect,
+                                                       p, num_iter);
                 }
-                num_iter = bbound_queue<CuriousNode,
-                             CuriousQueue,
-                             PrefixPermutationMap>(tree,
-                                                   max_num_nodes,
-                                                   &curious_construct_policy,
-                                                   &curious_lb_q,
-                                                   &curious_queue_front,
-                                                   &prefix_permutation_insert,
-                                                   &prefix_map_garbage_collect,
-                                                   p, num_iter);
                 printf("final num_nodes: %zu\n", tree->num_nodes());
                 printf("final num_evaluated: %zu\n", tree->num_evaluated());
                 printf("final min_objective: %1.5f\n", tree->min_objective());

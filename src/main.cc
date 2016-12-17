@@ -11,7 +11,7 @@ Logger logger;
 int main(int argc, char *argv[]) {
     const char usage[] = "USAGE: %s [-s] [-b] "
         "[-n max_num_nodes] [-r regularization] [-v verbosity] "
-        "-c (1|2) -p (0|1|2) [-f logging_frequency]"
+        "-c (1|2|3|4) -p (0|1|2) [-f logging_frequency]"
         "data.out data.label\n\n"
         "%s\n"; // for error
 
@@ -19,10 +19,7 @@ int main(int argc, char *argv[]) {
     bool run_stochastic = false;
     bool run_bfs = false;
     bool run_curiosity = false;
-    bool use_curious_cmp = false;
-    bool use_lower_bound_cmp = false;
-    bool use_objective_cmp = false;
-    bool use_depth_first_cmp = false;   // alternately implement via std::stack ?
+    int curiosity_policy = 0;
     bool latex_out = false;
     bool run_pmap = false;
     bool use_prefix_perm_map = false;
@@ -46,10 +43,7 @@ int main(int argc, char *argv[]) {
             break;
         case 'c':
             run_curiosity = true;
-            use_curious_cmp = atoi(optarg) == 1;
-            use_lower_bound_cmp = atoi(optarg) == 2;
-            use_objective_cmp = atoi(optarg) == 3;
-            use_depth_first_cmp = atoi(optarg) == 4;
+            curiosity_policy = atoi(optarg);
             break;
         case 'L':
             latex_out = true;
@@ -89,7 +83,7 @@ int main(int argc, char *argv[]) {
         sprintf(error_txt,
                 "you must specify data files for rules and labels");
     }
-    if (run_curiosity && ((use_curious_cmp + use_lower_bound_cmp + use_objective_cmp + use_depth_first_cmp) != 1)) {
+    if (run_curiosity && !((curiosity_policy >= 1) && (curiosity_policy <= 4))) {
         error = true;
         sprintf(error_txt,
                 "you must specify a curiosity type (1|2|3|4)");
@@ -99,6 +93,12 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, usage, argv[0], error_txt);
         exit(1);
     }
+
+    std::map<int, std::string> curiosity_map;
+    curiosity_map[1] = "curiosity";
+    curiosity_map[2] = "curious_lb";
+    curiosity_map[3] = "curious_obj";
+    curiosity_map[4] = "dfs";
 
     argc -= optind;
     argv += optind;
@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
             pch ? pch + 1 : "",
             run_stochastic ? "stochastic" : "",
             run_bfs ? "bfs" : "",
-            run_curiosity ? (use_curious_cmp ? "curiosity" : "curious_lb") : "",
+            run_curiosity ? curiosity_map[curiosity_policy].c_str() : "",
             run_pmap ? (use_prefix_perm_map ? "with_prefix_perm_map" : "with_captured_symmetry_map") : "no_pmap",
             max_num_nodes, c, verbosity, freq);
 
@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
             pch ? pch + 1 : "",
             run_stochastic ? "stochastic" : "",
             run_bfs ? "bfs" : "",
-            run_curiosity ? (use_curious_cmp ? "curiosity" : "curious_lb") : "",
+            run_curiosity ? curiosity_map[curiosity_policy].c_str() : "",
             run_pmap ? (use_prefix_perm_map ? "with_prefix_perm_map" : "with_captured_symmetry_map") : "no_pmap",
             max_num_nodes, c, verbosity, freq);
 
@@ -286,7 +286,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (run_curiosity) {
-        if (use_curious_cmp) {
+        if (curiosity_policy == 1) {
             if (use_prefix_perm_map) {
                 printf("CURIOSITY Prefix Permutation Map\n");
                 CacheTree<CuriousNode> *tree = new CacheTree<CuriousNode>(nsamples, nrules, c, rules, labels);
@@ -377,7 +377,7 @@ int main(int argc, char *argv[]) {
                 print_final_rulelist(r_list, tree.opt_predictions(),
                                      latex_out, rules, labels, opt_fname);
             }
-        } else if (use_lower_bound_cmp) {
+        } else if (curiosity_policy == 2) {
             if (use_prefix_perm_map) {
                 printf("CURIOUS LOWER BOUND Prefix Permutation Map\n");
                 CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
@@ -447,7 +447,7 @@ int main(int argc, char *argv[]) {
                 print_final_rulelist(r_list, tree.opt_predictions(),
                                      latex_out, rules, labels, opt_fname);
             }
-        } else if (use_objective_cmp) {
+        } else if (curiosity_policy == 3) {
             if (use_prefix_perm_map) {
                 printf("CURIOUS OBJECTIVE Prefix Permutation Map\n");
                 CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
@@ -517,7 +517,7 @@ int main(int argc, char *argv[]) {
                 print_final_rulelist(r_list, tree.opt_predictions(),
                                      latex_out, rules, labels, opt_fname);
             }
-        } else if (use_depth_first_cmp) {
+        } else if (curiosity_policy == 4) {
             if (use_prefix_perm_map) {
                 printf("DFS Prefix Permutation Map\n");
                 CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);

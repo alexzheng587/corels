@@ -24,7 +24,7 @@ auto curious_cmp = [](CuriousNode* left, CuriousNode* right) {
 
 // lambda function for priority queue metric using lower bound as curiosity
 auto lower_bound_cmp = [](CuriousNode* left, CuriousNode* right) {
-    return left->lower_bound() > right->lower_bound();
+    return left->lower_bound() < right->lower_bound();
 };
 
 typedef std::priority_queue<CuriousNode*, std::vector<CuriousNode*>,

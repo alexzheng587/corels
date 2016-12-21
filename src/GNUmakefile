@@ -15,7 +15,7 @@ CLEAN = bbcache *~ *.o *.so
 
 all: bbcache
 
-bbcache: main.o bbound.o cache.o rulelib.o utils.o
+bbcache: main.o bbound.o cache.o rulelib.o utils.o memtrack.o
 	$(CXX) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(LIBS)
 
 main.o: main.cc $(DEPSDIR)/stamp
@@ -25,10 +25,13 @@ bbound.o: bbound.cc $(DEPSDIR)/stamp
 	$(CXX) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@
 
 utils.o: utils.cc $(DEPSDIR)/stamp
-	$(CC) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@
+	$(CXX) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@
 
 cache.o: cache.cc $(DEPSDIR)/stamp
 	$(CXX) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@
+
+memtrack.o: memtrack.cc $(DEPSDIR)/stamp
+	$(CC) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@
 
 rulelib.o: rulelib.c $(DEPSDIR)/stamp
 	$(CC) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@

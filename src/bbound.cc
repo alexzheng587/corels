@@ -1,5 +1,6 @@
 #include "bbound.hh"
 #include "utils.hh"
+#include "memtrack.hh"
 
 BaseNode* base_construct_policy(size_t new_rule, size_t nrules, bool prediction,
                                 bool default_prediction, double lower_bound,
@@ -491,6 +492,27 @@ int bbound_queue(CacheTree<N>* tree,
         printf("Exited because queue empty\n");
     else
         printf("Exited because max number of nodes in the tree was reached\n");
+
+    //MemTrack::TrackDumpBlocks();
+    unsigned long long tree_size = tree->num_nodes() * sizeof(N) + sizeof(CacheTree<N>);
+    printf("Size of tree in bytes: %llu\n", tree_size);
+    if (p) {
+        //unsigned prefixkey_size = 
+        //unsigned vector_size = 
+        //unsigned pair_size = 
+        unsigned long long pmap_size = sizeof(p);//p->size() * (prefixkey_size + pair_size + 32) + sizeof(p);
+        typename P::iterator it;
+        for(it = p->begin(); it != p->end(); ++it) {
+            unsigned node_size = 0;
+            auto pkey = it->first;
+            node_size += pkey.size() * (sizeof(size_t) + 32) + sizeof(pkey);
+            std::pair<std::vector<size_t>, double> val = it->second;
+            node_size += val.first.capacity() * sizeof(size_t) + sizeof(val.first) + sizeof(val.second) + sizeof(val);
+            pmap_size += node_size + 32;
+        }
+        printf("Size of permutation map in bytes: %llu\n", pmap_size);
+    }
+    MemTrack::TrackListMemoryUsage();
 
     printf("Deleting queue elements and corresponding nodes in the cache, since they may not be reachable by the tree's destructor\n");
     N* node;

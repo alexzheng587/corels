@@ -7,9 +7,10 @@ BaseNode* base_construct_policy(size_t new_rule, size_t nrules, bool prediction,
                                 double objective, BaseNode* parent,
                                 int num_not_captured, int nsamples,
                                 int len_prefix, double c) {
-    (void) num_not_captured, nsamples, len_prefix, c;
+    (void) len_prefix, c;
+    size_t num_captured = nsamples - num_not_captured; // number captured by the new rule
     return (new BaseNode(new_rule, nrules, prediction, default_prediction,
-                         lower_bound, objective, 0, parent));
+                         lower_bound, objective, 0, parent, num_captured));
 }
 
 CuriousNode* curious_construct_policy(size_t new_rule, size_t nrules, bool prediction,
@@ -17,9 +18,10 @@ CuriousNode* curious_construct_policy(size_t new_rule, size_t nrules, bool predi
                                       double objective, CuriousNode* parent,
                                       int num_not_captured, int nsamples,
                                       int len_prefix, double c) {
-    double curiosity = (lower_bound - c * len_prefix + c) * nsamples / (double)(nsamples - num_not_captured);
+    size_t num_captured = nsamples - num_not_captured; // number captured by the new rule
+    double curiosity = (lower_bound - c * len_prefix + c) * nsamples / (double)(num_captured);
     return (new CuriousNode(new_rule, nrules, prediction, default_prediction,
-                            lower_bound, objective, curiosity, parent));
+                            lower_bound, objective, curiosity, parent, num_captured));
 }
 
 void prefix_map_garbage_collect(PrefixPermutationMap* p, size_t queue_min_length) {
@@ -403,7 +405,7 @@ int bbound_queue(CacheTree<N>* tree,
                 Q* q, N*(*front)(Q*),
                 permutation_insert_signature<N, P> permutation_insert,
                 pmap_garbage_collect_signature<P> pmap_garbage_collect,
-                P* p, size_t num_iter) {
+                P* p, size_t num_iter, size_t switch_iter) {
     double start;
     int cnt;
     double min_objective;
@@ -476,7 +478,7 @@ int bbound_queue(CacheTree<N>* tree,
         }
         if ((num_iter % logger.getFrequency()) == 0)
             logger.dumpState();     // want ~1000 records for detailed figures
-        if (num_iter == 20000) {
+        if (num_iter == switch_iter) {
             return num_iter;
         }
     }
@@ -493,14 +495,11 @@ int bbound_queue(CacheTree<N>* tree,
     else
         printf("Exited because max number of nodes in the tree was reached\n");
 
-    //MemTrack::TrackDumpBlocks();
+    // Memory usage
     unsigned long long tree_size = tree->num_nodes() * sizeof(N) + sizeof(CacheTree<N>);
     printf("Size of tree in bytes: %llu\n", tree_size);
     if (p) {
-        //unsigned prefixkey_size = 
-        //unsigned vector_size = 
-        //unsigned pair_size = 
-        unsigned long long pmap_size = sizeof(p);//p->size() * (prefixkey_size + pair_size + 32) + sizeof(p);
+        unsigned long long pmap_size = sizeof(p);
         typename P::iterator it;
         for(it = p->begin(); it != p->end(); ++it) {
             unsigned node_size = 0;
@@ -514,6 +513,14 @@ int bbound_queue(CacheTree<N>* tree,
     }
     MemTrack::TrackListMemoryUsage();
 
+    // Print out queue
+    char fname[] = "queue.txt"; // make this optional
+    ofstream f;
+    printf("Writing queue elements to: %s\n", fname);
+    f.open(fname, ios::out | ios::trunc);
+    f << "lower_bound objective length frac_captured rule_list\n";
+
+    // Clean up data structures
     printf("Deleting queue elements and corresponding nodes in the cache, since they may not be reachable by the tree's destructor\n");
     N* node;
     while (!q->empty()) {
@@ -522,8 +529,20 @@ int bbound_queue(CacheTree<N>* tree,
         if (node->deleted()) {
             tree->decrement_num_nodes();
             delete node;
+        } else {
+            auto pp_pair = node->get_prefix_and_predictions();
+            std::vector<size_t> prefix = std::move(pp_pair.first);
+            std::vector<bool> predictions = std::move(pp_pair.second);
+            f << node->lower_bound() << " " << node->objective() << " " << node->depth() << " "
+              << (double) node->num_captured() / (double) tree->nsamples() << " ";
+            for(size_t i = 0; i < prefix.size(); ++i) {
+                f << tree->rule_features(prefix[i]) << "~"
+                  << predictions[i] << ";";
+            }
+            f << "default~" << predictions.back() << "\n";
         }
     }
+    f.close();
     logger.dumpState(); // last log record (before cache deleted)
 
     rule_vfree(&captured);
@@ -712,7 +731,7 @@ bbound_queue<BaseNode, BaseQueue, PrefixPermutationMap>(CacheTree<BaseNode>* tre
                                   BaseNode*(*front)(BaseQueue*),
                                   permutation_insert_signature<BaseNode, PrefixPermutationMap> permutation_insert,
                                   pmap_garbage_collect_signature<PrefixPermutationMap> pmap_garbage_collect,
-                                  PrefixPermutationMap* p, size_t num_iter);
+                                  PrefixPermutationMap* p, size_t num_iter, size_t switch_iter);
 
 template int
 bbound_queue<BaseNode, BaseQueue, CapturedPermutationMap>(CacheTree<BaseNode>* tree,
@@ -722,7 +741,7 @@ bbound_queue<BaseNode, BaseQueue, CapturedPermutationMap>(CacheTree<BaseNode>* t
                                   BaseNode*(*front)(BaseQueue*),
                                   permutation_insert_signature<BaseNode, CapturedPermutationMap> permutation_insert,
                                   pmap_garbage_collect_signature<CapturedPermutationMap> pmap_garbage_collect,
-                                  CapturedPermutationMap* p, size_t num_iter);
+                                  CapturedPermutationMap* p, size_t num_iter, size_t switch_iter);
 
 template int
 bbound_queue<CuriousNode, CuriousQueue, PrefixPermutationMap>(CacheTree<CuriousNode>* tree,
@@ -732,7 +751,7 @@ bbound_queue<CuriousNode, CuriousQueue, PrefixPermutationMap>(CacheTree<CuriousN
                                         CuriousNode*(*front)(CuriousQueue*),
                                         permutation_insert_signature<CuriousNode, PrefixPermutationMap> permutation_insert,
                                         pmap_garbage_collect_signature<PrefixPermutationMap> pmap_garbage_collect,
-                                        PrefixPermutationMap* p, size_t num_iter);
+                                        PrefixPermutationMap* p, size_t num_iter, size_t switch_iter);
 
 template int
 bbound_queue<CuriousNode, CuriousQueue, CapturedPermutationMap>(CacheTree<CuriousNode>* tree,
@@ -742,7 +761,7 @@ bbound_queue<CuriousNode, CuriousQueue, CapturedPermutationMap>(CacheTree<Curiou
                                         CuriousNode*(*front)(CuriousQueue*),
                                         permutation_insert_signature<CuriousNode, CapturedPermutationMap> permutation_insert,
                                         pmap_garbage_collect_signature<CapturedPermutationMap> pmap_garbage_collect,
-                                        CapturedPermutationMap* p, size_t num_iter);
+                                        CapturedPermutationMap* p, size_t num_iter, size_t switch_iter);
 
 template void
 delete_subtree<BaseNode>(CacheTree<BaseNode>* tree, BaseNode* n, bool destructive, bool update_remaining_state_space);

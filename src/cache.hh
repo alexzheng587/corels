@@ -20,7 +20,8 @@ class Node {
     explicit Node(size_t nrules, bool default_prediction, double objective);
 
     Node(size_t id, size_t nrules, bool prediction, bool default_prediction,
-         double lower_bound, double objective, T storage, Node<T>* parent);
+         double lower_bound, double objective, T storage, Node<T>* parent,
+         size_t num_captured);
 
     inline size_t id() const;
     inline bool prediction() const;
@@ -44,6 +45,7 @@ class Node {
     inline size_t num_children() const;
 
     inline T& get_storage(); // can this be const?
+    inline size_t num_captured() const;
 
     inline typename std::map<size_t, Node<T>*>::iterator children_begin();
     inline typename std::map<size_t, Node<T>*>::iterator children_end();
@@ -65,6 +67,7 @@ class Node {
     std::map<size_t, Node<T>*> children_;
 
     T storage_;  // space for something extra, like curiosity or a bit vector
+    size_t num_captured_;
 
     friend class CacheTree<Node<T> >;
 };
@@ -82,6 +85,7 @@ class CacheTree {
     inline size_t num_nodes() const;
     inline size_t num_evaluated() const;
     inline rule_t rule(size_t idx) const;
+    inline char* rule_features(size_t idx) const;
     inline rule_t label(size_t idx) const;
     inline size_t nsamples() const;
     inline size_t nrules() const;
@@ -111,12 +115,13 @@ class CacheTree {
     size_t nrules_;
     double c_;
 
+    size_t num_nodes_;
+    size_t num_evaluated_;
+
     double min_objective_;
     std::vector<size_t> opt_rulelist_;
     std::vector<bool> opt_predictions_;
 
-    size_t num_nodes_;
-    size_t num_evaluated_;
     std::vector<rule_t> rules_;
     std::vector<rule_t> labels_;
 
@@ -239,6 +244,11 @@ inline T& Node<T>::get_storage() {
     return storage_;
 }
 
+template<class T>
+inline size_t Node<T>::num_captured() const {
+    return num_captured_;
+}
+
 template<class N>
 inline double CacheTree<N>::min_objective() const {
     return min_objective_;
@@ -267,6 +277,11 @@ inline size_t CacheTree<N>::num_evaluated() const {
 template<class N>
 inline rule_t CacheTree<N>::rule(size_t idx) const{
     return rules_[idx];
+}
+
+template<class N>
+inline char* CacheTree<N>::rule_features(size_t idx) const{
+    return rules_[idx].features;
 }
 
 template<class N>

@@ -27,6 +27,16 @@ auto lower_bound_cmp = [](CuriousNode* left, CuriousNode* right) {
     return left->lower_bound() < right->lower_bound();
 };
 
+// lambda function for priority queue metric using objective as curiosity
+auto objective_cmp = [](CuriousNode* left, CuriousNode* right) {
+    return left->objective() > right->objective();
+};
+
+// lambda function for priority queue metric implementing depth-first
+auto depth_first_cmp = [](CuriousNode* left, CuriousNode* right) {
+    return left->depth() < right->depth();
+};
+
 typedef std::priority_queue<CuriousNode*, std::vector<CuriousNode*>,
                             std::function<bool(CuriousNode*, CuriousNode*)> > CuriousQueue;
 
@@ -104,7 +114,7 @@ extern int bbound_queue(CacheTree<N>* tree,
                          Q* q, N*(*front)(Q*),
                          permutation_insert_signature<N, P> permutation_insert,
                          pmap_garbage_collect_signature<P> pmap_garbage_collect,
-                         P* p, size_t num_iter);
+                         P* p, size_t num_iter, size_t switch_iter);
 
 template<class N, class Q, class P>
 extern void evaluate_children(CacheTree<N>* tree, N* parent,

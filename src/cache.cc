@@ -8,22 +8,24 @@
 template<class T>
 Node<T>::Node(size_t nrules, bool default_prediction, double objective)
     : id_(0), default_prediction_(default_prediction),
-      lower_bound_(0.), objective_(objective), done_(0), deleted_(0), depth_(0), storage_(0) {
+      lower_bound_(0.), objective_(objective), done_(0), deleted_(0), depth_(0),
+      storage_(0), num_captured_(0) {
 }
 
 template<class T>
 Node<T>::Node(size_t id, size_t nrules, bool prediction,
-           bool default_prediction, double lower_bound,
-           double objective, T storage, Node<T>* parent)
+              bool default_prediction, double lower_bound,
+              double objective, T storage, Node<T>* parent, size_t num_captured)
     : id_(id), prediction_(prediction), default_prediction_(default_prediction),
       lower_bound_(lower_bound), objective_(objective),
-      done_(0), deleted_(0), depth_(1 + parent->depth_), parent_(parent), storage_(storage) {
+      done_(0), deleted_(0), depth_(1 + parent->depth_), parent_(parent),
+      storage_(storage), num_captured_(num_captured) {
 }
 
 template<class N>
 CacheTree<N>::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules, rule_t *labels)
-    : root_(0), nsamples_(nsamples), nrules_(nrules), c_(c), min_objective_(0.5),
-      num_nodes_(0), num_evaluated_(0),
+    : root_(0), nsamples_(nsamples), nrules_(nrules), c_(c),
+      num_nodes_(0), num_evaluated_(0), min_objective_(0.5),
       opt_rulelist_({}), opt_predictions_({}) {
     opt_rulelist_.resize(0);
     opt_predictions_.resize(0);

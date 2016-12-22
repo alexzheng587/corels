@@ -63,7 +63,7 @@ CuriousNode* curious_construct_policy(size_t new_rule, size_t nrules,
 /*
  * Permutation Map
  */
-typedef std::set<size_t> PrefixKey;
+typedef std::vector<size_t> PrefixKey;
 typedef std::vector<bool> CapturedKey;
 typedef std::map<PrefixKey, std::pair<std::vector<size_t>, double> > PrefixPermutationMap;
 typedef std::map<CapturedKey, std::pair<std::vector<size_t>, double> > CapturedPermutationMap;

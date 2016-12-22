@@ -59,7 +59,8 @@ N* prefix_permutation_insert(construct_signature<N> construct_policy, size_t new
                              PrefixPermutationMap* p) {
     typename PrefixPermutationMap::iterator iter;
     parent_prefix.push_back(new_rule);
-    std::set<size_t> key(parent_prefix.begin(), parent_prefix.end());
+    std::sort(parent_prefix.begin(), parent_prefix.end());
+    std::vector<size_t> key(parent_prefix.begin(), parent_prefix.end());
     N* child = NULL;
     iter = p->find(key);
     if (iter != p->end()) {
@@ -504,7 +505,7 @@ int bbound_queue(CacheTree<N>* tree,
         for(it = p->begin(); it != p->end(); ++it) {
             unsigned node_size = 0;
             auto pkey = it->first;
-            node_size += pkey.size() * (sizeof(size_t) + 32) + sizeof(pkey);
+            node_size += pkey.capacity() * sizeof(size_t) + sizeof(pkey);
             std::pair<std::vector<size_t>, double> val = it->second;
             node_size += val.first.capacity() * sizeof(size_t) + sizeof(val.first) + sizeof(val.second) + sizeof(val);
             pmap_size += node_size + 32;

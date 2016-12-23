@@ -63,6 +63,12 @@ CuriousNode* curious_construct_policy(unsigned short new_rule, size_t nrules,
 /*
  * Permutation Map
  */
+struct cmpVECTOR {
+    bool operator()(const VECTOR& left, const VECTOR& right) const {
+        return *left < *right;
+    }
+};
+
 typedef std::vector<unsigned short> PrefixKey;
 typedef std::vector<bool> CapturedKey;
 typedef std::map<PrefixKey, std::pair<std::vector<unsigned short>, double> > PrefixPermutationMap;
@@ -93,7 +99,7 @@ N* captured_permutation_insert(construct_signature<N> construct_policy, unsigned
                         double c, CacheTree<N>* tree, VECTOR not_captured, std::vector<unsigned short>, CapturedPermutationMap* p);
 
 template<class N>
-extern std::pair<N*, std::set<unsigned short> > stochastic_select(CacheTree<N>* tree, VECTOR not_captured);
+extern N* stochastic_select(CacheTree<N>* tree, VECTOR not_captured);
 
 template<class N, class P>
 extern void bbound_stochastic(CacheTree<N>* tree,
@@ -104,7 +110,7 @@ extern void bbound_stochastic(CacheTree<N>* tree,
                               P* p);
 
 template<class N, class Q>
-extern std::pair<N*, std::set<unsigned short> >
+extern N*
 queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured);
 
 template<class N, class Q, class P>
@@ -119,7 +125,6 @@ extern int bbound_queue(CacheTree<N>* tree,
 template<class N, class Q, class P>
 extern void evaluate_children(CacheTree<N>* tree, N* parent,
                               VECTOR parent_not_captured,
-                              std::set<unsigned short> ordered_parent,
                               construct_signature<N> construct_policy,
                               Q* q,
                               permutation_insert_signature<N, P> permutation_insert,

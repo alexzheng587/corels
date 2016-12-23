@@ -49,7 +49,7 @@ class Node {
 
     inline typename std::map<unsigned short, Node<T>*>::iterator children_begin();
     inline typename std::map<unsigned short, Node<T>*>::iterator children_end();
-    inline typename std::map<unsigned short, Node<T>*>::iterator random_child(); // FIXME
+    inline Node<T>* random_child(); // FIXME
     // inline typename std::map<unsigned short, Node<T>*>::iterator random_child(PRNG prng);
 
   private:
@@ -225,13 +225,13 @@ inline typename std::map<unsigned short, Node<T>*>::iterator Node<T>::children_e
 }
 
 template<class T>
-inline typename std::map<unsigned short, Node<T>*>::iterator Node<T>::random_child() {
+inline Node<T>* Node<T>::random_child() {
     typename std::map<unsigned short, Node<T>*>::iterator iter;
     unsigned short idx;
     iter = children_.begin();
     idx = rand() % (children_.size());
     std::advance(iter, idx);
-    return iter;
+    return iter->second;
 }
 
 template<class T>

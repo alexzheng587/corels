@@ -45,16 +45,16 @@ BaseNode* base_queue_front(BaseQueue* q);
 CuriousNode* curious_queue_front(CuriousQueue* q);
 
 template<class N>
-using construct_signature = N* (*)(short, size_t, bool, bool, double, double,
+using construct_signature = N* (*)(unsigned short, size_t, bool, bool, double, double,
                                    N* parent, int, int, int, double);
 
-BaseNode* base_construct_policy(short new_rule, size_t nrules,
+BaseNode* base_construct_policy(unsigned short new_rule, size_t nrules,
                                 bool prediction, bool default_prediction,
                                 double lower_bound, double objective,
                                 BaseNode* parent, int num_not_captured,
                                 int nsamples, int len_prefix, double c);
 
-CuriousNode* curious_construct_policy(short new_rule, size_t nrules,
+CuriousNode* curious_construct_policy(unsigned short new_rule, size_t nrules,
                                       bool prediction, bool default_prediction,
                                       double lower_bound, double objective,
                                       CuriousNode* parent, int num_not_captured,
@@ -63,10 +63,10 @@ CuriousNode* curious_construct_policy(short new_rule, size_t nrules,
 /*
  * Permutation Map
  */
-typedef std::vector<short> PrefixKey;
+typedef std::vector<unsigned short> PrefixKey;
 typedef std::vector<bool> CapturedKey;
-typedef std::map<PrefixKey, std::pair<std::vector<short>, double> > PrefixPermutationMap;
-typedef std::map<CapturedKey, std::pair<std::vector<short>, double> > CapturedPermutationMap;
+typedef std::map<PrefixKey, std::pair<std::vector<unsigned short>, double> > PrefixPermutationMap;
+typedef std::map<CapturedKey, std::pair<std::vector<unsigned short>, double> > CapturedPermutationMap;
 
 template<class P>
 using pmap_garbage_collect_signature = void (*)(P*, size_t);
@@ -76,24 +76,24 @@ void prefix_map_garbage_collect(PrefixPermutationMap* p, size_t min_length);
 void captured_map_garbage_collect(CapturedPermutationMap* p, size_t min_length);
 
 template<class N, class P>
-using permutation_insert_signature = N* (*)(construct_signature<N>, short, size_t, bool, bool, 
+using permutation_insert_signature = N* (*)(construct_signature<N>, unsigned short, size_t, bool, bool, 
                                             double, double, N* parent, int, int, int, double, CacheTree<N>*, VECTOR,
-                                            std::vector<short>, P*);
+                                            std::vector<unsigned short>, P*);
 
 template<class N>
-N* prefix_permutation_insert(construct_signature<N> construct_policy, short new_rule,
+N* prefix_permutation_insert(construct_signature<N> construct_policy, unsigned short new_rule,
                         size_t nrules, bool prediction, bool default_prediction, double lower_bound,
                         double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
-                        double c, CacheTree<N>* tree, VECTOR not_captured, std::vector<short>, PrefixPermutationMap* p);
+                        double c, CacheTree<N>* tree, VECTOR not_captured, std::vector<unsigned short>, PrefixPermutationMap* p);
 
 template<class N>
-N* captured_permutation_insert(construct_signature<N> construct_policy, short new_rule,
+N* captured_permutation_insert(construct_signature<N> construct_policy, unsigned short new_rule,
                         size_t nrules, bool prediction, bool default_prediction, double lower_bound,
                         double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
-                        double c, CacheTree<N>* tree, VECTOR not_captured, std::vector<short>, CapturedPermutationMap* p);
+                        double c, CacheTree<N>* tree, VECTOR not_captured, std::vector<unsigned short>, CapturedPermutationMap* p);
 
 template<class N>
-extern std::pair<N*, std::set<short> > stochastic_select(CacheTree<N>* tree, VECTOR not_captured);
+extern std::pair<N*, std::set<unsigned short> > stochastic_select(CacheTree<N>* tree, VECTOR not_captured);
 
 template<class N, class P>
 extern void bbound_stochastic(CacheTree<N>* tree,
@@ -104,7 +104,7 @@ extern void bbound_stochastic(CacheTree<N>* tree,
                               P* p);
 
 template<class N, class Q>
-extern std::pair<N*, std::set<short> >
+extern std::pair<N*, std::set<unsigned short> >
 queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured);
 
 template<class N, class Q, class P>
@@ -119,7 +119,7 @@ extern int bbound_queue(CacheTree<N>* tree,
 template<class N, class Q, class P>
 extern void evaluate_children(CacheTree<N>* tree, N* parent,
                               VECTOR parent_not_captured,
-                              std::set<short> ordered_parent,
+                              std::set<unsigned short> ordered_parent,
                               construct_signature<N> construct_policy,
                               Q* q,
                               permutation_insert_signature<N, P> permutation_insert,

@@ -13,7 +13,7 @@ Node<T>::Node(size_t nrules, bool default_prediction, double objective)
 }
 
 template<class T>
-Node<T>::Node(short id, size_t nrules, bool prediction,
+Node<T>::Node(unsigned short id, size_t nrules, bool prediction,
               bool default_prediction, double lower_bound,
               double objective, T storage, Node<T>* parent, size_t num_captured)
     : id_(id), prediction_(prediction), default_prediction_(default_prediction),
@@ -82,7 +82,7 @@ void CacheTree<N>::insert(N* node) {
 
 template<class N>
 void CacheTree<N>::prune_up(N* node) {
-    short id;
+    unsigned short id;
     size_t depth = node->depth();
     N* parent;
     while (node->children_.size() == 0) {
@@ -103,9 +103,9 @@ void CacheTree<N>::prune_up(N* node) {
 }
 
 template<class N>
-N* CacheTree<N>::check_prefix(std::vector<short>& prefix) {
+N* CacheTree<N>::check_prefix(std::vector<unsigned short>& prefix) {
     N* node = this->root_;
-    for(std::vector<short>::iterator it = prefix.begin(); it != prefix.end(); ++it) {
+    for(std::vector<unsigned short>::iterator it = prefix.begin(); it != prefix.end(); ++it) {
         node = node->child(*it);
         if (node == NULL)
             return NULL;
@@ -119,7 +119,7 @@ void CacheTree<N>::gc_helper(N* node) {
         logger.addQueueElement(node->depth(), node->lower_bound());
     N* child;
     std::vector<N*> children;
-    for (typename std::map<short, N*>::iterator cit = node->children_.begin(); cit != node->children_.end(); ++cit)
+    for (typename std::map<unsigned short, N*>::iterator cit = node->children_.begin(); cit != node->children_.end(); ++cit)
         children.push_back(cit->second);
     for (typename std::vector<N*>::iterator cit = children.begin(); cit != children.end(); ++cit) {
         child = *cit;
@@ -145,8 +145,8 @@ inline void CacheTree<N>::update_min_objective(double objective) {
 
 template<class N>
 inline void
-CacheTree<N>::update_opt_rulelist(std::vector<short>& parent_prefix,
-                                  short new_rule_id) {
+CacheTree<N>::update_opt_rulelist(std::vector<unsigned short>& parent_prefix,
+                                  unsigned short new_rule_id) {
     opt_rulelist_.assign(parent_prefix.begin(), parent_prefix.end());
     opt_rulelist_.push_back(new_rule_id);
     logger.setTreePrefixLen(opt_rulelist_.size());

@@ -1,6 +1,13 @@
-CFLAGS := -g -W -Wall -O$(O) -I. -fno-omit-frame-pointer
+CFLAGS := -g -W -Wall -O$(O) -I.
 LDFLAGS := -Wl,-no_pie
-LIBS := -lgmpxx -lgmp -lprofiler -ltcmalloc
+LIBS := -lgmpxx -lgmp
+
+ifneq ($(shell uname -n),beepboop)
+    CFLAGS += -fno-omit-frame-pointer
+    ifneq ($(shell uname -n),elaines-MacBook-Air.local)
+        LIBS += -lprofiler -ltcmalloc
+    endif
+endif
 
 ifneq ($(shell uname),Darwin)
 LIBS += -lbsd

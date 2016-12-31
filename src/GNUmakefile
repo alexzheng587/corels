@@ -8,7 +8,7 @@ ifneq ($(shell uname -n),beepboop)
         LIBS += -lprofiler -ltcmalloc
     endif
 else
-    LDFLAGS := -W
+    LDFLAGS :=
 endif
 
 ifneq ($(shell uname),Darwin)

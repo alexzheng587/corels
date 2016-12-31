@@ -406,6 +406,7 @@ int bbound_queue(CacheTree<N>* tree,
                 permutation_insert_signature<N, P> permutation_insert,
                 pmap_garbage_collect_signature<P> pmap_garbage_collect,
                 P* p, size_t num_iter, size_t switch_iter) {
+    bool print_queue = 0;
     double start;
     int cnt;
     double min_objective;
@@ -516,9 +517,11 @@ int bbound_queue(CacheTree<N>* tree,
     // Print out queue
     char fname[] = "queue.txt"; // make this optional
     ofstream f;
-    printf("Writing queue elements to: %s\n", fname);
-    f.open(fname, ios::out | ios::trunc);
-    f << "lower_bound objective length frac_captured rule_list\n";
+    if (print_queue) {
+        printf("Writing queue elements to: %s\n", fname);
+        f.open(fname, ios::out | ios::trunc);
+        f << "lower_bound objective length frac_captured rule_list\n";
+    }
 
     // Clean up data structures
     printf("Deleting queue elements and corresponding nodes in the cache, since they may not be reachable by the tree's destructor\n");
@@ -530,19 +533,22 @@ int bbound_queue(CacheTree<N>* tree,
             tree->decrement_num_nodes();
             delete node;
         } else {
-            auto pp_pair = node->get_prefix_and_predictions();
-            std::vector<size_t> prefix = std::move(pp_pair.first);
-            std::vector<bool> predictions = std::move(pp_pair.second);
-            f << node->lower_bound() << " " << node->objective() << " " << node->depth() << " "
-              << (double) node->num_captured() / (double) tree->nsamples() << " ";
-            for(size_t i = 0; i < prefix.size(); ++i) {
-                f << tree->rule_features(prefix[i]) << "~"
-                  << predictions[i] << ";";
+            if (print_queue) {
+                auto pp_pair = node->get_prefix_and_predictions();
+                std::vector<size_t> prefix = std::move(pp_pair.first);
+                std::vector<bool> predictions = std::move(pp_pair.second);
+                f << node->lower_bound() << " " << node->objective() << " " << node->depth() << " "
+                  << (double) node->num_captured() / (double) tree->nsamples() << " ";
+                for(size_t i = 0; i < prefix.size(); ++i) {
+                    f << tree->rule_features(prefix[i]) << "~"
+                      << predictions[i] << ";";
+                }
+                f << "default~" << predictions.back() << "\n";
             }
-            f << "default~" << predictions.back() << "\n";
         }
     }
-    f.close();
+    if (print_queue)
+        f.close();
     logger.dumpState(); // last log record (before cache deleted)
 
     rule_vfree(&captured);

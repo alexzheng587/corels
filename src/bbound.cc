@@ -500,9 +500,11 @@ int bbound_queue(CacheTree<N>* tree,
             unsigned node_size = 0;
             auto pkey = it->first;
             node_size += pkey.capacity() * sizeof(unsigned short) + sizeof(pkey);
-            std::pair<std::vector<unsigned short>, double> val = it->second;
+            auto val = it->second;
             node_size += val.first.capacity() * sizeof(unsigned short) + sizeof(val.first) + sizeof(val.second) + sizeof(val);
-            pmap_size += node_size + 32;
+            // The first 32 is for the extra pointers that each node in the map keeps
+            // The second 32 is for the size of the pair that composes the node (consisting of a key/val pair)
+            pmap_size += node_size + 32 + 32;
         }
         printf("Size of permutation map in bytes: %llu\n", pmap_size);
     }

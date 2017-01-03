@@ -19,11 +19,11 @@ class Node {
   public:
     explicit Node(size_t nrules, bool default_prediction, double objective);
 
-    Node(size_t id, size_t nrules, bool prediction, bool default_prediction,
+    Node(unsigned short id, size_t nrules, bool prediction, bool default_prediction,
          double lower_bound, double objective, T storage, Node<T>* parent,
          size_t num_captured);
 
-    inline size_t id() const;
+    inline unsigned short id() const;
     inline bool prediction() const;
     inline bool default_prediction() const;
     inline double lower_bound() const;
@@ -35,26 +35,26 @@ class Node {
 
     // Returns pair of prefixes and predictions for the path from this
     // node to the root
-    inline std::pair<std::vector<size_t>, std::vector<bool>>
+    inline std::pair<std::vector<unsigned short>, std::vector<bool>>
         get_prefix_and_predictions();
 
     inline size_t depth() const;
-    inline Node<T>* child(size_t idx);
+    inline Node<T>* child(unsigned short idx);
     inline Node<T>* parent() const;
-    inline void delete_child(size_t idx);
+    inline void delete_child(unsigned short idx);
     inline size_t num_children() const;
 
     inline T& get_storage(); // can this be const?
     inline size_t num_captured() const;
 
-    inline typename std::map<size_t, Node<T>*>::iterator children_begin();
-    inline typename std::map<size_t, Node<T>*>::iterator children_end();
-    inline typename std::map<size_t, Node<T>*>::iterator random_child(); // FIXME
-    // inline typename std::map<size_t, Node<T>*>::iterator random_child(PRNG prng);
+    inline typename std::map<unsigned short, Node<T>*>::iterator children_begin();
+    inline typename std::map<unsigned short, Node<T>*>::iterator children_end();
+    inline typename std::map<unsigned short, Node<T>*>::iterator random_child(); // FIXME
+    // inline typename std::map<unsigned short, Node<T>*>::iterator random_child(PRNG prng);
 
   private:
 
-    size_t id_;
+    unsigned short id_;
     bool prediction_;
     bool default_prediction_;
     double lower_bound_;
@@ -64,7 +64,7 @@ class Node {
 
     size_t depth_;
     Node<T>* parent_;
-    std::map<size_t, Node<T>*> children_;
+    std::map<unsigned short, Node<T>*> children_;
 
     T storage_;  // space for something extra, like curiosity or a bit vector
     size_t num_captured_;
@@ -79,22 +79,22 @@ class CacheTree {
     ~CacheTree();
 
     inline double min_objective() const;
-    inline std::vector<size_t> opt_rulelist() const;
+    inline std::vector<unsigned short> opt_rulelist() const;
     inline std::vector<bool> opt_predictions() const;
 
     inline size_t num_nodes() const;
     inline size_t num_evaluated() const;
-    inline rule_t rule(size_t idx) const;
-    inline char* rule_features(size_t idx) const;
-    inline rule_t label(size_t idx) const;
+    inline rule_t rule(unsigned short idx) const;
+    inline char* rule_features(unsigned short idx) const;
+    inline rule_t label(unsigned short idx) const;
     inline size_t nsamples() const;
     inline size_t nrules() const;
     inline double c() const;
     inline N* root() const;
 
     void update_min_objective(double objective);
-    void update_opt_rulelist(std::vector<size_t>& parent_prefix,
-                             size_t new_rule_id);
+    void update_opt_rulelist(std::vector<unsigned short>& parent_prefix,
+                             unsigned short new_rule_id);
     void update_opt_predictions(std::vector<bool>& parent_predictions,
                                 bool new_pred,
                                 bool new_default_pred);
@@ -107,7 +107,7 @@ class CacheTree {
     void prune_up(N* node);
     void garbage_collect();
     void play_with_rules();
-    N* check_prefix(std::vector<size_t>& prefix);
+    N* check_prefix(std::vector<unsigned short>& prefix);
 
   private:
     N* root_;
@@ -119,7 +119,7 @@ class CacheTree {
     size_t num_evaluated_;
 
     double min_objective_;
-    std::vector<size_t> opt_rulelist_;
+    std::vector<unsigned short> opt_rulelist_;
     std::vector<bool> opt_predictions_;
 
     std::vector<rule_t> rules_;
@@ -129,7 +129,7 @@ class CacheTree {
 };
 
 template <class T>
-inline size_t Node<T>::id() const {
+inline unsigned short Node<T>::id() const {
     return id_;
 }
 
@@ -174,9 +174,9 @@ inline void Node<T>::set_deleted() {
 }
 
 template <class T>
-inline std::pair<std::vector<size_t>, std::vector<bool>>
+inline std::pair<std::vector<unsigned short>, std::vector<bool>>
     Node<T>::get_prefix_and_predictions() {
-    std::vector<size_t> prefix;
+    std::vector<unsigned short> prefix;
     std::vector<bool> predictions;
     auto it1 = prefix.begin();
     auto it2 = predictions.begin();
@@ -195,8 +195,8 @@ inline size_t Node<T>::depth() const {
 }
 
 template<class T>
-inline Node<T>* Node<T>::child(size_t idx) {
-    typename std::map<size_t, Node<T>*>::iterator iter;
+inline Node<T>* Node<T>::child(unsigned short idx) {
+    typename std::map<unsigned short, Node<T>*>::iterator iter;
     iter = children_.find(idx);
     if (iter == children_.end())
         return NULL;
@@ -205,7 +205,7 @@ inline Node<T>* Node<T>::child(size_t idx) {
 }
 
 template<class T>
-inline void Node<T>::delete_child(size_t idx) {
+inline void Node<T>::delete_child(unsigned short idx) {
     children_.erase(idx);
 }
 
@@ -215,19 +215,19 @@ inline size_t Node<T>::num_children() const {
 }
 
 template<class T>
-inline typename std::map<size_t, Node<T>*>::iterator Node<T>::children_begin() {
+inline typename std::map<unsigned short, Node<T>*>::iterator Node<T>::children_begin() {
     return children_.begin();
 }
 
 template<class T>
-inline typename std::map<size_t, Node<T>*>::iterator Node<T>::children_end() {
+inline typename std::map<unsigned short, Node<T>*>::iterator Node<T>::children_end() {
     return children_.end();
 }
 
 template<class T>
-inline typename std::map<size_t, Node<T>*>::iterator Node<T>::random_child() {
-    typename std::map<size_t, Node<T>*>::iterator iter;
-    size_t idx;
+inline typename std::map<unsigned short, Node<T>*>::iterator Node<T>::random_child() {
+    typename std::map<unsigned short, Node<T>*>::iterator iter;
+    unsigned short idx;
     iter = children_.begin();
     idx = rand() % (children_.size());
     std::advance(iter, idx);
@@ -255,7 +255,7 @@ inline double CacheTree<N>::min_objective() const {
 }
 
 template<class N>
-inline std::vector<size_t> CacheTree<N>::opt_rulelist() const {
+inline std::vector<unsigned short> CacheTree<N>::opt_rulelist() const {
     return opt_rulelist_;
 }
 
@@ -275,17 +275,17 @@ inline size_t CacheTree<N>::num_evaluated() const {
 }
 
 template<class N>
-inline rule_t CacheTree<N>::rule(size_t idx) const{
+inline rule_t CacheTree<N>::rule(unsigned short idx) const{
     return rules_[idx];
 }
 
 template<class N>
-inline char* CacheTree<N>::rule_features(size_t idx) const{
+inline char* CacheTree<N>::rule_features(unsigned short idx) const{
     return rules_[idx].features;
 }
 
 template<class N>
-inline rule_t CacheTree<N>::label(size_t idx) const{
+inline rule_t CacheTree<N>::label(unsigned short idx) const{
     return labels_[idx];
 }
 

@@ -161,7 +161,7 @@ int main(int argc, char *argv[]) {
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
-            const std::vector<size_t>& r_list = tree.opt_rulelist();
+            const std::vector<unsigned short>& r_list = tree.opt_rulelist();
             printf("final accuracy: %1.5f\n",
                    1 - tree.min_objective() + c*r_list.size());
             print_final_rulelist(r_list, tree.opt_predictions(),
@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
-            const std::vector<size_t>& r_list = tree.opt_rulelist();
+            const std::vector<unsigned short>& r_list = tree.opt_rulelist();
             printf("final accuracy: %1.5f\n",
                    1 - tree.min_objective() + c*r_list.size());
             print_final_rulelist(r_list, tree.opt_predictions(),
@@ -199,7 +199,7 @@ int main(int argc, char *argv[]) {
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
-            const std::vector<size_t>& r_list = tree.opt_rulelist();
+            const std::vector<unsigned short>& r_list = tree.opt_rulelist();
             printf("final accuracy: %1.5f\n",
                    1 - tree.min_objective() + c*r_list.size());
             print_final_rulelist(r_list, tree.opt_predictions(),
@@ -229,7 +229,7 @@ int main(int argc, char *argv[]) {
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
-            const std::vector<size_t>& r_list = tree.opt_rulelist();
+            const std::vector<unsigned short>& r_list = tree.opt_rulelist();
             printf("final accuracy: %1.5f\n",
                    1 - tree.min_objective() + c*r_list.size());
             print_final_rulelist(r_list, tree.opt_predictions(),
@@ -253,7 +253,7 @@ int main(int argc, char *argv[]) {
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
-            const std::vector<size_t>& r_list = tree.opt_rulelist();
+            const std::vector<unsigned short>& r_list = tree.opt_rulelist();
             printf("final accuracy: %1.5f\n",
                    1 - tree.min_objective() + c*r_list.size());
             print_final_rulelist(r_list, tree.opt_predictions(),
@@ -277,7 +277,7 @@ int main(int argc, char *argv[]) {
             printf("final num_nodes: %zu\n", tree.num_nodes());
             printf("final num_evaluated: %zu\n", tree.num_evaluated());
             printf("final min_objective: %1.5f\n", tree.min_objective());
-            const std::vector<size_t>& r_list = tree.opt_rulelist();
+            const std::vector<unsigned short>& r_list = tree.opt_rulelist();
             printf("final accuracy: %1.5f\n",
                    1 - tree.min_objective() + c*r_list.size());
             print_final_rulelist(r_list, tree.opt_predictions(),
@@ -325,7 +325,7 @@ int main(int argc, char *argv[]) {
                 printf("final num_nodes: %zu\n", tree->num_nodes());
                 printf("final num_evaluated: %zu\n", tree->num_evaluated());
                 printf("final min_objective: %1.5f\n", tree->min_objective());
-                const std::vector<size_t>& r_list = tree->opt_rulelist();
+                const std::vector<unsigned short>& r_list = tree->opt_rulelist();
                 printf("final accuracy: %1.5f\n",
                        1 - tree->min_objective() + c*r_list.size());
                 print_final_rulelist(r_list, tree->opt_predictions(),
@@ -348,7 +348,7 @@ int main(int argc, char *argv[]) {
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());
                 printf("final min_objective: %1.5f\n", tree.min_objective());
-                const std::vector<size_t>& r_list = tree.opt_rulelist();
+                const std::vector<unsigned short>& r_list = tree.opt_rulelist();
                 printf("final accuracy: %1.5f\n",
                        1 - tree.min_objective() + c*r_list.size());
                 print_final_rulelist(r_list, tree.opt_predictions(),
@@ -371,7 +371,7 @@ int main(int argc, char *argv[]) {
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());
                 printf("final min_objective: %1.5f\n", tree.min_objective());
-                const std::vector<size_t>& r_list = tree.opt_rulelist();
+                const std::vector<unsigned short>& r_list = tree.opt_rulelist();
                 printf("final accuracy: %1.5f\n",
                        1 - tree.min_objective() + c*r_list.size());
                 print_final_rulelist(r_list, tree.opt_predictions(),
@@ -396,7 +396,7 @@ int main(int argc, char *argv[]) {
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());
                 printf("final min_objective: %1.5f\n", tree.min_objective());
-                const std::vector<size_t>& r_list = tree.opt_rulelist();
+                const std::vector<unsigned short>& r_list = tree.opt_rulelist();
                 printf("final accuracy: %1.5f\n",
                        1 - tree.min_objective() + c*r_list.size());
                 print_final_rulelist(r_list, tree.opt_predictions(),
@@ -419,7 +419,7 @@ int main(int argc, char *argv[]) {
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());
                 printf("final min_objective: %1.5f\n", tree.min_objective());
-                const std::vector<size_t>& r_list = tree.opt_rulelist();
+                const std::vector<unsigned short>& r_list = tree.opt_rulelist();
                 printf("final accuracy: %1.5f\n",
                        1 - tree.min_objective() + c*r_list.size());
                 print_final_rulelist(r_list, tree.opt_predictions(),
@@ -441,7 +441,7 @@ int main(int argc, char *argv[]) {
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());
                 printf("final min_objective: %1.5f\n", tree.min_objective());
-                const std::vector<size_t>& r_list = tree.opt_rulelist();
+                const std::vector<unsigned short>& r_list = tree.opt_rulelist();
                 printf("final accuracy: %1.5f\n",
                        1 - tree.min_objective() + c*r_list.size());
                 print_final_rulelist(r_list, tree.opt_predictions(),
@@ -466,7 +466,7 @@ int main(int argc, char *argv[]) {
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());
                 printf("final min_objective: %1.5f\n", tree.min_objective());
-                const std::vector<size_t>& r_list = tree.opt_rulelist();
+                const std::vector<unsigned short>& r_list = tree.opt_rulelist();
                 printf("final accuracy: %1.5f\n",
                        1 - tree.min_objective() + c*r_list.size());
                 print_final_rulelist(r_list, tree.opt_predictions(),
@@ -489,7 +489,7 @@ int main(int argc, char *argv[]) {
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());
                 printf("final min_objective: %1.5f\n", tree.min_objective());
-                const std::vector<size_t>& r_list = tree.opt_rulelist();
+                const std::vector<unsigned short>& r_list = tree.opt_rulelist();
                 printf("final accuracy: %1.5f\n",
                        1 - tree.min_objective() + c*r_list.size());
                 print_final_rulelist(r_list, tree.opt_predictions(),
@@ -511,7 +511,7 @@ int main(int argc, char *argv[]) {
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());
                 printf("final min_objective: %1.5f\n", tree.min_objective());
-                const std::vector<size_t>& r_list = tree.opt_rulelist();
+                const std::vector<unsigned short>& r_list = tree.opt_rulelist();
                 printf("final accuracy: %1.5f\n",
                        1 - tree.min_objective() + c*r_list.size());
                 print_final_rulelist(r_list, tree.opt_predictions(),
@@ -536,7 +536,7 @@ int main(int argc, char *argv[]) {
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());
                 printf("final min_objective: %1.5f\n", tree.min_objective());
-                const std::vector<size_t>& r_list = tree.opt_rulelist();
+                const std::vector<unsigned short>& r_list = tree.opt_rulelist();
                 printf("final accuracy: %1.5f\n",
                        1 - tree.min_objective() + c*r_list.size());
                 print_final_rulelist(r_list, tree.opt_predictions(),
@@ -559,7 +559,7 @@ int main(int argc, char *argv[]) {
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());
                 printf("final min_objective: %1.5f\n", tree.min_objective());
-                const std::vector<size_t>& r_list = tree.opt_rulelist();
+                const std::vector<unsigned short>& r_list = tree.opt_rulelist();
                 printf("final accuracy: %1.5f\n",
                        1 - tree.min_objective() + c*r_list.size());
                 print_final_rulelist(r_list, tree.opt_predictions(),
@@ -581,7 +581,7 @@ int main(int argc, char *argv[]) {
                 printf("final num_nodes: %zu\n", tree.num_nodes());
                 printf("final num_evaluated: %zu\n", tree.num_evaluated());
                 printf("final min_objective: %1.5f\n", tree.min_objective());
-                const std::vector<size_t>& r_list = tree.opt_rulelist();
+                const std::vector<unsigned short>& r_list = tree.opt_rulelist();
                 printf("final accuracy: %1.5f\n",
                        1 - tree.min_objective() + c*r_list.size());
                 print_final_rulelist(r_list, tree.opt_predictions(),

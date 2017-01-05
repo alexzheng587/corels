@@ -29,7 +29,7 @@ void prefix_map_garbage_collect(PrefixPermutationMap* p, size_t queue_min_length
     size_t num_deleted = 0;
     printf("pmap gc for length %zu: %zu -> ", queue_min_length, p->size());
     for (iter = p->begin(); iter != p->end(); ) {
-        if (iter->first.size() <= queue_min_length) {
+        if (iter->first.key.size() <= queue_min_length) {
             iter = p->erase(iter);
             ++num_deleted;
         } else {
@@ -61,7 +61,8 @@ N* prefix_permutation_insert(construct_signature<N> construct_policy, unsigned s
     parent_prefix.push_back(new_rule);
     std::sort(parent_prefix.begin(), parent_prefix.end());
     //std::array<unsigned short> prefix = object->getArray(&parent_prefix[0]);;
-    PrefixKey key(parent_prefix.begin(), parent_prefix.end());
+    std::vector<unsigned short> pre_key(parent_prefix.begin(), parent_prefix.end());
+    struct PrefixKey key = { pre_key };
     N* child = NULL;
     iter = p->find(key);
     if (iter != p->end()) {
@@ -491,7 +492,7 @@ int bbound_queue(CacheTree<N>* tree,
         printf("Exited because max number of nodes in the tree was reached\n");
 
     // Memory usage
-    unsigned long long tree_size = tree->num_nodes() * sizeof(N) + sizeof(CacheTree<N>);
+/*    unsigned long long tree_size = tree->num_nodes() * sizeof(N) + sizeof(CacheTree<N>);
     printf("Size of tree in bytes: %llu\n", tree_size);
     if (p) {
         unsigned long long pmap_size = sizeof(p);
@@ -499,7 +500,7 @@ int bbound_queue(CacheTree<N>* tree,
         for(it = p->begin(); it != p->end(); ++it) {
             unsigned node_size = 0;
             auto pkey = it->first;
-            node_size += pkey.capacity() * sizeof(unsigned short) + sizeof(pkey);
+            node_size += pkey.key.capacity() * sizeof(unsigned short) + sizeof(pkey.key);
             auto val = it->second;
             node_size += val.first.capacity() * sizeof(unsigned short) + sizeof(val.first) + sizeof(val.second) + sizeof(val);
             // The first 32 is for the extra pointers that each node in the map keeps
@@ -508,6 +509,7 @@ int bbound_queue(CacheTree<N>* tree,
         }
         printf("Size of permutation map in bytes: %llu\n", pmap_size);
     }
+    */
     MemTrack::TrackListMemoryUsage();
 
     // Print out queue

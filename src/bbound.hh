@@ -2,6 +2,7 @@
 #include <functional>
 #include <queue>
 #include <map>
+#include <unordered_map>
 #include <set>
 
 /*
@@ -69,9 +70,41 @@ struct cmpVECTOR {
     }
 };
 
-typedef std::vector<unsigned short> PrefixKey;
+struct PrefixKey {
+    std::vector<unsigned short> key;
+
+    bool operator==(const PrefixKey& other) const {
+        if (key.size() != other.key.size())
+            return false;
+        auto it = key.begin();
+        //std::vector<unsigned short>::iterator it = key.begin();
+        auto it2 = other.key.begin();
+        //std::vector<unsigned short>::iterator it2 = other.key.begin();
+        while(it != key.end()) {
+            if (*it != *it2)
+                return false;
+            ++it;
+            ++it2;
+        }
+        return true;
+        //return key == other.key;
+    }
+};
+
+struct prefixHash {
+    std::size_t operator()(const PrefixKey& k) const {
+        unsigned long hash = 5381;
+        int c;
+        for(auto it = k.key.begin(); it != k.key.end(); ++it)
+            hash = ((hash << 5) + hash) + *it; /* hash * 33 + c */
+        return hash;
+    }
+};
+
+//typedef std::vector<unsigned short> PrefixKey;
+//typedef std::map<PrefixKey, std::pair<std::vector<unsigned short>, double> > PrefixPermutationMap;
 typedef std::vector<bool> CapturedKey;
-typedef std::map<PrefixKey, std::pair<std::vector<unsigned short>, double> > PrefixPermutationMap;
+typedef std::unordered_map<struct PrefixKey, std::pair<std::vector<unsigned short>, double>, prefixHash> PrefixPermutationMap;
 typedef std::map<CapturedKey, std::pair<std::vector<unsigned short>, double> > CapturedPermutationMap;
 
 template<class P>

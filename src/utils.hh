@@ -277,7 +277,7 @@ inline double time_diff(double t0) {
 
 // rulelist -- rule ids of optimal rulelist
 // preds -- corresponding predictions of rules (+ default prediction)
-void print_final_rulelist(const std::vector<size_t>& rulelist,
+void print_final_rulelist(const std::vector<unsigned short>& rulelist,
                           const std::vector<bool>& preds,
                           const bool latex_out,
                           const rule_t rules[],

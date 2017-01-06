@@ -70,7 +70,7 @@ struct cmpVECTOR {
     }
 };
 
-struct PrefixKey {
+/*struct PrefixKey {
     std::vector<unsigned short> key;
 
     bool operator==(const PrefixKey& other) const {
@@ -89,14 +89,30 @@ struct PrefixKey {
         return true;
         //return key == other.key;
     }
+};*/
+
+struct PrefixKey {
+    unsigned short *key;
+
+    bool operator==(const PrefixKey& other) const {
+        if (key[0] != other.key[0])
+            return false;
+        for(size_t i = 1; i <= *key; ++i) {
+            if (key[i] != other.key[i])
+                return false;
+        }
+        return true;
+        //return key == other.key;
+    }
 };
 
 struct prefixHash {
     std::size_t operator()(const PrefixKey& k) const {
-        unsigned long hash = 5381;
+        unsigned long hash = 0;
         int c;
-        for(auto it = k.key.begin(); it != k.key.end(); ++it)
-            hash = ((hash << 5) + hash) + *it; /* hash * 33 + c */
+        for(size_t i = 1; i <= *k.key; ++i)
+            hash = k.key[i] + (hash << 6) + (hash << 16) - hash;
+            //hash = ((hash << 5) + hash) + k.key[i]; /* hash * 33 + c */
         return hash;
     }
 };

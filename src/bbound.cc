@@ -25,12 +25,15 @@ CuriousNode* curious_construct_policy(unsigned short new_rule, size_t nrules, bo
 }
 
 void prefix_map_garbage_collect(PrefixPermutationMap* p, size_t queue_min_length) {
-    /*
     typename PrefixPermutationMap::iterator iter;
     size_t num_deleted = 0;
     printf("pmap gc for length %zu: %zu -> ", queue_min_length, p->size());
     for (iter = p->begin(); iter != p->end(); ) {
+#if POINTER == 0
         if (iter->first.key.size() <= queue_min_length) {
+#else
+        if (iter->first.key[0] <= queue_min_length) {
+#endif
             iter = p->erase(iter);
             ++num_deleted;
         } else {
@@ -39,7 +42,6 @@ void prefix_map_garbage_collect(PrefixPermutationMap* p, size_t queue_min_length
     }
     printf("%zu\n", p->size());
     logger.decreasePmapSize(num_deleted);
-    */
 }
 
 void bfs_prefix_map_garbage_collect(PrefixPermutationMap* p, size_t queue_min_length) {
@@ -63,12 +65,16 @@ N* prefix_permutation_insert(construct_signature<N> construct_policy, unsigned s
     parent_prefix.push_back(new_rule);
     std::sort(parent_prefix.begin(), parent_prefix.end());
     //std::array<unsigned short> prefix = object->getArray(&parent_prefix[0]);;
-    //std::vector<unsigned short> pre_key(parent_prefix.begin(), parent_prefix.end());
+#if POINTER == 0
+    std::vector<unsigned short> pre_key(parent_prefix.begin(), parent_prefix.end());
+#else
     //printf("len_prefix: %d, size:%d\n", len_prefix, parent_prefix.size());
     unsigned short *pre_key = (unsigned short*) malloc(sizeof(unsigned short) * (len_prefix + 1));
     //unsigned short *pre_key = new unsigned short[len_prefix + 1];
     pre_key[0] = (unsigned short)len_prefix;
     memcpy(&pre_key[1], &parent_prefix[0], len_prefix);
+#endif
+    
 /*    for (size_t i = 1; i <= len_prefix; ++i) {
         printf("OLD: %d, NEW: %d\n", parent_prefix[i - 1], pre_key[i]);
         //pre_key[i] = parent_prefix[i - 1];
@@ -77,7 +83,9 @@ N* prefix_permutation_insert(construct_signature<N> construct_policy, unsigned s
     struct PrefixKey key = { pre_key };
     N* child = NULL;
     iter = p->find(key);
+//    printf("FXN\n");
     if (iter != p->end()) {
+//        printf("HERE\n");
         std::vector<unsigned short> permuted_prefix = iter->second.first;
         double permuted_lower_bound = iter->second.second;
         if (lower_bound < permuted_lower_bound) {

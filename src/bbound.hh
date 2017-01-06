@@ -70,7 +70,10 @@ struct cmpVECTOR {
     }
 };
 
-/*struct PrefixKey {
+#define POINTER 1
+
+#if POINTER == 0
+struct PrefixKey {
     std::vector<unsigned short> key;
 
     bool operator==(const PrefixKey& other) const {
@@ -89,8 +92,9 @@ struct cmpVECTOR {
         return true;
         //return key == other.key;
     }
-};*/
+};
 
+#else
 struct PrefixKey {
     unsigned short *key;
 
@@ -105,14 +109,21 @@ struct PrefixKey {
         //return key == other.key;
     }
 };
+#endif
 
 struct prefixHash {
     std::size_t operator()(const PrefixKey& k) const {
         unsigned long hash = 0;
         int c;
+#if POINTER == 0
+        for(auto it = k.key.begin(); it != k.key.end(); ++it)
+            hash = *it + (hash << 6) + (hash << 16) - hash;
+#else
         for(size_t i = 1; i <= *k.key; ++i)
             hash = k.key[i] + (hash << 6) + (hash << 16) - hash;
+#endif
             //hash = ((hash << 5) + hash) + k.key[i]; /* hash * 33 + c */
+        printf("HASH: %d, pointer: %d\n", hash, POINTER);
         return hash;
     }
 };

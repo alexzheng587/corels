@@ -56,7 +56,7 @@ void CacheTree<N>::insert_root() {
     double objective;
     make_default(&tmp_vec, nsamples_);
     d0 = labels_[0].support;
-    d1 = labels_[1].support;
+    d1 = nsamples_ - d0;
     if (d0 > d1) {
         default_prediction = 0;
         objective = (float)(d1) / nsamples_;

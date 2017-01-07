@@ -178,6 +178,9 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
     rule_vinit(nsamples, &captured_zeros);
     rule_vinit(nsamples, &not_captured);
     rule_vinit(nsamples, &not_captured_zeros);
+    VECTOR not_captured_minority;
+    int num_not_captured_minority;
+    rule_vinit(nsamples, &not_captured_minority);
     int i, len_prefix;
     len_prefix = parent->depth() + 1;
     parent_lower_bound = parent->lower_bound();
@@ -200,6 +203,10 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
         if (captured_correct < (c * nsamples))
             continue;
         lower_bound = parent_lower_bound + (float)(num_captured - captured_correct) / nsamples + c;
+        if (len_prefix > 1) {
+            rule_vand(not_captured_minority, parent_not_captured, tree->label(1).truthtable, nsamples, &num_not_captured_minority);
+            lower_bound -= (float)(num_not_captured_minority) / nsamples;
+        }
         logger.setLowerBoundTime(time_diff(t1));
         logger.incLowerBoundNum();
         double t2 = timestamp();
@@ -226,6 +233,10 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
 
             logger.dumpState(); // dump state when min objective is updated (keep this)
         }
+        rule_vand(not_captured_minority, not_captured, tree->label(1).truthtable, nsamples, &num_not_captured_minority);
+        //printf("lower bound: %1.5f -> ", lower_bound);
+        lower_bound += (float)(num_not_captured_minority) / nsamples;
+        //printf("%1.5f %1.5f\n", lower_bound, tree->min_objective());
         if ((lower_bound + c) < tree->min_objective()) {
             N* n;
             if (p) {

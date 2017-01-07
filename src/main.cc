@@ -108,6 +108,11 @@ int main(int argc, char *argv[]) {
     rules_init(argv[0], &nrules, &nsamples, &rules, 1);
     rules_init(argv[1], &nlabels, &nsamples_chk, &labels, 0);
 
+    int nminor, nsamples_check;
+    rule_t *minority;
+    rules_init(argv[2], &nminor, &nsamples_check, &minority, 0);
+    labels[1] = minority[0];
+
     print_machine_info();
     char log_fname[512];
     char opt_fname[512];

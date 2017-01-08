@@ -174,6 +174,7 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
     int nsamples = tree->nsamples();
     int nrules = tree->nrules();
     double c = tree->c();
+    double threshold = c * nsamples;
     rule_vinit(nsamples, &captured);
     rule_vinit(nsamples, &captured_zeros);
     rule_vinit(nsamples, &not_captured);
@@ -191,6 +192,8 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
             continue;
         // captured represents data captured by the new rule
         rule_vand(captured, parent_not_captured, tree->rule(i).truthtable, nsamples, &num_captured);
+        if (num_captured < threshold) // lower bound on antecedent support
+            continue;
         rule_vand(captured_zeros, captured, tree->label(0).truthtable, nsamples, &c0);
         c1 = num_captured - c0;
         if (c0 > c1) {
@@ -200,7 +203,7 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
             prediction = 1;
             captured_correct = c1;
         }
-        if (captured_correct < (c * nsamples))
+        if (captured_correct < threshold) // lower bound on accurate antecedent support
             continue;
         lower_bound = parent_lower_bound + (float)(num_captured - captured_correct) / nsamples + c;
         if (len_prefix > 1) {
@@ -209,6 +212,8 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
         }
         logger.setLowerBoundTime(time_diff(t1));
         logger.incLowerBoundNum();
+        if (lower_bound >= tree->min_objective()) // hierarchical objective lower bound
+            continue;
         double t2 = timestamp();
         rule_vandnot(not_captured, parent_not_captured, captured, nsamples, &num_not_captured);
         rule_vand(not_captured_zeros, not_captured, tree->label(0).truthtable, nsamples, &d0);
@@ -263,7 +268,7 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
                     logger.addQueueElement(len_prefix, lower_bound);
                 }
             }
-        }
+        } // else:  objective lower bound with one-step lookahead
     }
 
     rule_vfree(&captured);

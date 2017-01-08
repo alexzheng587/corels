@@ -6,24 +6,25 @@
 #include <stdlib.h>
 
 template<class T>
-Node<T>::Node(size_t nrules, bool default_prediction, double objective)
+Node<T>::Node(size_t nrules, bool default_prediction, double objective, double minority)
     : id_(0), default_prediction_(default_prediction),
-      lower_bound_(0.), objective_(objective), done_(0), deleted_(0), depth_(0),
-      storage_(0), num_captured_(0) {
+      lower_bound_(minority), objective_(objective), done_(0), deleted_(0), depth_(0),
+      storage_(0), num_captured_(0), minority_(minority) {
 }
 
 template<class T>
 Node<T>::Node(unsigned short id, size_t nrules, bool prediction,
-              bool default_prediction, double lower_bound,
-              double objective, T storage, Node<T>* parent, size_t num_captured)
+              bool default_prediction, double lower_bound, double objective,
+              T storage, Node<T>* parent, size_t num_captured, double minority)
     : id_(id), prediction_(prediction), default_prediction_(default_prediction),
       lower_bound_(lower_bound), objective_(objective),
       done_(0), deleted_(0), depth_(1 + parent->depth_), parent_(parent),
-      storage_(storage), num_captured_(num_captured) {
+      storage_(storage), num_captured_(num_captured), minority_(minority) {
 }
 
 template<class N>
-CacheTree<N>::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules, rule_t *labels)
+CacheTree<N>::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules,
+                        rule_t *labels, rule_t *meta)
     : root_(0), nsamples_(nsamples), nrules_(nrules), c_(c),
       num_nodes_(0), num_evaluated_(0), min_objective_(0.5),
       opt_rulelist_({}), opt_predictions_({}) {
@@ -32,10 +33,17 @@ CacheTree<N>::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules,
     rules_.resize(nrules);
     labels_.resize(2);
     size_t i;
-    for (i = 0; i < nrules; i++)
+    for (i = 0; i < nrules; i++) {
         rules_[i] = rules[i];
+    }
     labels_[0] = labels[0];
     labels_[1] = labels[1];
+    if (meta) {
+        meta_.resize(1);
+        meta_[0] = meta[0];
+    } else {
+        meta_.resize(0);
+    }
 
     logger.setTreeMinObj(min_objective_);
     logger.setTreeNumNodes(num_nodes_);
@@ -64,7 +72,10 @@ void CacheTree<N>::insert_root() {
         default_prediction = 1;
         objective = (float)(d0) / nsamples_;
     }
-    root_ = new N(nrules_, default_prediction, objective);
+    double minority = 0.;
+    if (meta_.size() > 0)
+        minority = (float) count_ones_vector(meta_[0].truthtable, nsamples_) / nsamples_;
+    root_ = new N(nrules_, default_prediction, objective, minority);
     min_objective_ = objective;
     logger.setTreeMinObj(objective);
     ++num_nodes_;

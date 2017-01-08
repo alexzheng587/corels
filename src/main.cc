@@ -109,9 +109,8 @@ int main(int argc, char *argv[]) {
     rules_init(argv[1], &nlabels, &nsamples_chk, &labels, 0);
 
     int nminor, nsamples_check;
-    rule_t *minority;
-    rules_init(argv[2], &nminor, &nsamples_check, &minority, 0);
-    labels[1] = minority[0];
+    rule_t *meta;
+    rules_init(argv[2], &nminor, &nsamples_check, &meta, 0);
 
     print_machine_info();
     char log_fname[512];
@@ -155,7 +154,7 @@ int main(int argc, char *argv[]) {
     if (run_stochastic) {
         if (use_prefix_perm_map) {
             printf("BBOUND_STOCHASTIC Permutation Map\n");
-            CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
+            CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels, meta);
             PrefixPermutationMap p;
             bbound_stochastic<BaseNode,
                               PrefixPermutationMap>(&tree, max_num_nodes,
@@ -175,7 +174,7 @@ int main(int argc, char *argv[]) {
             logger.dumpState();
         } else if (use_captured_sym_map) {
             printf("BBOUND_STOCHASTIC Captured Symmetry Map\n");
-            CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
+            CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels, meta);
             CapturedPermutationMap p;
             bbound_stochastic<BaseNode,
                               CapturedPermutationMap>(&tree, max_num_nodes,
@@ -194,7 +193,7 @@ int main(int argc, char *argv[]) {
             logger.dumpState();
         } else {
             printf("BBOUND_STOCHASTIC No Permutation Map \n");
-            CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
+            CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels, meta);
             bbound_stochastic<BaseNode,
                               CapturedPermutationMap>(&tree, max_num_nodes,
                                                       &base_construct_policy,
@@ -217,7 +216,7 @@ int main(int argc, char *argv[]) {
     if (run_bfs) {
         if (use_prefix_perm_map) {
             printf("BFS Permutation Map\n");        
-            CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
+            CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels, meta);
             BaseQueue bfs_q;
             PrefixPermutationMap p;
             bbound_queue<BaseNode,
@@ -241,7 +240,7 @@ int main(int argc, char *argv[]) {
                                  latex_out, rules, labels, opt_fname);
         } else if (use_captured_sym_map) {
             printf("BFS Captured Symmetry Map\n");        
-            CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
+            CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels, meta);
             BaseQueue bfs_q;
             CapturedPermutationMap p;
             bbound_queue<BaseNode,
@@ -266,7 +265,7 @@ int main(int argc, char *argv[]) {
         }
         else {
             printf("BFS No Permutation Map\n");        
-            CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels);
+            CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels, meta);
             BaseQueue bfs_q;
             bbound_queue<BaseNode,
                          BaseQueue,
@@ -294,7 +293,7 @@ int main(int argc, char *argv[]) {
         if (curiosity_policy == 1) {
             if (use_prefix_perm_map) {
                 printf("CURIOSITY Prefix Permutation Map\n");
-                CacheTree<CuriousNode> *tree = new CacheTree<CuriousNode>(nsamples, nrules, c, rules, labels);
+                CacheTree<CuriousNode> *tree = new CacheTree<CuriousNode>(nsamples, nrules, c, rules, labels, meta);
                 CuriousQueue curious_q(curious_cmp);
                 PrefixPermutationMap *p = new PrefixPermutationMap;
                 size_t num_iter;
@@ -337,7 +336,7 @@ int main(int argc, char *argv[]) {
                                      latex_out, rules, labels, opt_fname);
             } else if (use_captured_sym_map) {
                 printf("CURIOSITY Captured Symmetry Map\n");
-                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
+                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
                 CuriousQueue curious_q(curious_cmp);
                 CapturedPermutationMap p;
                 bbound_queue<CuriousNode,
@@ -361,7 +360,7 @@ int main(int argc, char *argv[]) {
             }
             else {
                 printf("CURIOSITY No Permutation Map\n");
-                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
+                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
                 CuriousQueue curious_q(curious_cmp);
                 bbound_queue<CuriousNode,
                              CuriousQueue,
@@ -385,7 +384,7 @@ int main(int argc, char *argv[]) {
         } else if (curiosity_policy == 2) {
             if (use_prefix_perm_map) {
                 printf("CURIOUS LOWER BOUND Prefix Permutation Map\n");
-                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
+                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
                 CuriousQueue curious_q(lower_bound_cmp);
                 PrefixPermutationMap p;
                 bbound_queue<CuriousNode,
@@ -408,7 +407,7 @@ int main(int argc, char *argv[]) {
                                      latex_out, rules, labels, opt_fname);
             } else if (use_captured_sym_map) {
                 printf("CURIOUS LOWER BOUND Captured Symmetry Map\n");
-                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
+                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
                 CuriousQueue curious_q(lower_bound_cmp);
                 CapturedPermutationMap p;
                 bbound_queue<CuriousNode,
@@ -431,7 +430,7 @@ int main(int argc, char *argv[]) {
                                      latex_out, rules, labels, opt_fname);
             } else {
                 printf("CURIOUS LOWER BOUND No Permutation Map\n");
-                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
+                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
                 CuriousQueue curious_q(lower_bound_cmp);
                 bbound_queue<CuriousNode,
                              CuriousQueue,
@@ -455,7 +454,7 @@ int main(int argc, char *argv[]) {
         } else if (curiosity_policy == 3) {
             if (use_prefix_perm_map) {
                 printf("CURIOUS OBJECTIVE Prefix Permutation Map\n");
-                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
+                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
                 CuriousQueue curious_q(objective_cmp);
                 PrefixPermutationMap p;
                 bbound_queue<CuriousNode,
@@ -478,7 +477,7 @@ int main(int argc, char *argv[]) {
                                      latex_out, rules, labels, opt_fname);
             } else if (use_captured_sym_map) {
                 printf("CURIOUS OBJECTIVE Captured Symmetry Map\n");
-                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
+                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
                 CuriousQueue curious_q(objective_cmp);
                 CapturedPermutationMap p;
                 bbound_queue<CuriousNode,
@@ -501,7 +500,7 @@ int main(int argc, char *argv[]) {
                                      latex_out, rules, labels, opt_fname);
             } else {
                 printf("CURIOUS OBJECTIVE No Permutation Map\n");
-                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
+                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
                 CuriousQueue curious_q(objective_cmp);
                 bbound_queue<CuriousNode,
                              CuriousQueue,
@@ -525,7 +524,7 @@ int main(int argc, char *argv[]) {
         } else if (curiosity_policy == 4) {
             if (use_prefix_perm_map) {
                 printf("DFS Prefix Permutation Map\n");
-                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
+                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
                 CuriousQueue curious_q(depth_first_cmp);
                 PrefixPermutationMap p;
                 bbound_queue<CuriousNode,
@@ -548,7 +547,7 @@ int main(int argc, char *argv[]) {
                                      latex_out, rules, labels, opt_fname);
             } else if (use_captured_sym_map) {
                 printf("DFS Captured Symmetry Map\n");
-                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
+                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
                 CuriousQueue curious_q(depth_first_cmp);
                 CapturedPermutationMap p;
                 bbound_queue<CuriousNode,
@@ -571,7 +570,7 @@ int main(int argc, char *argv[]) {
                                      latex_out, rules, labels, opt_fname);
             } else {
                 printf("DFS No Permutation Map\n");
-                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels);
+                CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
                 CuriousQueue curious_q(depth_first_cmp);
                 bbound_queue<CuriousNode,
                              CuriousQueue,

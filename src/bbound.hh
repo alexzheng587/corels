@@ -46,19 +46,19 @@ CuriousNode* curious_queue_front(CuriousQueue* q);
 
 template<class N>
 using construct_signature = N* (*)(unsigned short, size_t, bool, bool, double, double,
-                                   N* parent, int, int, int, double);
+                                   N* parent, int, int, int, double, double);
 
 BaseNode* base_construct_policy(unsigned short new_rule, size_t nrules,
                                 bool prediction, bool default_prediction,
                                 double lower_bound, double objective,
                                 BaseNode* parent, int num_not_captured,
-                                int nsamples, int len_prefix, double c);
+                                int nsamples, int len_prefix, double c, double minority);
 
 CuriousNode* curious_construct_policy(unsigned short new_rule, size_t nrules,
                                       bool prediction, bool default_prediction,
                                       double lower_bound, double objective,
                                       CuriousNode* parent, int num_not_captured,
-                                      int nsamples, int len_prefix, double c);
+                                      int nsamples, int len_prefix, double c, double minority);
 
 /*
  * Permutation Map
@@ -77,20 +77,22 @@ void captured_map_garbage_collect(CapturedPermutationMap* p, size_t min_length);
 
 template<class N, class P>
 using permutation_insert_signature = N* (*)(construct_signature<N>, unsigned short, size_t, bool, bool, 
-                                            double, double, N* parent, int, int, int, double, CacheTree<N>*, VECTOR,
+                                            double, double, N* parent, int, int, int, double, double, CacheTree<N>*, VECTOR,
                                             std::vector<unsigned short>, P*);
 
 template<class N>
 N* prefix_permutation_insert(construct_signature<N> construct_policy, unsigned short new_rule,
                         size_t nrules, bool prediction, bool default_prediction, double lower_bound,
                         double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
-                        double c, CacheTree<N>* tree, VECTOR not_captured, std::vector<unsigned short>, PrefixPermutationMap* p);
+                        double c, double minority, CacheTree<N>* tree, VECTOR not_captured,
+                        std::vector<unsigned short>, PrefixPermutationMap* p);
 
 template<class N>
 N* captured_permutation_insert(construct_signature<N> construct_policy, unsigned short new_rule,
                         size_t nrules, bool prediction, bool default_prediction, double lower_bound,
                         double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
-                        double c, CacheTree<N>* tree, VECTOR not_captured, std::vector<unsigned short>, CapturedPermutationMap* p);
+                        double c, double minority, CacheTree<N>* tree, VECTOR not_captured,
+                        std::vector<unsigned short>, CapturedPermutationMap* p);
 
 template<class N>
 extern std::pair<N*, std::set<unsigned short> > stochastic_select(CacheTree<N>* tree, VECTOR not_captured);

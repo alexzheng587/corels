@@ -17,11 +17,11 @@ typedef Node<double> CuriousNode;  // curiosity
 template <class T>
 class Node {
   public:
-    explicit Node(size_t nrules, bool default_prediction, double objective);
+    explicit Node(size_t nrules, bool default_prediction, double objective, double minority);
 
     Node(unsigned short id, size_t nrules, bool prediction, bool default_prediction,
          double lower_bound, double objective, T storage, Node<T>* parent,
-         size_t num_captured);
+         size_t num_captured, double minority);
 
     inline unsigned short id() const;
     inline bool prediction() const;
@@ -46,6 +46,7 @@ class Node {
 
     inline T& get_storage(); // can this be const?
     inline size_t num_captured() const;
+    inline double minority() const;
 
     inline typename std::map<unsigned short, Node<T>*>::iterator children_begin();
     inline typename std::map<unsigned short, Node<T>*>::iterator children_end();
@@ -68,6 +69,7 @@ class Node {
 
     T storage_;  // space for something extra, like curiosity or a bit vector
     size_t num_captured_;
+    double minority_;
 
     friend class CacheTree<Node<T> >;
 };
@@ -75,7 +77,8 @@ class Node {
 template<class N>
 class CacheTree {
   public:
-    CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules, rule_t *labels);
+    CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules,
+              rule_t *labels, rule_t *meta);
     ~CacheTree();
 
     inline double min_objective() const;
@@ -87,6 +90,7 @@ class CacheTree {
     inline rule_t rule(unsigned short idx) const;
     inline char* rule_features(unsigned short idx) const;
     inline rule_t label(unsigned short idx) const;
+    inline rule_t meta(unsigned short idx) const;
     inline size_t nsamples() const;
     inline size_t nrules() const;
     inline double c() const;
@@ -124,6 +128,7 @@ class CacheTree {
 
     std::vector<rule_t> rules_;
     std::vector<rule_t> labels_;
+    std::vector<rule_t> meta_;
 
     void gc_helper(N* node);
 };
@@ -249,6 +254,11 @@ inline size_t Node<T>::num_captured() const {
     return num_captured_;
 }
 
+template<class T>
+inline double Node<T>::minority() const {
+    return minority_;
+}
+
 template<class N>
 inline double CacheTree<N>::min_objective() const {
     return min_objective_;
@@ -287,6 +297,11 @@ inline char* CacheTree<N>::rule_features(unsigned short idx) const{
 template<class N>
 inline rule_t CacheTree<N>::label(unsigned short idx) const{
     return labels_[idx];
+}
+
+template<class N>
+inline rule_t CacheTree<N>::meta(unsigned short idx) const{
+    return meta_[idx];
 }
 
 template<class N>

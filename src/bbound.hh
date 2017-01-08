@@ -123,7 +123,7 @@ struct prefixHash {
             hash = k.key[i] + (hash << 6) + (hash << 16) - hash;
 #endif
             //hash = ((hash << 5) + hash) + k.key[i]; /* hash * 33 + c */
-        printf("HASH: %d, pointer: %d\n", hash, POINTER);
+        //printf("HASH: %d, pointer: %d\n", hash, POINTER);
         return hash;
     }
 };
@@ -131,7 +131,7 @@ struct prefixHash {
 //typedef std::vector<unsigned short> PrefixKey;
 //typedef std::map<PrefixKey, std::pair<std::vector<unsigned short>, double> > PrefixPermutationMap;
 typedef std::vector<bool> CapturedKey;
-typedef std::unordered_map<struct PrefixKey, std::pair<std::vector<unsigned short>, double>, prefixHash> PrefixPermutationMap;
+typedef std::unordered_map<struct PrefixKey, std::pair<double, std::vector<unsigned short>>, prefixHash> PrefixPermutationMap;
 typedef std::map<CapturedKey, std::pair<std::vector<unsigned short>, double> > CapturedPermutationMap;
 
 template<class P>

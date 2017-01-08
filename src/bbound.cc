@@ -72,22 +72,21 @@ N* prefix_permutation_insert(construct_signature<N> construct_policy, unsigned s
     unsigned short *pre_key = (unsigned short*) malloc(sizeof(unsigned short) * (len_prefix + 1));
     //unsigned short *pre_key = new unsigned short[len_prefix + 1];
     pre_key[0] = (unsigned short)len_prefix;
-    memcpy(&pre_key[1], &parent_prefix[0], len_prefix);
+    memcpy(&pre_key[1], &parent_prefix[0], len_prefix * sizeof(unsigned short));
 #endif
     
 /*    for (size_t i = 1; i <= len_prefix; ++i) {
-        printf("OLD: %d, NEW: %d\n", parent_prefix[i - 1], pre_key[i]);
-        //pre_key[i] = parent_prefix[i - 1];
+        printf("NEW RULE: %u\n", new_rule);
+        //pre_key_2[i] = parent_prefix[i - 1];
+        printf("OLDEST: %d, OLD: %d, NEW: %d\n", parent_prefix[i - 1], pre_key[i - 1], pre_key_2[i]);
     }
-    */
+*/
     struct PrefixKey key = { pre_key };
     N* child = NULL;
     iter = p->find(key);
-//    printf("FXN\n");
     if (iter != p->end()) {
-//        printf("HERE\n");
-        std::vector<unsigned short> permuted_prefix = iter->second.first;
-        double permuted_lower_bound = iter->second.second;
+        std::vector<unsigned short> permuted_prefix = iter->second.second;
+        double permuted_lower_bound = iter->second.first;
         if (lower_bound < permuted_lower_bound) {
             N* permuted_node;
             if ((permuted_node = tree->check_prefix(permuted_prefix)) != NULL) {
@@ -101,14 +100,14 @@ N* prefix_permutation_insert(construct_signature<N> construct_policy, unsigned s
             child = construct_policy(new_rule, nrules, prediction, default_prediction,
                                        lower_bound, objective, parent,
                                         num_not_captured, nsamples, len_prefix, c);
-            iter->second = std::make_pair(parent_prefix, lower_bound);
+            iter->second = std::make_pair(lower_bound, parent_prefix);
             //permutation_map_.insert(std::make_pair(key, child));
         }
     } else {
         child = construct_policy(new_rule, nrules, prediction, default_prediction,
                                     lower_bound, objective, parent,
                                     num_not_captured, nsamples, len_prefix, c);
-        p->insert(std::make_pair(key, std::make_pair(parent_prefix, lower_bound)));
+        p->insert(std::make_pair(key, std::make_pair(lower_bound, parent_prefix)));
         logger.incPmapSize();
     }
     return child;

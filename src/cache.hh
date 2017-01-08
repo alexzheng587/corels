@@ -54,20 +54,19 @@ class Node {
 
   private:
 
+    std::map<unsigned short, Node<T>*> children_;
+    Node<T>* parent_;
+    double lower_bound_;
+    double objective_;
+    size_t depth_;
+    size_t num_captured_;
     unsigned short id_;
     bool prediction_;
     bool default_prediction_;
-    double lower_bound_;
-    double objective_;
     bool done_;
     bool deleted_;
 
-    size_t depth_;
-    Node<T>* parent_;
-    std::map<unsigned short, Node<T>*> children_;
-
     T storage_;  // space for something extra, like curiosity or a bit vector
-    size_t num_captured_;
 
     friend class CacheTree<Node<T> >;
 };

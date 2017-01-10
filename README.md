@@ -448,22 +448,6 @@ permutation, and if so, determine which is better.
 We couple ICM and cache updates:  cache insertions and deletions trigger
 corresponding ICM operations.
 
-## small and other datasets with rule expansion
-
-The last column reports the number of rules mined for (max cardinality, min support)
-
-| dataset | # data | # 0 | # 1 | f. 0 | f. 1 | # dim | (2, 0.01) |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| bcancer | 683 | 444 | 239 | 0.65 | 0.35 | 28 | 1,336 |
-| cars | 1,728 | 1,210 | 518 | 0.70 | 0.30 | 22 | 792 |
-| haberman | 306 | 81 | 225 | 0.26 | 0.74 | 16 | 334 |
-| monks1 | 432 | 216 | 216 | 0.5 | 0.5 | 18 | 396 |
-| monks2 | 432 | 290 | 142 | 0.67 | 0.33 | 18 | 396 |
-| monks3 | 432 | 204 | 228 | 0.47 | 0.53 | 18 | 396 |
-| votes | 435 | 168 | 267 | 0.39 | 0.61 | 17 | 512 |
-| compas | 7,214 | 3,743 | 3,471 | 0.52 | 0.48 | 30 | 1,037 |
-| telco | 7,043 | 5,174 | 1,869 | 0.73 | 0.27 | 19 | 957 |
-
 ## todo
 
 Semantics should buy us more than we're already achieving.  Let's optimize the crap out of tic-tac-toe!

@@ -523,7 +523,7 @@ int bbound_queue(CacheTree<N>* tree,
     // Print out queue
     char fname[] = "queue.txt"; // make this optional
     ofstream f;
-    if (1) {//(print_queue) {
+    if (print_queue) {
         printf("Writing queue elements to: %s\n", fname);
         f.open(fname, ios::out | ios::trunc);
         f << "lower_bound objective length frac_captured rule_list\n";
@@ -546,7 +546,7 @@ int bbound_queue(CacheTree<N>* tree,
             lb = node->lower_bound() + tree->c();
             if (lb < min_lower_bound)
                 min_lower_bound = lb;
-            if (num < 1000) {//(print_queue) {
+            if (print_queue) {
                 auto pp_pair = node->get_prefix_and_predictions();
                 std::vector<unsigned short> prefix = std::move(pp_pair.first);
                 std::vector<bool> predictions = std::move(pp_pair.second);

@@ -523,7 +523,7 @@ int bbound_queue(CacheTree<N>* tree,
     // Print out queue
     char fname[] = "queue.txt"; // make this optional
     ofstream f;
-    if (print_queue) {
+    if (1) {//(print_queue) {
         printf("Writing queue elements to: %s\n", fname);
         f.open(fname, ios::out | ios::trunc);
         f << "lower_bound objective length frac_captured rule_list\n";
@@ -531,8 +531,11 @@ int bbound_queue(CacheTree<N>* tree,
 
     // Clean up data structures
     printf("Deleting queue elements and corresponding nodes in the cache, since they may not be reachable by the tree's destructor\n");
+    printf("\nminimum objective: %1.10f\n", tree->min_objective());
     N* node;
     double min_lower_bound = 1.0;
+    double lb;
+    size_t num = 0;
     while (!q->empty()) {
         node = front(q);
         q->pop();
@@ -540,9 +543,10 @@ int bbound_queue(CacheTree<N>* tree,
             tree->decrement_num_nodes();
             delete node;
         } else {
-            if (node->lower_bound() < min_lower_bound)
-                min_lower_bound = node->lower_bound() + tree->c();
-            if (print_queue) {
+            lb = node->lower_bound() + tree->c();
+            if (lb < min_lower_bound)
+                min_lower_bound = lb;
+            if (num < 1000) {//(print_queue) {
                 auto pp_pair = node->get_prefix_and_predictions();
                 std::vector<unsigned short> prefix = std::move(pp_pair.first);
                 std::vector<bool> predictions = std::move(pp_pair.second);
@@ -553,10 +557,11 @@ int bbound_queue(CacheTree<N>* tree,
                       << predictions[i] << ";";
                 }
                 f << "default~" << predictions.back() << "\n";
+                num++;
             }
         }
     }
-    printf("\nminimum lower bound in queue: %1.5f\n\n", min_lower_bound);
+    printf("minimum lower bound in queue: %1.10f\n\n", min_lower_bound);
     if (print_queue)
         f.close();
     logger.dumpState(); // last log record (before cache deleted)

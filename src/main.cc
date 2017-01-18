@@ -116,24 +116,19 @@ int main(int argc, char *argv[]) {
         meta = NULL;
 
     print_machine_info();
+    char froot[512];
     char log_fname[512];
     char opt_fname[512];
     const char* pch = strrchr(argv[0], '/');
-    sprintf(log_fname, "../logs/for-%s-%s%s%s-%s-max_num_nodes=%d-c=%.7f-v=%d-f=%d.txt",
+    sprintf(froot, "../logs/for-%s-%s%s%s-%s-max_num_nodes=%d-c=%.7f-v=%d-f=%d",
             pch ? pch + 1 : "",
             run_stochastic ? "stochastic" : "",
             run_bfs ? "bfs" : "",
             run_curiosity ? curiosity_map[curiosity_policy].c_str() : "",
             run_pmap ? (use_prefix_perm_map ? "with_prefix_perm_map" : "with_captured_symmetry_map") : "no_pmap",
             max_num_nodes, c, verbosity, freq);
-
-    sprintf(opt_fname, "../logs/for-%s-%s%s%s-%s-max_num_nodes=%d-c=%.7f-v=%d-f=%d-opt.txt",
-            pch ? pch + 1 : "",
-            run_stochastic ? "stochastic" : "",
-            run_bfs ? "bfs" : "",
-            run_curiosity ? curiosity_map[curiosity_policy].c_str() : "",
-            run_pmap ? (use_prefix_perm_map ? "with_prefix_perm_map" : "with_captured_symmetry_map") : "no_pmap",
-            max_num_nodes, c, verbosity, freq);
+    sprintf(log_fname, "%s.txt", froot);
+    sprintf(opt_fname, "%s-opt.txt", froot);
 
     if (verbosity >= 1000) {
         printf("\n%d rules %d samples\n\n", nrules, nsamples);

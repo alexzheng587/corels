@@ -238,9 +238,11 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
 
             logger.dumpState(); // dump state when min objective is updated (keep this)
         }
-        rule_vand(not_captured_minority, not_captured, tree->meta(0).truthtable, nsamples, &num_not_captured_minority);
-        minority = (float)(num_not_captured_minority) / nsamples;
-        lower_bound += minority;
+        if (tree->meta_size() == 1) {
+            rule_vand(not_captured_minority, not_captured, tree->meta(0).truthtable, nsamples, &num_not_captured_minority);
+            minority = (float)(num_not_captured_minority) / nsamples;
+            lower_bound += minority;
+        }
         if ((lower_bound + c) < tree->min_objective()) {
             N* n;
             if (p) {

@@ -110,7 +110,10 @@ int main(int argc, char *argv[]) {
 
     int nminor, nsamples_check;
     rule_t *meta;
-    rules_init(argv[2], &nminor, &nsamples_check, &meta, 0);
+    if (argc == 3)
+        rules_init(argv[2], &nminor, &nsamples_check, &meta, 0);
+    else
+        meta = NULL;
 
     print_machine_info();
     char log_fname[512];

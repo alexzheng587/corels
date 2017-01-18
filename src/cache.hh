@@ -91,6 +91,7 @@ class CacheTree {
     inline char* rule_features(unsigned short idx) const;
     inline rule_t label(unsigned short idx) const;
     inline rule_t meta(unsigned short idx) const;
+    inline size_t meta_size() const;
     inline size_t nsamples() const;
     inline size_t nrules() const;
     inline double c() const;
@@ -302,6 +303,11 @@ inline rule_t CacheTree<N>::label(unsigned short idx) const{
 template<class N>
 inline rule_t CacheTree<N>::meta(unsigned short idx) const{
     return meta_[idx];
+}
+
+template<class N>
+inline size_t CacheTree<N>::meta_size() const {
+    return meta_.size();
 }
 
 template<class N>

@@ -481,6 +481,8 @@ int bbound_queue(CacheTree<N>* tree,
                 printf("after garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", tree->num_nodes(), logger.getLogRemainingSpaceSize());
             }
         }
+        if (q)
+            logger.setQueueSize(q->size());
         if (queue_min_length < logger.getQueueMinLen()) {
             // garbage collect the permutation map: can be simplified for the case of BFS
             queue_min_length = logger.getQueueMinLen();

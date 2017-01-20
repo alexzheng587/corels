@@ -29,11 +29,7 @@ void prefix_map_garbage_collect(PrefixPermutationMap* p, size_t queue_min_length
     size_t num_deleted = 0;
     printf("pmap gc for length %zu: %zu -> ", queue_min_length, p->size());
     for (iter = p->begin(); iter != p->end(); ) {
-#if POINTER == 0
-        if (iter->first.key.size() <= queue_min_length) {
-#else
         if (iter->first.key[0] <= queue_min_length) {
-#endif
             iter = p->erase(iter);
             ++num_deleted;
         } else {
@@ -63,32 +59,45 @@ N* prefix_permutation_insert(construct_signature<N> construct_policy, unsigned s
                              PrefixPermutationMap* p) {
     typename PrefixPermutationMap::iterator iter;
     parent_prefix.push_back(new_rule);
+
+    unsigned char* ordered = (unsigned char*) malloc(sizeof(unsigned char) * (len_prefix + 1));
+    ordered[0] = (unsigned char)len_prefix;
+    auto cmp = [&](int i, int j) { return parent_prefix[i] < parent_prefix[j]; };
+    std::sort(&ordered[1], &ordered[len_prefix], cmp);
+
     std::sort(parent_prefix.begin(), parent_prefix.end());
-    //std::array<unsigned short> prefix = object->getArray(&parent_prefix[0]);;
-#if POINTER == 0
-    std::vector<unsigned short> pre_key(parent_prefix.begin(), parent_prefix.end());
-#else
-    //printf("len_prefix: %d, size:%d\n", len_prefix, parent_prefix.size());
+    
     unsigned short *pre_key = (unsigned short*) malloc(sizeof(unsigned short) * (len_prefix + 1));
-    //unsigned short *pre_key = new unsigned short[len_prefix + 1];
     pre_key[0] = (unsigned short)len_prefix;
     memcpy(&pre_key[1], &parent_prefix[0], len_prefix * sizeof(unsigned short));
-#endif
     
-/*    for (size_t i = 1; i <= len_prefix; ++i) {
-        printf("NEW RULE: %u\n", new_rule);
-        //pre_key_2[i] = parent_prefix[i - 1];
-        printf("OLDEST: %d, OLD: %d, NEW: %d\n", parent_prefix[i - 1], pre_key[i - 1], pre_key_2[i]);
-    }
-*/
-    struct PrefixKey key = { pre_key };
+    struct prefix_key key = { pre_key };
+    //struct prefix_value val = { 0, { .indices={ordered} } };
     N* child = NULL;
     iter = p->find(key);
     if (iter != p->end()) {
-        std::vector<unsigned short> permuted_prefix = iter->second.second;
+        /*struct prefix_value val = iter->second;
+        double permuted_lower_bound;
+        N* permuted_node = NULL;
+        if (val.is_lb) {
+            permuted_lower_bound = val.v.lower_bound;
+        } else {
+            unsigned char* indices = val.v.indices;
+            std::vector<unsigned short> permuted_prefix(parent_prefix.size());
+            for (unsigned char i = 0; i < indices[0]; ++i)
+                permuted_prefix[i] = parent_prefix[indices[i + 1]];
+            permuted_node = tree->check_prefix(permuted_prefix);
+            permuted_lower_bound = permuted_node->lower_bound();
+        }
+        */
         double permuted_lower_bound = iter->second.first;
         if (lower_bound < permuted_lower_bound) {
             N* permuted_node;
+            unsigned char* indices = iter->second.second;
+            std::vector<unsigned short> permuted_prefix(parent_prefix.size());
+            for (unsigned char i = 0; i < indices[0]; ++i)
+                permuted_prefix[i] = parent_prefix[indices[i + 1]];
+
             if ((permuted_node = tree->check_prefix(permuted_prefix)) != NULL) {
                 N* permuted_parent = permuted_node->parent();
                 permuted_parent->delete_child(permuted_node->id());
@@ -100,14 +109,15 @@ N* prefix_permutation_insert(construct_signature<N> construct_policy, unsigned s
             child = construct_policy(new_rule, nrules, prediction, default_prediction,
                                        lower_bound, objective, parent,
                                         num_not_captured, nsamples, len_prefix, c);
-            iter->second = std::make_pair(lower_bound, parent_prefix);
+            iter->second = std::make_pair(lower_bound, ordered);
             //permutation_map_.insert(std::make_pair(key, child));
         }
     } else {
         child = construct_policy(new_rule, nrules, prediction, default_prediction,
                                     lower_bound, objective, parent,
                                     num_not_captured, nsamples, len_prefix, c);
-        p->insert(std::make_pair(key, std::make_pair(lower_bound, parent_prefix)));
+        unsigned char* ordered_prefix = &ordered[0];
+        p->insert(std::make_pair(key, std::make_pair(lower_bound, ordered_prefix)));
         logger.incPmapSize();
     }
     return child;
@@ -620,6 +630,7 @@ template<class N>
 void delete_subtree(CacheTree<N>* tree, N* node, bool destructive, bool update_remaining_state_space) {
     N* child;
     typename std::map<unsigned short, N*>::iterator iter;
+
     if (node->done()) {
         iter = node->children_begin();
         while (iter != node->children_end()) {

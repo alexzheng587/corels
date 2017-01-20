@@ -70,35 +70,10 @@ struct cmpVECTOR {
     }
 };
 
-#define POINTER 1
-
-#if POINTER == 0
-struct PrefixKey {
-    std::vector<unsigned short> key;
-
-    bool operator==(const PrefixKey& other) const {
-        if (key.size() != other.key.size())
-            return false;
-        auto it = key.begin();
-        //std::vector<unsigned short>::iterator it = key.begin();
-        auto it2 = other.key.begin();
-        //std::vector<unsigned short>::iterator it2 = other.key.begin();
-        while(it != key.end()) {
-            if (*it != *it2)
-                return false;
-            ++it;
-            ++it2;
-        }
-        return true;
-        //return key == other.key;
-    }
-};
-
-#else
-struct PrefixKey {
+struct prefix_key {
     unsigned short *key;
 
-    bool operator==(const PrefixKey& other) const {
+    bool operator==(const prefix_key& other) const {
         if (key[0] != other.key[0])
             return false;
         for(size_t i = 1; i <= *key; ++i) {
@@ -106,32 +81,30 @@ struct PrefixKey {
                 return false;
         }
         return true;
-        //return key == other.key;
     }
 };
-#endif
 
-struct prefixHash {
-    std::size_t operator()(const PrefixKey& k) const {
+struct prefix_hash {
+    std::size_t operator()(const prefix_key& k) const {
         unsigned long hash = 0;
         int c;
-#if POINTER == 0
-        for(auto it = k.key.begin(); it != k.key.end(); ++it)
-            hash = *it + (hash << 6) + (hash << 16) - hash;
-#else
         for(size_t i = 1; i <= *k.key; ++i)
             hash = k.key[i] + (hash << 6) + (hash << 16) - hash;
-#endif
-            //hash = ((hash << 5) + hash) + k.key[i]; /* hash * 33 + c */
-        //printf("HASH: %d, pointer: %d\n", hash, POINTER);
         return hash;
     }
 };
 
-//typedef std::vector<unsigned short> PrefixKey;
-//typedef std::map<PrefixKey, std::pair<std::vector<unsigned short>, double> > PrefixPermutationMap;
+/*struct prefix_value {
+    bool is_lb;
+    union {
+        double lower_bound;
+        unsigned char* indices;
+    } v;
+};*/
+
 typedef std::vector<bool> CapturedKey;
-typedef std::unordered_map<struct PrefixKey, std::pair<double, std::vector<unsigned short>>, prefixHash> PrefixPermutationMap;
+typedef std::unordered_map<struct prefix_key, std::pair<double, unsigned char*>, prefix_hash> PrefixPermutationMap;
+//typedef std::unordered_map<struct prefix_key, struct prefix_value, prefix_hash> PrefixPermutationMap;
 typedef std::map<CapturedKey, std::pair<std::vector<unsigned short>, double> > CapturedPermutationMap;
 
 template<class P>

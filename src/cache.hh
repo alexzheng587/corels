@@ -50,26 +50,25 @@ class Node {
 
     inline typename std::map<unsigned short, Node<T>*>::iterator children_begin();
     inline typename std::map<unsigned short, Node<T>*>::iterator children_end();
-    inline typename std::map<unsigned short, Node<T>*>::iterator random_child(); // FIXME
+    inline Node<T>* random_child(); // FIXME
     // inline typename std::map<unsigned short, Node<T>*>::iterator random_child(PRNG prng);
 
   private:
 
+    std::map<unsigned short, Node<T>*> children_;
+    Node<T>* parent_;
+    double lower_bound_;
+    double objective_;
+    double minority_;
+    size_t depth_;
+    size_t num_captured_;
     unsigned short id_;
     bool prediction_;
     bool default_prediction_;
-    double lower_bound_;
-    double objective_;
     bool done_;
     bool deleted_;
 
-    size_t depth_;
-    Node<T>* parent_;
-    std::map<unsigned short, Node<T>*> children_;
-
     T storage_;  // space for something extra, like curiosity or a bit vector
-    size_t num_captured_;
-    double minority_;
 
     friend class CacheTree<Node<T> >;
 };
@@ -231,13 +230,13 @@ inline typename std::map<unsigned short, Node<T>*>::iterator Node<T>::children_e
 }
 
 template<class T>
-inline typename std::map<unsigned short, Node<T>*>::iterator Node<T>::random_child() {
+inline Node<T>* Node<T>::random_child() {
     typename std::map<unsigned short, Node<T>*>::iterator iter;
     unsigned short idx;
     iter = children_.begin();
     idx = rand() % (children_.size());
     std::advance(iter, idx);
-    return iter;
+    return iter->second;
 }
 
 template<class T>

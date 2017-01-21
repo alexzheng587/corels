@@ -7,19 +7,19 @@
 
 template<class T>
 Node<T>::Node(size_t nrules, bool default_prediction, double objective)
-    : id_(0), default_prediction_(default_prediction),
-      lower_bound_(0.), objective_(objective), done_(0), deleted_(0), depth_(0),
-      storage_(0), num_captured_(0) {
+    : lower_bound_(0.), objective_(objective), depth_(0), num_captured_(0),
+      id_(0), default_prediction_(default_prediction), done_(0), deleted_(0),
+      storage_(0) {
 }
 
 template<class T>
 Node<T>::Node(unsigned short id, size_t nrules, bool prediction,
               bool default_prediction, double lower_bound,
               double objective, T storage, Node<T>* parent, size_t num_captured)
-    : id_(id), prediction_(prediction), default_prediction_(default_prediction),
-      lower_bound_(lower_bound), objective_(objective),
-      done_(0), deleted_(0), depth_(1 + parent->depth_), parent_(parent),
-      storage_(storage), num_captured_(num_captured) {
+    : parent_(parent), lower_bound_(lower_bound), objective_(objective),
+      depth_(1 + parent->depth_), num_captured_(num_captured), id_(id),
+      prediction_(prediction), default_prediction_(default_prediction),
+      done_(0), deleted_(0), storage_(storage) {
 }
 
 template<class N>

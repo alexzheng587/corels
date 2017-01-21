@@ -87,7 +87,6 @@ struct prefix_key {
 struct prefix_hash {
     std::size_t operator()(const prefix_key& k) const {
         unsigned long hash = 0;
-        int c;
         for(size_t i = 1; i <= *k.key; ++i)
             hash = k.key[i] + (hash << 6) + (hash << 16) - hash;
         return hash;

@@ -64,11 +64,11 @@ CuriousNode* curious_construct_policy(unsigned short new_rule, size_t nrules,
 /*
  * Permutation Map
  */
-struct cmpVECTOR {
+/*struct cmpVECTOR {
     bool operator()(const VECTOR& left, const VECTOR& right) const {
         return *left < *right;
     }
-};
+};*/
 
 struct prefix_key {
     unsigned short *key;

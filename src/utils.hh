@@ -1,3 +1,5 @@
+#pragma once
+
 #include "rule.h"
 
 #include <cstdlib>
@@ -7,9 +9,6 @@
 #include <fstream>
 #include <vector>
 #include <gmpxx.h>
-
-#ifndef _UTILS_H_
-#define _UTILS_H_
 
 using namespace std;
 
@@ -288,4 +287,3 @@ extern Logger logger;
 
 void print_machine_info();
 
-#endif

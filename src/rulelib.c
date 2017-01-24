@@ -201,12 +201,12 @@ rule_vinit(int len, VECTOR *ret)
 
 /* Clear vector -- set to all 0's */
 void
-rule_vclear(int len, VECTOR *v) {
+rule_vclear(int len, VECTOR v) {
 #ifdef GMP
-    mpz_set_ui(*v, 0);
+    mpz_set_ui(v, 0);
 #else
     int nentries = (len + BITS_PER_ENTRY - 1)/BITS_PER_ENTRY;
-    memset(*v, 0, nentries * sizeof(v_entry));
+    memset(v, 0, nentries * sizeof(v_entry));
 #endif
 }
 
@@ -792,7 +792,6 @@ rule_vor(VECTOR dest, VECTOR src1, VECTOR src2, int nsamples, int *cnt)
 {
 #ifdef GMP
 	mpz_ior(dest, src1, src2);
-	*cnt = 0;
 	*cnt = mpz_popcount(dest);
 #else
 	int i, count, nentries;

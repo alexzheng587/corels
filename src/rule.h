@@ -22,13 +22,17 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdlib.h>
+#pragma once
+
 #ifdef GMP
 #include <gmp.h>
 #endif
 
-#ifndef _RULE_H_
-#define _RULE_H_
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+#include <stdlib.h>
 
 /*
  * This library implements rule set management for Bayesian rule lists.
@@ -152,9 +156,9 @@ void rule_copy(VECTOR, VECTOR, int);
 
 int rule_isset(VECTOR, int);
 int rule_vinit(int, VECTOR *);
-void rule_vclear(int, VECTOR *v);
 int rule_vfree(VECTOR *);
 int make_default(VECTOR *, int);
+void rule_vclear(int, VECTOR);
 void rule_vand(VECTOR, VECTOR, VECTOR, int, int *);
 void rule_vandnot(VECTOR, VECTOR, VECTOR, int, int *);
 void rule_vor(VECTOR, VECTOR, VECTOR, int, int *);
@@ -168,5 +172,7 @@ ruleset_t *run_mcmc(int, int, int, rule_t *, rule_t *, params_t *, double);
 ruleset_t *run_simulated_annealing(int,
     int, int, int, rule_t *, rule_t *, params_t *);
 pred_model_t *train(data_t *, int, int, params_t *);
-
+#if defined(__cplusplus)
+}
 #endif
+

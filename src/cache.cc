@@ -1,4 +1,4 @@
-//#include "cache.hh"
+#include "cache.hh"
 #include "bbound.hh"
 #include "utils.hh"
 #include <memory>

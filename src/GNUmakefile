@@ -1,4 +1,4 @@
-CFLAGS := -g -W -Wall -O$(O) -I.
+CFLAGS := -g -W -Wall -O$(O) -I. -DGMP
 LIBS := -lgmpxx -lgmp
 
 ifneq ($(shell uname -n),beepboop)

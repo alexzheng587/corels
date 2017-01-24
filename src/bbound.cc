@@ -1,6 +1,7 @@
 #include "bbound.hh"
 #include "utils.hh"
 #include "memtrack.hh"
+#include <algorithm>
 
 BaseNode* base_construct_policy(unsigned short new_rule, size_t nrules, bool prediction,
                                 bool default_prediction, double lower_bound,
@@ -128,13 +129,7 @@ std::vector<bool> VECTOR_to_bitvector(VECTOR vec, size_t len) {
     std::vector<bool> bitvector;
     bitvector.resize(len);
     for (size_t index = 0; index < len; index++) {
-        size_t i = index / BITS_PER_ENTRY;
-        size_t j = (index % BITS_PER_ENTRY);
-        size_t bmask = (1 << j) & vec[i];
-        if (bmask != 0)
-            bitvector[index] = true;
-        else
-            bitvector[index] = false;
+        bitvector[index] = rule_isset(vec, index);
     }
     return bitvector;
 }
@@ -413,7 +408,7 @@ N* queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured) {
         return NULL;
     }
 
-    rule_vclear(tree->nsamples(), &captured);
+    rule_vclear(tree->nsamples(), captured);
 
     while (node != tree->root()) { /* or node->id() != root->id() */
         if (node->deleted()) {

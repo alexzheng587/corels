@@ -1,12 +1,11 @@
+#pragma once
+
 #include "string.h"
 #include <iterator>
 #include <map>
 #include <vector>
 #include <stdlib.h>
-
-extern "C" {
-  #include "rule.h"
-}
+#include "rule.h"
 
 template <class T> class Node;
 template <class N> class CacheTree;

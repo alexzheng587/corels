@@ -72,12 +72,14 @@ rules_init(const char *infile, int *nrules,
     int *nsamples, rule_t **rules_ret, int add_default_rule)
 {
 	FILE *fi;
-	char *line, *rulestr;
+	char *line = NULL;
+    char *rulestr;
 	int rule_cnt, sample_cnt, rsize;
 	int i, ones, ret;
 	rule_t *rules=NULL;
 	rule_t default_rule;
-	size_t len, rulelen;
+	size_t len = 0;
+    size_t rulelen;
 
 	sample_cnt = rsize = 0;
 
@@ -89,7 +91,7 @@ rules_init(const char *infile, int *nrules,
 	 * the end.
 	 */
 	rule_cnt = add_default_rule != 0 ? 1 : 0;
-	while ((line = fgetln(fi, &len)) != NULL) {
+	while (getline(&line, &len, fi) != -1) {
 		if (rule_cnt >= rsize) {
 			rsize += RULE_INC;
                 	rules = realloc(rules, rsize * sizeof(rule_t));
@@ -124,6 +126,7 @@ rules_init(const char *infile, int *nrules,
 			if (*cp == ',')
 				rules[rule_cnt].cardinality++;
 		rule_cnt++;
+        line = NULL;
 	}
 	/* All done! */
 	fclose(fi);
@@ -198,12 +201,12 @@ rule_vinit(int len, VECTOR *ret)
 
 /* Clear vector -- set to all 0's */
 void
-rule_vclear(int len, VECTOR *v) {
+rule_vclear(int len, VECTOR v) {
 #ifdef GMP
-    mpz_set_ui(*v, 0);
+    mpz_set_ui(v, 0);
 #else
     int nentries = (len + BITS_PER_ENTRY - 1)/BITS_PER_ENTRY;
-    memset(*v, 0, nentries * sizeof(v_entry));
+    memset(v, 0, nentries * sizeof(v_entry));
 #endif
 }
 
@@ -789,7 +792,6 @@ rule_vor(VECTOR dest, VECTOR src1, VECTOR src2, int nsamples, int *cnt)
 {
 #ifdef GMP
 	mpz_ior(dest, src1, src2);
-	*cnt = 0;
 	*cnt = mpz_popcount(dest);
 #else
 	int i, count, nentries;

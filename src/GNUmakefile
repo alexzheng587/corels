@@ -1,5 +1,13 @@
 CFLAGS := -g -W -Wall -O$(O) -I. -DGMP
-LIBS := -lgmpxx -lgmp
+
+ifeq ($(shell uname -n),elaines-MacBook-Pro.local)
+    LIBS := -L/usr/local/lib
+    CFLAGS += -I/usr/local/include
+else
+    LIBS :=
+endif
+
+LIBS += -L/usr/local/lib -lgmpxx -lgmp
 
 ifneq ($(shell uname -n),beepboop)
     LDFLAGS := -Wl,-no_pie

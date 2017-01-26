@@ -596,6 +596,8 @@ int main(int argc, char *argv[]) {
     printf("final total time: %f\n", time_diff(init));
     logger.dumpState();
     logger.closeFile();
+    if (meta)
+        rules_free(meta, nlabels, 0);
     printf("\ndelete rules\n");
 	rules_free(rules, nrules, 1);
 	printf("delete labels\n");

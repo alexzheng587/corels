@@ -303,6 +303,7 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
     rule_vfree(&captured_zeros);
     rule_vfree(&not_captured);
     rule_vfree(&not_captured_zeros);
+    rule_vfree(&not_captured_minority);
 
     logger.addToRuleEvalTime(time_diff(t0));
     logger.incRuleEvalNum();

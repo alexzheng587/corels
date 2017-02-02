@@ -108,10 +108,10 @@ int main(int argc, char *argv[]) {
     rules_init(argv[0], &nrules, &nsamples, &rules, 1);
     rules_init(argv[1], &nlabels, &nsamples_chk, &labels, 0);
 
-    int nminor, nsamples_check;
+    int nmeta, nsamples_check;
     rule_t *meta;
     if (argc == 3)
-        rules_init(argv[2], &nminor, &nsamples_check, &meta, 0);
+        rules_init(argv[2], &nmeta, &nsamples_check, &meta, 0);
     else
         meta = NULL;
 
@@ -596,8 +596,10 @@ int main(int argc, char *argv[]) {
     printf("final total time: %f\n", time_diff(init));
     logger.dumpState();
     logger.closeFile();
-    if (meta)
-        rules_free(meta, nlabels, 0);
+    if (meta) {
+        printf("\ndelete identical points indicator\n");
+        rules_free(meta, nmeta, 0);
+    }
     printf("\ndelete rules\n");
 	rules_free(rules, nrules, 1);
 	printf("delete labels\n");

@@ -597,7 +597,7 @@ int main(int argc, char *argv[]) {
     logger.dumpState();
     logger.closeFile();
     if (meta) {
-        printf("\ndelete identical points indicator\n");
+        printf("\ndelete identical points indicator");
         rules_free(meta, nmeta, 0);
     }
     printf("\ndelete rules\n");

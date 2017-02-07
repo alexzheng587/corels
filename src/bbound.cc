@@ -320,7 +320,6 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
 
 template<class N>
 N* stochastic_select(CacheTree<N>* tree, VECTOR not_captured) {
-    typename std::map<unsigned short, N*>::iterator iter;
     N* node = tree->root();
     rule_copy(not_captured, tree->rule(node->id()).truthtable, tree->nsamples());
     int cnt;
@@ -340,7 +339,7 @@ N* stochastic_select(CacheTree<N>* tree, VECTOR not_captured) {
             return NULL;
         }
         node = node->random_child();
-        rule_vandnot(not_captured, not_captured, tree->rule(iter->first).truthtable, tree->nsamples(), &cnt);
+        rule_vandnot(not_captured, not_captured, tree->rule(node->id()).truthtable, tree->nsamples(), &cnt);
     }
     logger.setCurrentLowerBound(node->lower_bound() + tree->c());
     return node;

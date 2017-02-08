@@ -3,6 +3,8 @@
 #include "memtrack.hh"
 #include <algorithm>
 
+extern int ablation;
+
 BaseNode* base_construct_policy(unsigned short new_rule, size_t nrules, bool prediction,
                                 bool default_prediction, double lower_bound,
                                 double objective, BaseNode* parent,
@@ -199,7 +201,7 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
     int num_captured, c0, c1, captured_correct;
     int num_not_captured, d0, d1, default_correct;
     bool prediction, default_prediction;
-    double lower_bound, objective, parent_lower_bound;
+    double lower_bound, objective, parent_lower_bound, lb;
     double parent_minority, minority;
     int nsamples = tree->nsamples();
     int nrules = tree->nrules();
@@ -223,7 +225,7 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
             continue;
         // captured represents data captured by the new rule
         rule_vand(captured, parent_not_captured, tree->rule(i).truthtable, nsamples, &num_captured);
-        if (num_captured < threshold) // lower bound on antecedent support
+        if ((ablation != 1) && (num_captured < threshold)) // lower bound on antecedent support
             continue;
         rule_vand(captured_zeros, captured, tree->label(0).truthtable, nsamples, &c0);
         c1 = num_captured - c0;
@@ -234,7 +236,7 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
             prediction = 1;
             captured_correct = c1;
         }
-        if (captured_correct < threshold) // lower bound on accurate antecedent support
+        if ((ablation != 1) && (captured_correct < threshold)) // lower bound on accurate antecedent support
             continue;
         lower_bound = parent_lower_bound - parent_minority + (float)(num_captured - captured_correct) / nsamples + c;
         logger.setLowerBoundTime(time_diff(t1));
@@ -270,7 +272,11 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
             minority = (float)(num_not_captured_minority) / nsamples;
             lower_bound += minority;
         }
-        if ((lower_bound + c) < tree->min_objective()) {
+        if (ablation != 2)
+            lb = lower_bound + c;
+        else
+            lb = lower_bound;
+        if (lb < tree->min_objective()) {
             N* n;
             if (p) {
                 double t3 = timestamp();

@@ -7,11 +7,13 @@
 #include <getopt.h>
 
 Logger logger;
+int ablation = 0;
 
 int main(int argc, char *argv[]) {
     const char usage[] = "USAGE: %s [-s] [-b] "
         "[-n max_num_nodes] [-r regularization] [-v verbosity] "
         "-c (1|2|3|4) -p (0|1|2) [-f logging_frequency]"
+        "-a (1|2|3)"
         "data.out data.label\n\n"
         "%s\n"; // for error
 
@@ -33,7 +35,7 @@ int main(int argc, char *argv[]) {
     int freq = 1000;
     size_t switch_iter = 0;
     /* only parsing happens here */
-    while ((ch = getopt(argc, argv, "sbLc:p:v:n:r:f:w:")) != -1) {
+    while ((ch = getopt(argc, argv, "sbLc:p:v:n:r:f:w:a:")) != -1) {
         switch (ch) {
         case 's':
             run_stochastic = true;
@@ -67,6 +69,9 @@ int main(int argc, char *argv[]) {
             break;
         case 'w':
             switch_iter = atoi(optarg);
+            break;
+        case 'a':
+            ablation = atoi(optarg);
             break;
         default:
             error = true;
@@ -120,13 +125,14 @@ int main(int argc, char *argv[]) {
     char log_fname[512];
     char opt_fname[512];
     const char* pch = strrchr(argv[0], '/');
-    sprintf(froot, "../logs/for-%s-%s%s%s-%s-%s-max_num_nodes=%d-c=%.7f-v=%d-f=%d",
+    sprintf(froot, "../logs/for-%s-%s%s%s-%s-%s-removed=%s-max_num_nodes=%d-c=%.7f-v=%d-f=%d",
             pch ? pch + 1 : "",
             run_stochastic ? "stochastic" : "",
             run_bfs ? "bfs" : "",
             run_curiosity ? curiosity_map[curiosity_policy].c_str() : "",
             run_pmap ? (use_prefix_perm_map ? "with_prefix_perm_map" : "with_captured_symmetry_map") : "no_pmap",
             meta ? "minor" : "no_minor",
+            ablation ? ((ablation == 1) ? "support" : "lookahead") : "none",
             max_num_nodes, c, verbosity, freq);
     sprintf(log_fname, "%s.txt", froot);
     sprintf(opt_fname, "%s-opt.txt", froot);

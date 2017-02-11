@@ -149,7 +149,10 @@ N* captured_permutation_insert(construct_signature<N> construct_policy, unsigned
     typename CapturedPermutationMap::iterator iter;
     parent_prefix.push_back(new_rule);
     N* child = NULL;
-    CapturedKey key = VECTOR_to_bitvector(not_captured, nsamples);
+    //CapturedKey key = not_captured;//VECTOR_to_bitvector(not_captured, nsamples);
+    struct captured_key key;// = { cap_key };
+    rule_vinit(nsamples, &key.key);
+    rule_copy(key.key, not_captured, nsamples);
     iter = p->find(key);
     if (iter != p->end()) {
         std::vector<unsigned short> permuted_prefix = iter->second.first;

@@ -101,10 +101,34 @@ struct prefix_hash {
     } v;
 };*/
 
-typedef std::vector<bool> CapturedKey;
+struct captured_key {
+    VECTOR key;
+
+    bool operator==(const captured_key& other) const {
+#ifdef GMP
+        return !mpz_cmp(other.key, key);
+#else
+        return false;
+#endif
+    }
+};
+
+struct captured_hash {
+    std::size_t operator()(const captured_key& k) const{
+        unsigned long hash = 0;
+#ifdef GMP
+        for(size_t i = 0; i < mpz_size(k.key); ++i)
+            hash = mpz_getlimbn(k.key, i) + (hash << 6) + (hash << 16) - hash;
+#endif
+        return hash;
+    }
+};
+
+//typedef std::vector<bool> CapturedKey;
+//typedef VECTOR CapturedKey;
 typedef std::unordered_map<struct prefix_key, std::pair<double, unsigned char*>, prefix_hash> PrefixPermutationMap;
 //typedef std::unordered_map<struct prefix_key, struct prefix_value, prefix_hash> PrefixPermutationMap;
-typedef std::map<CapturedKey, std::pair<std::vector<unsigned short>, double> > CapturedPermutationMap;
+typedef std::unordered_map<struct captured_key, std::pair<std::vector<unsigned short>, double>, captured_hash> CapturedPermutationMap;
 
 template<class P>
 using pmap_garbage_collect_signature = void (*)(P*, size_t);

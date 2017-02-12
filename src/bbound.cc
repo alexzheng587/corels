@@ -153,6 +153,9 @@ N* captured_permutation_insert(construct_signature<N> construct_policy, unsigned
     struct captured_key key;// = { cap_key };
     rule_vinit(nsamples, &key.key);
     rule_copy(key.key, not_captured, nsamples);
+#ifndef GMP
+    key.len = (short) nsamples;
+#endif
     iter = p->find(key);
     if (iter != p->end()) {
         std::vector<unsigned short> permuted_prefix = iter->second.first;

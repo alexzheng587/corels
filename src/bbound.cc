@@ -205,7 +205,8 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
     int num_not_captured, d0, d1, default_correct;
     bool prediction, default_prediction;
     double lower_bound, objective, parent_lower_bound, lb;
-    double parent_minority, minority;
+    double parent_minority;
+    double minority = 0.;
     int nsamples = tree->nsamples();
     int nrules = tree->nrules();
     double c = tree->c();

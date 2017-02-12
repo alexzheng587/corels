@@ -103,22 +103,43 @@ struct prefix_hash {
 
 struct captured_key {
     VECTOR key;
+#ifndef GMP
+    short len;
+#endif
 
     bool operator==(const captured_key& other) const {
+/*
 #ifdef GMP
-        return !mpz_cmp(other.key, key);
+        return rule_is_equal(other.key, key, 0);
 #else
-        return false;
+        return rule_is_equal(other.key, key, len);
 #endif
+
+*/
+#ifdef GMP
+		return !mpz_cmp(other.key, key);
+#else
+		size_t nentries = (len + BITS_PER_ENTRY - 1)/BITS_PER_ENTRY;
+		for (size_t i = 0; i < nentries; i++)
+			if (other.key[i] != key[i])
+				return false;
+		return true;
+#endif
+
     }
 };
 
 struct captured_hash {
     std::size_t operator()(const captured_key& k) const{
         unsigned long hash = 0;
+		size_t i;
 #ifdef GMP
-        for(size_t i = 0; i < mpz_size(k.key); ++i)
+        for(i = 0; i < mpz_size(k.key); ++i)
             hash = mpz_getlimbn(k.key, i) + (hash << 6) + (hash << 16) - hash;
+#else
+   		size_t nentries = (k.len + BITS_PER_ENTRY - 1)/BITS_PER_ENTRY;
+		for(i = 0; i < nentries; ++i)
+            hash = k.key[i] + (hash << 6) + (hash << 16) - hash;
 #endif
         return hash;
     }

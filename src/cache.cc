@@ -56,6 +56,9 @@ CacheTree<N>::~CacheTree() {
         delete_subtree<N>(this, root_, true, false);
 }
 
+/*
+ * Inserts the root of the tree, setting up the default rules.
+ */
 template<class N>
 void CacheTree<N>::insert_root() {
     VECTOR tmp_vec;
@@ -84,6 +87,9 @@ void CacheTree<N>::insert_root() {
     logger.setTreePrefixLen(0);
 }
 
+/*
+ * Insert a node into the tree.
+ */
 template<class N>
 void CacheTree<N>::insert(N* node) {
     node->parent()->children_.insert(std::make_pair(node->id(), node));
@@ -91,6 +97,9 @@ void CacheTree<N>::insert(N* node) {
     logger.setTreeNumNodes(num_nodes_);
 }
 
+/*
+ * Removes nodes with no children, recursively traversing tree towards the root.
+ */
 template<class N>
 void CacheTree<N>::prune_up(N* node) {
     unsigned short id;
@@ -113,6 +122,10 @@ void CacheTree<N>::prune_up(N* node) {
     logger.setTreeNumNodes(num_nodes_);
 }
 
+/*
+ * Checks that the prefix is in the tree and hasn't been deleted.
+ * Returns NULL if the prefix isn't in the tree, a pointer to the prefix node otherwise.
+ */
 template<class N>
 N* CacheTree<N>::check_prefix(std::vector<unsigned short>& prefix) {
     N* node = this->root_;
@@ -124,6 +137,10 @@ N* CacheTree<N>::check_prefix(std::vector<unsigned short>& prefix) {
     return node;
 }
 
+/*
+ * Recursive helper function to traverse down the tree, deleting nodes with a lower bound greater 
+ * than the minimum objective.
+ */
 template<class N>
 void CacheTree<N>::gc_helper(N* node) {
     if (!node->done())
@@ -143,18 +160,27 @@ void CacheTree<N>::gc_helper(N* node) {
     }
 }
 
+/*
+ * Public wrapper function to garbage collect the entire tree beginning from the root.
+ */
 template<class N>
 void CacheTree<N>::garbage_collect() {
     logger.clearRemainingSpaceSize();
     gc_helper(root_);
 }
 
+/*
+ * Update the minimum objective of the tree.
+ */
 template<class N>
 inline void CacheTree<N>::update_min_objective(double objective) {
     min_objective_ = objective;
     logger.setTreeMinObj(objective);
 }
 
+/*
+ * Update the optimal rulelist of the tree.
+ */
 template<class N>
 inline void
 CacheTree<N>::update_opt_rulelist(std::vector<unsigned short>& parent_prefix,
@@ -164,6 +190,9 @@ CacheTree<N>::update_opt_rulelist(std::vector<unsigned short>& parent_prefix,
     logger.setTreePrefixLen(opt_rulelist_.size());
 }
 
+/*
+ * Update the optimal rulelist predictions of the tree.
+ */
 template<class N>
 inline void
 CacheTree<N>::update_opt_predictions(std::vector<bool>& parent_predictions,
@@ -174,20 +203,34 @@ CacheTree<N>::update_opt_predictions(std::vector<bool>& parent_predictions,
     opt_predictions_.push_back(new_default_pred);
 }
 
+/*
+ * Increment number of nodes evaluated after performing incremental computation 
+ * in evaluate_children.
+ */
 template<class N>
 inline void CacheTree<N>::increment_num_evaluated() {
     ++num_evaluated_;
     logger.setTreeNumEvaluated(num_evaluated_);
 }
 
+/*
+ * Called whenever a node is deleted from the tree.
+ */
 template<class N>
 inline void CacheTree<N>::decrement_num_nodes() {
     --num_nodes_;
     logger.setTreeNumNodes(num_nodes_);
 }
 
+/*
+ * Deletes a subtree of tree by recursively calling itself on node's children.
+ * node -- the node at the root of the subtree to be deleted.
+ * destructive -- booelan flag indicating whether to delete node or just lazily mark it.
+ * update_remaining_state_space -- affects whether we remove the deleted elements from the queue.
+ */
 template<class N>
-void delete_subtree(CacheTree<N>* tree, N* node, bool destructive, bool update_remaining_state_space) {
+void delete_subtree(CacheTree<N>* tree, N* node, bool destructive, 
+        bool update_remaining_state_space) {
     N* child;
     typename std::map<unsigned short, N*>::iterator iter;
 

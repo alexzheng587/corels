@@ -1,11 +1,10 @@
 #pragma once
 
-#include "string.h"
+#include "rule.h"
 #include <iterator>
 #include <map>
 #include <vector>
 #include <stdlib.h>
-#include "rule.h"
 
 template <class T> class Node;
 template <class N> class CacheTree;
@@ -32,8 +31,7 @@ class Node {
     inline bool deleted() const;
     inline void set_deleted();
 
-    // Returns pair of prefixes and predictions for the path from this
-    // node to the root
+    // Returns pair of prefixes and predictions for the path from this node to the root
     inline std::pair<std::vector<unsigned short>, std::vector<bool>>
         get_prefix_and_predictions();
 
@@ -43,14 +41,13 @@ class Node {
     inline void delete_child(unsigned short idx);
     inline size_t num_children() const;
 
-    inline T& get_storage(); // can this be const?
+    inline T& get_storage();
     inline size_t num_captured() const;
     inline double minority() const;
 
     inline typename std::map<unsigned short, Node<T>*>::iterator children_begin();
     inline typename std::map<unsigned short, Node<T>*>::iterator children_end();
     inline Node<T>* random_child(); // FIXME
-    // inline typename std::map<unsigned short, Node<T>*>::iterator random_child(PRNG prng);
 
   private:
 
@@ -67,7 +64,8 @@ class Node {
     bool done_;
     bool deleted_;
 
-    T storage_;  // space for something extra, like curiosity or a bit vector
+    // space for something extra, like curiosity or a bit vector
+    T storage_;
 
     friend class CacheTree<Node<T> >;
 };
@@ -327,3 +325,22 @@ template<class N>
 inline N* CacheTree<N>::root() const {
     return root_;
 }
+
+template<class N>
+extern void delete_subtree(CacheTree<N>* tree, N* node, bool destructive, bool update_remaining_state_space);
+
+template<class N>
+using construct_signature = N* (*)(unsigned short, size_t, bool, bool, double, double,
+                                   N* parent, int, int, int, double, double);
+
+BaseNode* base_construct_policy(unsigned short new_rule, size_t nrules,
+                                bool prediction, bool default_prediction,
+                                double lower_bound, double objective,
+                                BaseNode* parent, int num_not_captured,
+                                int nsamples, int len_prefix, double c, double minority);
+
+CuriousNode* curious_construct_policy(unsigned short new_rule, size_t nrules,
+                                      bool prediction, bool default_prediction,
+                                      double lower_bound, double objective,
+                                      CuriousNode* parent, int num_not_captured,
+                                      int nsamples, int len_prefix, double c, double minority);

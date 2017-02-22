@@ -1,9 +1,12 @@
 #pragma once
-
 #include "cache.hh"
 #include "utils.hh"
 #include <unordered_map>
 
+/*
+ * Represent prefix canonical order using an array of shorts.
+ * The 0th index of the pointer contains the length of the prefix.
+ */
 struct prefix_key {
     unsigned short *key;
 
@@ -18,6 +21,9 @@ struct prefix_key {
     }
 };
 
+/*
+ * Hash function from: http://www.cse.yorku.ca/~oz/hash.html
+ */
 struct prefix_hash {
     std::size_t operator()(const prefix_key& k) const {
         unsigned long hash = 0;
@@ -27,6 +33,9 @@ struct prefix_hash {
     }
 };
 
+/*
+ * Represents captured vector using the VECTOR type defined in rule.h
+ */
 struct captured_key {
     VECTOR key;
 #ifndef GMP
@@ -47,6 +56,9 @@ struct captured_key {
     }
 };
 
+/*
+ * Hash function from: http://www.cse.yorku.ca/~oz/hash.html
+ */
 struct captured_hash {
     std::size_t operator()(const captured_key& k) const{
         unsigned long hash = 0;

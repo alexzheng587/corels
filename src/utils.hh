@@ -105,7 +105,8 @@ class Logger {
         _state.queue_size = n;
     }
     inline void setNRules(size_t nrules) {
-        _state.nrules = nrules - 1;     // the first rule is the default rule
+        // the first rule is the default rule
+        _state.nrules = nrules - 1;
     }
     inline void setC(double c) {
         _state.c = c;
@@ -123,7 +124,10 @@ class Logger {
         if (_state.prefix_lens[n] == 0)
             updateQueueMinLen();
     }
-    inline size_t sumPrefixLens() { // size of logical queue
+    /*
+     * Returns the size of the logical queue.
+     */
+    inline size_t sumPrefixLens() {
         size_t tot = 0;
         for(size_t i = 0; i < _state.nrules; ++i) {
             tot += _state.prefix_lens[i];
@@ -131,7 +135,8 @@ class Logger {
         return tot;
     }
     inline void updateQueueMinLen() {
-        size_t min_length = 0; // note that min length is logically undefined when queue size is 0
+        // Note: min length is logically undefined when queue size is 0
+        size_t min_length = 0; 
         for(size_t i = 0; i < _state.nrules; ++i) {
             if (_state.prefix_lens[i] > 0) {
                 min_length = i;
@@ -156,13 +161,14 @@ class Logger {
         ++_state.pmap_discard_num;
     }
     inline void subtreeSize(mpz_t tot, unsigned int len_prefix, double lower_bound) {
-        // theorem 4 (fine-grain upper bound on number of remaining prefix evaluations)
+        // Theorem 4 (fine-grain upper bound on number of remaining prefix evaluations)
         unsigned int f_naive = _state.nrules - len_prefix;
         unsigned int f = (_state.tree_min_objective - lower_bound) / _state.c;
         if (f_naive < f)
             f = f_naive;
         mpz_set_ui(tot, _state.nrules - len_prefix);
-        for (unsigned int k = (_state.nrules - len_prefix - 1); k >= (_state.nrules - len_prefix - f + 1); k--) {
+        for (unsigned int k = (_state.nrules - len_prefix - 1); 
+                k >= (_state.nrules - len_prefix - f + 1); k--) {
             mpz_addmul_ui(tot, tot, k);
         }
     }
@@ -181,7 +187,7 @@ class Logger {
         mpz_clear(tot);
     }
     inline void initRemainingSpaceSize() {
-        // proposition 2 (upper bound on total number of prefix evaluations)
+        // Proposition 2 (upper bound on total number of prefix evaluations)
         size_t naive_max_length = 0.5 / _state.c;
         if (naive_max_length < _state.nrules)
             mpz_fac_ui(_state.remaining_space_size, naive_max_length);
@@ -192,9 +198,14 @@ class Logger {
         mpz_set_ui(_state.remaining_space_size, 0);
     }
     inline size_t getLogRemainingSpaceSize() {
-        return mpz_sizeinbase(_state.remaining_space_size, 10); // this is approximate
+        // This is approximate.
+        return mpz_sizeinbase(_state.remaining_space_size, 10); 
     }
-    inline void initializeState() { // initialize so we can write a log record immediately
+    /*
+     * Initializes the logger by setting all fields to 0.
+     * This allwos us to write a log record immediately.
+     */
+    inline void initializeState() {
         _state.total_time = 0.;
         _state.evaluate_children_time = 0.;
         _state.evaluate_children_num = 0;
@@ -245,7 +256,7 @@ class Logger {
         size_t tree_insertion_num;
         double permutation_map_insertion_time;
         size_t permutation_map_insertion_num;   // number of calls to `permutation_insert` function
-        double current_lower_bound;             // monotonically decreases for curious lower bound policy
+        double current_lower_bound;             // monotonically decreases for curious lower bound
         double tree_min_objective;
         size_t tree_prefix_length;
         size_t tree_num_nodes;
@@ -253,15 +264,15 @@ class Logger {
         size_t queue_size;
         size_t queue_min_length;                // monotonically increases
         size_t pmap_size;                       // size of pmap
-        size_t pmap_null_num;                   // number of pmap lookup operations that return null
-        size_t pmap_discard_num;                // number of pmap lookup operations that trigger discard
+        size_t pmap_null_num;                   // number of pmap lookups that return null
+        size_t pmap_discard_num;                // number of pmap lookups that trigger discard
         size_t* prefix_lens;
         mpz_t remaining_space_size;
     };
     State _state;
-    int _v; // verbosity
-    int _freq; // frequency of logging
-    ofstream _f; // output file
+    int _v;                                     // verbosity
+    int _freq;                                  // frequency of logging
+    ofstream _f;                                // output file
 };
 
 inline double timestamp() {
@@ -274,8 +285,11 @@ inline double time_diff(double t0) {
     return timestamp() - t0;
 }
 
-// rulelist -- rule ids of optimal rulelist
-// preds -- corresponding predictions of rules (+ default prediction)
+/* 
+ * Prints the final rulelist that CORELS returns.
+ * rulelist -- rule ids of optimal rulelist
+ * preds -- corresponding predictions of rules (+ default prediction)
+ */
 void print_final_rulelist(const std::vector<unsigned short>& rulelist,
                           const std::vector<bool>& preds,
                           const bool latex_out,

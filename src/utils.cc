@@ -17,13 +17,15 @@ void Logger::setLogFileName(char *fname) {
        << "current_lower_bound,tree_min_objective,tree_prefix_length,"
        << "tree_num_nodes,tree_num_evaluated,"
        << "queue_size,queue_min_length,"
-       << "pmap_size,pmap_null_num,pmap_discard_num,log_remaining_space_size,prefix_lengths" << endl;
+       << "pmap_size,pmap_null_num,pmap_discard_num,"
+       << "log_remaining_space_size,prefix_lengths" << endl;
 }
 
 void Logger::dumpState() {
     if (_v < 1) return;
 
-    setTotalTime(time_diff(_state.initial_time));   // update timestamp here
+    // update timestamp here
+    setTotalTime(time_diff(_state.initial_time));
 
     _f << _state.total_time << ","
        << _state.evaluate_children_time << ","

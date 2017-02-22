@@ -1,6 +1,4 @@
-#include "bbound.hh"
-#include "utils.hh"
-#include "memtrack.hh"
+#include "queue.hh"
 #include <algorithm>
 
 extern int ablation;
@@ -26,166 +24,6 @@ CuriousNode* curious_construct_policy(unsigned short new_rule, size_t nrules, bo
     return (new CuriousNode(new_rule, nrules, prediction, default_prediction,
                             lower_bound, objective, curiosity, parent, num_captured, minority));
 }
-
-void prefix_map_garbage_collect(PrefixPermutationMap* p, size_t queue_min_length) {
-    typename PrefixPermutationMap::iterator iter;
-    size_t num_deleted = 0;
-    printf("pmap gc for length %zu: %zu -> ", queue_min_length, p->size());
-    for (iter = p->begin(); iter != p->end(); ) {
-        if (iter->first.key[0] <= queue_min_length) {
-            iter = p->erase(iter);
-            ++num_deleted;
-        } else {
-            ++iter;
-        }
-    }
-    printf("%zu\n", p->size());
-    logger.decreasePmapSize(num_deleted);
-}
-
-void bfs_prefix_map_garbage_collect(PrefixPermutationMap* p, size_t queue_min_length) {
-    size_t pmap_size = p->size();
-    printf("bfs pmap gc for length %zu: %zu -> ", queue_min_length, pmap_size);
-    p->clear();
-    printf("%zu\n", p->size());
-    logger.decreasePmapSize(pmap_size);
-}
-
-void captured_map_garbage_collect(CapturedPermutationMap* p, size_t min_length) {
-}
-
-template<class N>
-N* prefix_permutation_insert(construct_signature<N> construct_policy, unsigned short new_rule,
-                             size_t nrules, bool prediction, bool default_prediction, double lower_bound,
-                             double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
-                             double c, double minority, CacheTree<N>* tree, VECTOR not_captured,
-                             std::vector<unsigned short> parent_prefix,
-                             PrefixPermutationMap* p) {
-    typename PrefixPermutationMap::iterator iter;
-    parent_prefix.push_back(new_rule);
-
-    unsigned char* ordered = (unsigned char*) malloc(sizeof(unsigned char) * (len_prefix + 1));
-    ordered[0] = (unsigned char)len_prefix;
-    auto cmp = [&](int i, int j) { return parent_prefix[i] < parent_prefix[j]; };
-    std::sort(&ordered[1], &ordered[len_prefix], cmp);
-
-    std::sort(parent_prefix.begin(), parent_prefix.end());
-    
-    unsigned short *pre_key = (unsigned short*) malloc(sizeof(unsigned short) * (len_prefix + 1));
-    pre_key[0] = (unsigned short)len_prefix;
-    memcpy(&pre_key[1], &parent_prefix[0], len_prefix * sizeof(unsigned short));
-    
-    struct prefix_key key = { pre_key };
-    //struct prefix_value val = { 0, { .indices={ordered} } };
-    N* child = NULL;
-    iter = p->find(key);
-    if (iter != p->end()) {
-        /*struct prefix_value val = iter->second;
-        double permuted_lower_bound;
-        N* permuted_node = NULL;
-        if (val.is_lb) {
-            permuted_lower_bound = val.v.lower_bound;
-        } else {
-            unsigned char* indices = val.v.indices;
-            std::vector<unsigned short> permuted_prefix(parent_prefix.size());
-            for (unsigned char i = 0; i < indices[0]; ++i)
-                permuted_prefix[i] = parent_prefix[indices[i + 1]];
-            permuted_node = tree->check_prefix(permuted_prefix);
-            permuted_lower_bound = permuted_node->lower_bound();
-        }
-        */
-        double permuted_lower_bound = iter->second.first;
-        if (lower_bound < permuted_lower_bound) {
-            N* permuted_node;
-            unsigned char* indices = iter->second.second;
-            std::vector<unsigned short> permuted_prefix(parent_prefix.size());
-            for (unsigned char i = 0; i < indices[0]; ++i)
-                permuted_prefix[i] = parent_prefix[indices[i + 1]];
-
-            if ((permuted_node = tree->check_prefix(permuted_prefix)) != NULL) {
-                N* permuted_parent = permuted_node->parent();
-                permuted_parent->delete_child(permuted_node->id());
-                delete_subtree<N>(tree, permuted_node, false, true);
-                logger.incPmapDiscardNum();
-            } else {
-                logger.incPmapNullNum();
-            }
-            child = construct_policy(new_rule, nrules, prediction,
-                                     default_prediction, lower_bound, objective,
-                                     parent, num_not_captured, nsamples,
-                                     len_prefix, c, minority);
-            iter->second = std::make_pair(lower_bound, ordered);
-            //permutation_map_.insert(std::make_pair(key, child));
-        }
-    } else {
-        child = construct_policy(new_rule, nrules, prediction,
-                                 default_prediction, lower_bound, objective,
-                                 parent, num_not_captured, nsamples, len_prefix,
-                                 c, minority);
-        unsigned char* ordered_prefix = &ordered[0];
-        p->insert(std::make_pair(key, std::make_pair(lower_bound, ordered_prefix)));
-        logger.incPmapSize();
-    }
-    return child;
-};
-
-static
-std::vector<bool> VECTOR_to_bitvector(VECTOR vec, size_t len) {
-    std::vector<bool> bitvector;
-    bitvector.resize(len);
-    for (size_t index = 0; index < len; index++) {
-        bitvector[index] = rule_isset(vec, index);
-    }
-    return bitvector;
-}
-
-template<class N>
-N* captured_permutation_insert(construct_signature<N> construct_policy, unsigned short new_rule,
-                               size_t nrules, bool prediction, bool default_prediction, double lower_bound,
-                               double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
-                               double c, double minority, CacheTree<N>* tree, VECTOR not_captured,
-                               std::vector<unsigned short> parent_prefix,
-                               CapturedPermutationMap* p) {
-    typename CapturedPermutationMap::iterator iter;
-    parent_prefix.push_back(new_rule);
-    N* child = NULL;
-    //CapturedKey key = not_captured;//VECTOR_to_bitvector(not_captured, nsamples);
-    struct captured_key key;// = { cap_key };
-    rule_vinit(nsamples, &key.key);
-    rule_copy(key.key, not_captured, nsamples);
-#ifndef GMP
-    key.len = (short) nsamples;
-#endif
-    iter = p->find(key);
-    if (iter != p->end()) {
-        std::vector<unsigned short> permuted_prefix = iter->second.first;
-        double permuted_lower_bound = iter->second.second;
-        if (lower_bound < permuted_lower_bound) {
-            N* permuted_node;
-            if ((permuted_node = tree->check_prefix(permuted_prefix)) != NULL) {
-                N* permuted_parent = permuted_node->parent();
-                permuted_parent->delete_child(permuted_node->id());
-                delete_subtree<N>(tree, permuted_node, false, true);
-                logger.incPmapDiscardNum();
-            } else {
-                logger.incPmapNullNum();
-            }
-            child = construct_policy(new_rule, nrules, prediction, default_prediction,
-                                       lower_bound, objective, parent,
-                                        num_not_captured, nsamples, len_prefix, c, minority);
-            iter->second = std::make_pair(parent_prefix, lower_bound);
-            //permutation_map_.insert(std::make_pair(key, child));
-        }
-    } else {
-        child = construct_policy(new_rule, nrules, prediction, default_prediction,
-                                    lower_bound, objective, parent,
-                                    num_not_captured, nsamples, len_prefix, c, minority);
-        p->insert(std::make_pair(key, std::make_pair(parent_prefix, lower_bound)));
-        logger.incPmapSize();
-    }
-    return child;
-};
-
 
 BaseNode* base_queue_front(BaseQueue* q) {
     return q->front();
@@ -569,7 +407,6 @@ int bbound_queue(CacheTree<N>* tree,
         printf("Size of permutation map in bytes: %llu\n", pmap_size);
     }
     */
-    MemTrack::TrackListMemoryUsage();
 
     // Print out queue
     char fname[] = "queue.txt"; // make this optional
@@ -669,65 +506,6 @@ void bbound_greedy(size_t nsamples, size_t nrules, rule_t *rules, rule_t *labels
     rule_vfree(&captured_zeros);
     rule_vfree(&unseen);
 }
-
-template<class N>
-void delete_subtree(CacheTree<N>* tree, N* node, bool destructive, bool update_remaining_state_space) {
-    N* child;
-    typename std::map<unsigned short, N*>::iterator iter;
-
-    if (node->done()) {
-        iter = node->children_begin();
-        while (iter != node->children_end()) {
-            child = iter->second;
-            delete_subtree<N>(tree, child, destructive, update_remaining_state_space);
-            ++iter;
-        }
-        tree->decrement_num_nodes(); // always delete interior (non-leaf) nodes
-        delete node;
-    } else {
-        if (destructive) {  // only delete leaf nodes in destructive mode
-            tree->decrement_num_nodes();
-            delete node;
-        } else {
-            logger.decPrefixLen(node->depth());
-            if (update_remaining_state_space)
-                logger.removeQueueElement(node->depth(), node->lower_bound());
-            node->set_deleted();
-        }
-    }
-}
-
-template BaseNode*
-prefix_permutation_insert(construct_signature<BaseNode> construct_policy, unsigned short new_rule,
-                          size_t nrules, bool prediction, bool default_prediction, double lower_bound,
-                          double objective, BaseNode* parent, int num_not_captured, int nsamples, int len_prefix,
-                          double c, double minority, CacheTree<BaseNode>* tree, VECTOR captured,
-                          std::vector<unsigned short> parent_prefix,
-                          PrefixPermutationMap* p);
-
-template CuriousNode*
-prefix_permutation_insert(construct_signature<CuriousNode> construct_policy, unsigned short new_rule,
-                          size_t nrules, bool prediction, bool default_prediction, double lower_bound,
-                          double objective, CuriousNode* parent, int num_not_captured, int nsamples, int len_prefix,
-                          double c, double minority, CacheTree<CuriousNode>* tree, VECTOR captured,
-                          std::vector<unsigned short> parent_prefix,
-                          PrefixPermutationMap* p);
-
-template BaseNode*
-captured_permutation_insert(construct_signature<BaseNode> construct_policy, unsigned short new_rule,
-                            size_t nrules, bool prediction, bool default_prediction, double lower_bound,
-                            double objective, BaseNode* parent, int num_not_captured, int nsamples, int len_prefix,
-                            double c, double minority, CacheTree<BaseNode>* tree, VECTOR captured,
-                            std::vector<unsigned short> parent_prefix,
-                            CapturedPermutationMap* p);
-
-template CuriousNode*
-captured_permutation_insert(construct_signature<CuriousNode> construct_policy, unsigned short new_rule,
-                            size_t nrules, bool prediction, bool default_prediction, double lower_bound,
-                            double objective, CuriousNode* parent, int num_not_captured, int nsamples, int len_prefix,
-                            double c, double minority, CacheTree<CuriousNode>* tree, VECTOR captured,
-                            std::vector<unsigned short> parent_prefix,
-                            CapturedPermutationMap* p);
 
 template void
 evaluate_children<BaseNode, NullQueue<BaseNode>, PrefixPermutationMap>(CacheTree<BaseNode>* tree,
@@ -835,9 +613,3 @@ bbound_queue<CuriousNode, CuriousQueue, CapturedPermutationMap>(CacheTree<Curiou
                                         permutation_insert_signature<CuriousNode, CapturedPermutationMap> permutation_insert,
                                         pmap_garbage_collect_signature<CapturedPermutationMap> pmap_garbage_collect,
                                         CapturedPermutationMap* p, size_t num_iter, size_t switch_iter);
-
-template void
-delete_subtree<BaseNode>(CacheTree<BaseNode>* tree, BaseNode* n, bool destructive, bool update_remaining_state_space);
-
-template void
-delete_subtree<CuriousNode>(CacheTree<CuriousNode>* tree, CuriousNode* n, bool destructive, bool update_remaining_state_space);

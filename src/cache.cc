@@ -1,5 +1,4 @@
 #include "cache.hh"
-#include "bbound.hh"
 #include "utils.hh"
 #include <memory>
 #include <vector>
@@ -131,7 +130,8 @@ void CacheTree<N>::gc_helper(N* node) {
         logger.addQueueElement(node->depth(), node->lower_bound());
     N* child;
     std::vector<N*> children;
-    for (typename std::map<unsigned short, N*>::iterator cit = node->children_.begin(); cit != node->children_.end(); ++cit)
+    for (typename std::map<unsigned short, N*>::iterator cit = node->children_.begin(); 
+            cit != node->children_.end(); ++cit)
         children.push_back(cit->second);
     for (typename std::vector<N*>::iterator cit = children.begin(); cit != children.end(); ++cit) {
         child = *cit;
@@ -186,11 +186,45 @@ inline void CacheTree<N>::decrement_num_nodes() {
     logger.setTreeNumNodes(num_nodes_);
 }
 
+template<class N>
+void delete_subtree(CacheTree<N>* tree, N* node, bool destructive, bool update_remaining_state_space) {
+    N* child;
+    typename std::map<unsigned short, N*>::iterator iter;
 
-template class Node<bool>; // BaseNode
+    if (node->done()) {
+        iter = node->children_begin();
+        while (iter != node->children_end()) {
+            child = iter->second;
+            delete_subtree<N>(tree, child, destructive, update_remaining_state_space);
+            ++iter;
+        }
+        tree->decrement_num_nodes(); // always delete interior (non-leaf) nodes
+        delete node;
+    } else {
+        if (destructive) {  // only delete leaf nodes in destructive mode
+            tree->decrement_num_nodes();
+            delete node;
+        } else {
+            logger.decPrefixLen(node->depth());
+            if (update_remaining_state_space)
+                logger.removeQueueElement(node->depth(), node->lower_bound());
+            node->set_deleted();
+        }
+    }
+}
 
-template class Node<double>; // CuriousNode
+// BaseNode
+template class Node<bool>;
+
+// CuriousNode
+template class Node<double>; 
 
 template class CacheTree<BaseNode>;
 
 template class CacheTree<CuriousNode>;
+
+template void
+delete_subtree<BaseNode>(CacheTree<BaseNode>* tree, BaseNode* n, bool destructive, bool update_remaining_state_space);
+
+template void
+delete_subtree<CuriousNode>(CacheTree<CuriousNode>* tree, CuriousNode* n, bool destructive, bool update_remaining_state_space);

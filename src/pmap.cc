@@ -1,5 +1,9 @@
 #include "pmap.hh"
 
+/*
+ * Garbage collects the permutation map by removing any entries related to prefixes shorter than
+ * the current minimum length prefix in the queue.
+ */
 void prefix_map_garbage_collect(PrefixPermutationMap* p, size_t queue_min_length) {
     typename PrefixPermutationMap::iterator iter;
     size_t num_deleted = 0;
@@ -16,6 +20,10 @@ void prefix_map_garbage_collect(PrefixPermutationMap* p, size_t queue_min_length
     logger.decreasePmapSize(num_deleted);
 }
 
+/*
+ * Simplified version of above since we can clear out the permutation map every time the length
+ * of prefix we're looking at increases.
+ */
 void bfs_prefix_map_garbage_collect(PrefixPermutationMap* p, size_t queue_min_length) {
     size_t pmap_size = p->size();
     printf("bfs pmap gc for length %zu: %zu -> ", queue_min_length, pmap_size);
@@ -24,14 +32,16 @@ void bfs_prefix_map_garbage_collect(PrefixPermutationMap* p, size_t queue_min_le
     logger.decreasePmapSize(pmap_size);
 }
 
+/*
+ * TODO: Need to deal with the fact that CapturedKey doesn't contain length of associatd prefix.
+ */
 void captured_map_garbage_collect(CapturedPermutationMap* p, size_t queue_min_length) {
-    size_t pmap_size = p->size();
-    printf("captured pmap gc for length %zu: %zu -> ", queue_min_length, pmap_size);
-    p->clear();
-    printf("%zu\n", p->size());
-    logger.decreasePmapSize(pmap_size);
 }
 
+/*
+ * Checks the permutation bound of a node and inserts it into the permutation map if it's the best
+ * permutation of its prefix.
+ */
 template<class N>
 N* prefix_permutation_insert(construct_signature<N> construct_policy, unsigned short new_rule,
                              size_t nrules, bool prediction, bool default_prediction, double lower_bound,
@@ -91,6 +101,10 @@ N* prefix_permutation_insert(construct_signature<N> construct_policy, unsigned s
     return child;
 };
 
+/*
+ * Checks the permutation bound of a node and inserts it into the permutation map if it's the best
+ * permutation of its captured vector.
+ */
 template<class N>
 N* captured_permutation_insert(construct_signature<N> construct_policy, unsigned short new_rule,
                                size_t nrules, bool prediction, bool default_prediction, double lower_bound,

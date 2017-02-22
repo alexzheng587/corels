@@ -1,4 +1,4 @@
-#include "bbound.hh"
+#include "queue.hh"
 #include "utils.hh"
 
 #include <iostream>
@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
         "-c (1|2|3|4) -p (0|1|2) [-f logging_frequency]"
         "-a (1|2|3)"
         "data.out data.label\n\n"
-        "%s\n"; // for error
+        "%s\n";
 
     extern char *optarg;
     bool run_stochastic = false;
@@ -316,7 +316,7 @@ int main(int argc, char *argv[]) {
                     printf("Switching to curious lower bound policy... \n");
                     CuriousQueue curious_lb_q(lower_bound_cmp);
                     while(!curious_q.empty()) {
-                        CuriousNode* selected_node = curious_queue_front(&curious_q); //q->front();
+                        CuriousNode* selected_node = curious_queue_front(&curious_q);
                         curious_q.pop();
                         curious_lb_q.push(selected_node);
                     }

@@ -21,6 +21,8 @@
 
 ### pmap.cc and pmap.hh
 
+- [ ] TODO: Need to deal with the fact that CapturedKey doesn't contain length of associatd prefix.
+
 ### utils.cc and utils.hh
 
 - [ ] Are we ok with the fact that the logger object is a global variable?

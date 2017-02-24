@@ -1,9 +1,11 @@
 #include "utils.hh"
-
 #include <stdio.h>
 #include <assert.h>
 #include <sys/utsname.h>
 
+/*
+ * Sets the logger file name and writes the header line to the file.
+ */
 void Logger::setLogFileName(char *fname) {
     if (_v < 1) return;
 
@@ -21,6 +23,9 @@ void Logger::setLogFileName(char *fname) {
        << "log_remaining_space_size,prefix_lengths" << endl;
 }
 
+/*
+ * Writes current stats about the execution to the log file.
+ */
 void Logger::dumpState() {
     if (_v < 1) return;
 
@@ -52,11 +57,19 @@ void Logger::dumpState() {
        << dumpPrefixLens().c_str() << endl;
 }
 
+/*
+ * Uses GMP library to dump a string version of the remaining state space size.
+ * This number is typically very large (e.g. 10^20) which is why we use GMP instead of a long.
+ * Note: this function may not work on some Linux machines.
+ */
 std::string Logger::dumpRemainingSpaceSize() {
     mpz_class s(_state.remaining_space_size);
     return s.get_str();
 }
 
+/*
+ * Function to convert vector of remaining prefix lengths to a string format for logging.
+ */
 std::string Logger::dumpPrefixLens() {
     std::string s = "";
     for(size_t i = 0; i < _state.nrules; ++i) {
@@ -70,6 +83,9 @@ std::string Logger::dumpPrefixLens() {
     return s;
 }
 
+/*
+ * Given a rulelist and predictions, will output a human-interpretable form to a file.
+ */
 void print_final_rulelist(const std::vector<unsigned short>& rulelist,
                           const std::vector<bool>& preds,
                           const bool latex_out,
@@ -124,6 +140,9 @@ void print_final_rulelist(const std::vector<unsigned short>& rulelist,
     f.close();
 }
 
+/*
+ * Prints out information about the machine.
+ */
 void print_machine_info() {
     struct utsname buffer;
 

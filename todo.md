@@ -87,6 +87,7 @@
 - [ ] Kaggle had a maybe interesting housing dataset
 - [ ] Look at the datasets from Stat 220
 - [ ] Figure out what is going on with the nursery dataset -- maybe ping Hongyu again (Elaine)
+- [ ] How far did we get with adult (gap between lower bound and objective)? (Elaine)
 
 ### Implementation (writing)
 
@@ -104,12 +105,25 @@
 - [ ] Should we output confusion matrices?
 - [ ] Provide more examples of rule lists that we find (Elaine)
 
+### Evaluation (analyzing our algorithms and data structures)
+
+- [ ] Detailed analysis of our log files.
+      Start by visualizing all logged quantities as functions of time,
+      using logs from our ablation study.  Explore when linear versus log scales
+      make sense (e.g., matplotlib functions plot, semilogx, semilogy, loglog).
+      Plot data for a single cross-validation folds separately, and together.
+      Do line plots always make sense? (Nicholas)
+- [ ] Analyze our timing measurements -- where does our algorithm spend its time?
+      Does this change during execution?  See `eval/scratch.py` for preliminary analysis.
+
 ### General
 
 - [ ] Curiosity is missing -- it gives significant improvement for tic-tac-toe, but what else?
 - [ ] Do we want a more thorough description of how we do rule mining, and our bit vector representation and operations?
 
 -----
+
+**Stuff below hasn't been organized recently, but contains some useful thoughts and notes**
 
 ## bbound improvements
 
@@ -183,11 +197,6 @@
 - [ ] Properly calculate log10 of the remaining search space --
       see `getLogRemainingSpaceSize()` in `utils.hh` --
       you'll probably need to either write your own function or switch from `mpz` to `mpfr`
-
-## Framework for experiments and analysis
-
-- [ ] Analyze our timing measurements -- where does our algorithm spend its time?
-      Does this change during execution?  See `eval/scratch.py` for preliminary analysis.
 
 ## Algorithms and data structures
 

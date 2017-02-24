@@ -3,6 +3,9 @@
 
 extern int ablation;
 
+/*
+ * Constructs a node of type BaseNode.
+ */
 BaseNode* base_construct_policy(unsigned short new_rule, size_t nrules, bool prediction,
                                 bool default_prediction, double lower_bound,
                                 double objective, BaseNode* parent,
@@ -14,6 +17,9 @@ BaseNode* base_construct_policy(unsigned short new_rule, size_t nrules, bool pre
                          lower_bound, objective, 0, parent, num_captured, minority));
 }
 
+/*
+ * Constructs a node of type CuriousNode.
+ */
 CuriousNode* curious_construct_policy(unsigned short new_rule, size_t nrules, bool prediction,
                                       bool default_prediction, double lower_bound,
                                       double objective, CuriousNode* parent,
@@ -33,6 +39,17 @@ CuriousNode* curious_queue_front(CuriousQueue* q) {
     return q->top();
 }
 
+/*
+ * Performs incremental computation on a node, evaluating the bounds and inserting into the cache,
+ * queue, and permutation map if appropriate.
+ * This is the function that contains the majority of the logic of the algorithm.
+ *
+ * parent -- the node that is going to have all of its children evaluated.
+ * parent_not_captured -- the vector representing data points NOT captured by the parent.
+ * construct_policy -- function pointer to how to construct nodes.
+ * permutation_insert -- function pointer to how to insert into the permutation map.
+ * p -- the permutation map
+ */
 template<class N, class Q, class P>
 void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured,
                        construct_signature<N> construct_policy, Q* q,
@@ -70,7 +87,8 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
             continue;
         // captured represents data captured by the new rule
         rule_vand(captured, parent_not_captured, tree->rule(i).truthtable, nsamples, &num_captured);
-        if ((ablation != 1) && (num_captured < threshold)) // lower bound on antecedent support
+        // lower bound on antecedent support
+        if ((ablation != 1) && (num_captured < threshold)) 
             continue;
         rule_vand(captured_zeros, captured, tree->label(0).truthtable, nsamples, &c0);
         c1 = num_captured - c0;
@@ -81,12 +99,14 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
             prediction = 1;
             captured_correct = c1;
         }
-        if ((ablation != 1) && (captured_correct < threshold)) // lower bound on accurate antecedent support
+        // lower bound on accurate antecedent support
+        if ((ablation != 1) && (captured_correct < threshold))
             continue;
         lower_bound = parent_lower_bound - parent_minority + (float)(num_captured - captured_correct) / nsamples + c;
         logger.setLowerBoundTime(time_diff(t1));
         logger.incLowerBoundNum();
-        if (lower_bound >= tree->min_objective()) // hierarchical objective lower bound
+        // hierarchical objective lower bound
+        if (lower_bound >= tree->min_objective())
             continue;
         double t2 = timestamp();
         rule_vandnot(not_captured, parent_not_captured, captured, nsamples, &num_not_captured);
@@ -110,7 +130,8 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
             tree->update_opt_rulelist(parent_prefix, i);
             tree->update_opt_predictions(parent_predictions, prediction, default_prediction);
 
-            logger.dumpState(); // dump state when min objective is updated (keep this)
+            // dump state when min objective is updated
+            logger.dumpState();
         }
         if (tree->meta_size() == 1) {
             rule_vand(not_captured_minority, not_captured, tree->meta(0).truthtable, nsamples, &num_not_captured_minority);
@@ -123,6 +144,7 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
             lb = lower_bound;
         if (lb < tree->min_objective()) {
             N* n;
+            // check permutation bound
             if (p) {
                 double t3 = timestamp();
                 n = permutation_insert(construct_policy, i, nrules, prediction, default_prediction,
@@ -166,9 +188,11 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
         parent->set_done();
         tree->increment_num_evaluated();
     }
-    //logger.dumpState(); // dump state at least once for each call to evaluate_children (possibly too frequent)
 }
 
+/*
+ * Randomly selects a leave node to evaluate by stochastically walking down the tree.
+ */
 template<class N>
 N* stochastic_select(CacheTree<N>* tree, VECTOR not_captured) {
     N* node = tree->root();
@@ -190,12 +214,16 @@ N* stochastic_select(CacheTree<N>* tree, VECTOR not_captured) {
             return NULL;
         }
         node = node->random_child();
-        rule_vandnot(not_captured, not_captured, tree->rule(node->id()).truthtable, tree->nsamples(), &cnt);
+        rule_vandnot(not_captured, not_captured, tree->rule(node->id()).truthtable, 
+                tree->nsamples(), &cnt);
     }
     logger.setCurrentLowerBound(node->lower_bound() + tree->c());
     return node;
 }
 
+/*
+ * Uses a stochastic search process to explore the search space.
+ */
 template<class N, class P>
 void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes,
                        construct_signature<N> construct_policy,
@@ -204,7 +232,8 @@ void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes,
                        P* p) {
     double start = timestamp();
     logger.setInitialTime(start);
-    logger.dumpState();         // initial log record
+    // initial log record
+    logger.dumpState();
 
     double min_objective = 1.0;
     N* node_ordered;
@@ -218,7 +247,8 @@ void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes,
     tree->insert_root();
     logger.incTreeInsertionNum();
     q->push(tree->root());
-    logger.dumpState();         // log record for empty rule list
+    // log record for empty rule list
+    logger.dumpState();
     while ((tree->num_nodes() < max_num_nodes) and (tree->num_nodes() > 0)) {
         double t0 = timestamp();
         node_ordered = stochastic_select<N>(tree, not_captured);
@@ -251,23 +281,31 @@ void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes,
                 printf("iter: %zu, tree: %zu, queue: %zu, time elapsed: %f\n",
                        num_iter, tree->num_nodes(), q->size(), time_diff(start));
         }
-        if ((num_iter % logger.getFrequency()) == 0)
-            logger.dumpState();     // want ~1000 records for detailed figures
+        if ((num_iter % logger.getFrequency()) == 0) {
+            // want ~1000 records for detailed figures
+            logger.dumpState();     
+        }
     }
     logger.dumpState();
     rule_vfree(&not_captured);
 }
 
+/*
+ * Selects the node off the front of the queue.
+ *
+ * front -- determines whether the queue is FIFO or a priority queue.
+ */
 template<class N, class Q>
 N* queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured) {
     int cnt;
 
-    N* selected_node = front(q); //q->front();
+    N* selected_node = front(q);
     q->pop();
     logger.setCurrentLowerBound(selected_node->lower_bound() + tree->c());
 
     N* node = selected_node;
-    if (node->deleted()) {  // lazily delete leaf nodes
+    // delete leaf nodes that were lazily marked
+    if (node->deleted()) {
         tree->decrement_num_nodes();
         delete node;
         return NULL;
@@ -275,7 +313,7 @@ N* queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured) {
 
     rule_vclear(tree->nsamples(), captured);
 
-    while (node != tree->root()) { /* or node->id() != root->id() */
+    while (node != tree->root()) {
         if (node->deleted()) {
             delete node;
             return NULL;
@@ -288,6 +326,10 @@ N* queue_select(CacheTree<N>* tree, Q* q, N*(*front)(Q*), VECTOR captured) {
     return selected_node;
 }
 
+/*
+ * Explores the search space by using a queue to order the search process.
+ * The queue can be ordered by DFS, BFS, or an alternative priority metric (e.g. lower bound).
+ */
 template<class N, class Q, class P>
 int bbound_queue(CacheTree<N>* tree,
                 size_t max_num_nodes,
@@ -307,11 +349,13 @@ int bbound_queue(CacheTree<N>* tree,
 
     size_t queue_min_length = logger.getQueueMinLen();
 
+    // Set up is different when we initialize the tree as opposed to when we restart execution.
     if (tree->num_nodes() == 0) {
         start = timestamp();
         logger.setInitialTime(start);
         logger.initializeState();
-        logger.dumpState();         // initial log record
+        // initial log record
+        logger.dumpState();         
 
         min_objective = 1.0;
         tree->insert_root();
@@ -319,7 +363,8 @@ int bbound_queue(CacheTree<N>* tree,
         q->push(tree->root());
         logger.setQueueSize(q->size());
         logger.incPrefixLen(0);
-        logger.dumpState();         // log record for empty rule list
+        // log record for empty rule list
+        logger.dumpState(); 
         logger.initRemainingSpaceSize();
     } else {
         start = logger.getInitialTime();
@@ -334,7 +379,7 @@ int bbound_queue(CacheTree<N>* tree,
         if (node_ordered) {
             double t1 = timestamp();
             min_objective = tree->min_objective();
-            /* not_captured = default rule truthtable & ~ captured */
+            // not_captured = default rule truthtable & ~ captured
             rule_vandnot(not_captured,
                          tree->rule(tree->root()->id()).truthtable, captured,
                          tree->nsamples(), &cnt);
@@ -369,11 +414,12 @@ int bbound_queue(CacheTree<N>* tree,
                 printf("iter: %zu, tree: %zu, queue: %zu, log10(remaining): %zu, time elapsed: %f\n",
                        num_iter, tree->num_nodes(), q->size(), logger.getLogRemainingSpaceSize(), time_diff(start));
         }
-        if ((num_iter % logger.getFrequency()) == 0)
-            logger.dumpState();     // want ~1000 records for detailed figures
-        if (num_iter == switch_iter) {
-            return num_iter;
+        if ((num_iter % logger.getFrequency()) == 0) {
+            // want ~1000 records for detailed figures
+            logger.dumpState();
         }
+        if (num_iter == switch_iter)
+            return num_iter;
     }
     logger.dumpState(); // second last log record (before queue elements deleted)
     if (p)
@@ -388,37 +434,18 @@ int bbound_queue(CacheTree<N>* tree,
     else
         printf("Exited because max number of nodes in the tree was reached\n");
 
-    // Memory usage
-/*    unsigned long long tree_size = tree->num_nodes() * sizeof(N) + sizeof(CacheTree<N>);
-    printf("Size of tree in bytes: %llu\n", tree_size);
-    if (p) {
-        unsigned long long pmap_size = sizeof(p);
-        typename P::iterator it;
-        for(it = p->begin(); it != p->end(); ++it) {
-            unsigned node_size = 0;
-            auto pkey = it->first;
-            node_size += pkey.key.capacity() * sizeof(unsigned short) + sizeof(pkey.key);
-            auto val = it->second;
-            node_size += val.first.capacity() * sizeof(unsigned short) + sizeof(val.first) + sizeof(val.second) + sizeof(val);
-            // The first 32 is for the extra pointers that each node in the map keeps
-            // The second 32 is for the size of the pair that composes the node (consisting of a key/val pair)
-            pmap_size += node_size + 32 + 32;
-        }
-        printf("Size of permutation map in bytes: %llu\n", pmap_size);
-    }
-    */
-
     // Print out queue
-    char fname[] = "queue.txt"; // make this optional
     ofstream f;
     if (print_queue) {
+        char fname[] = "queue.txt";
         printf("Writing queue elements to: %s\n", fname);
         f.open(fname, ios::out | ios::trunc);
         f << "lower_bound objective length frac_captured rule_list\n";
     }
 
     // Clean up data structures
-    printf("Deleting queue elements and corresponding nodes in the cache, since they may not be reachable by the tree's destructor\n");
+    printf("Deleting queue elements and corresponding nodes in the cache,"
+            "since they may not be reachable by the tree's destructor\n");
     printf("\nminimum objective: %1.10f\n", tree->min_objective());
     N* node;
     double min_lower_bound = 1.0;
@@ -452,59 +479,12 @@ int bbound_queue(CacheTree<N>* tree,
     printf("minimum lower bound in queue: %1.10f\n\n", min_lower_bound);
     if (print_queue)
         f.close();
-    logger.dumpState(); // last log record (before cache deleted)
+    // last log record (before cache deleted)
+    logger.dumpState();
 
     rule_vfree(&captured);
     rule_vfree(&not_captured);
     return num_iter;
-}
-
-void bbound_greedy(size_t nsamples, size_t nrules, rule_t *rules, rule_t *labels,
-                   size_t max_prefix_length) {
-    // Initialize variables
-    rule_t greedy_list[max_prefix_length];
-    std::vector<rule_t> available_rules (rules, rules + nrules);
-    VECTOR captured, captured_zeros, unseen; // not_captured, not_captured_zeros;
-    int num_captured, c0, c1, prediction, captured_correct;
-    rule_vinit(nsamples, &captured);
-    rule_vinit(nsamples, &captured_zeros);
-    rule_vinit(nsamples, &unseen);
-    make_default(&unseen, nsamples);
-
-    for(size_t i = 0; i < max_prefix_length; ++i) {
-        float best_percent_captured = 0.0;
-        int best_num_captured = 0;
-        int best_index = 0;
-        // Iterate over rule array to find best rule
-        for(size_t j = 0; j < available_rules.size(); ++j) {
-            rule_vand(captured, available_rules[j].truthtable, unseen, nsamples, &num_captured);
-            rule_vand(captured_zeros, captured, labels[0].truthtable, nsamples, &c0);
-            c1 = num_captured - c0;
-            if (c0 > c1) {
-                prediction = 0;
-                captured_correct = c0;
-            } else {
-                prediction = 1;
-                captured_correct = c1;
-            }
-            float percent_captured = (float)captured_correct / num_captured;
-            if (percent_captured > best_percent_captured || (percent_captured == best_percent_captured && num_captured > best_num_captured)) {
-                best_percent_captured = percent_captured;
-                best_num_captured = num_captured;
-                best_index = j;
-            }
-        }
-        rule_t best_rule = available_rules[best_index];
-        // Update unseen with best rule so far
-        rule_vor(captured, unseen, best_rule.truthtable, nsamples, &c0);
-        available_rules.erase(available_rules.begin() + best_index);
-        greedy_list[i] = best_rule;
-    }
-    rule_print_all(greedy_list, max_prefix_length, nsamples);
-
-    rule_vfree(&captured);
-    rule_vfree(&captured_zeros);
-    rule_vfree(&unseen);
 }
 
 template void

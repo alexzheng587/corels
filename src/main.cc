@@ -144,10 +144,6 @@ int main(int argc, char *argv[]) {
         printf("\nLabels (%d) for %d samples\n\n", nlabels, nsamples);
         rule_print_all(labels, nlabels, nsamples);
     }
-    if (verbosity >= 100) {
-        printf("\nGreedy algorithm:\n\n");
-        bbound_greedy(nsamples, nrules, rules, labels, 8);
-    }
 
     logger.setC(c);
     logger.setNRules(nrules);

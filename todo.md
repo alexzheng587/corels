@@ -1,98 +1,119 @@
 # To do
 
-Feel free to edit and please add any items or even sections that come to mind.
-Claim items by adding your name, and check them off when complete :)
+## Code review ([clean-up branch](https://github.com/elaine84/bbcache/tree/clean-up))
 
-## Experiments
+### General
 
-- [ ] Figure out how to use these algorithms and write useful scripts for
-      running experiments.  If I understand correctly, we want to use datasets
-      from before we do rule mining, e.g., see the files in `data/small/`. (Daniel)
+- [ ] Would we benefit from some refactoring?
+- [ ] Are we fully leveraging the rule library?
+- [ ] How should we include or point to the rule library?
+- [ ] Are we displaying useful output during execution and at the end?
+- [ ] We should add the ability to generate predictions for a test dataset on a learned model
+- [ ] Would we like to support a more "plug-in" style framework (for scheduling policies, node types, and/or algorithms)?
+- [ ] Can we simplify anything about how we're using templates (are we not really leveraging them in places)?
 
-- [ ] We should do measurements with and without our (beautiful and temporarily forgotten) cached bit vectors
+### cache.cc and cache.hh
 
-## Writing
+- [ ] Anything that we should strip out of our Node types?  (Or perhaps introduce "lite" versions?)
+- [ ] Any extra cruft being stored in the trie?  (See below regarding interactions with logger)
 
-- [ ] Cynthia's paragraph goes somewhere (beginning of Section 3 or 4)
+### queue.cc and queue.hh
 
-- [ ] Section 4 becomes section 3.5?
+### pmap.cc and pmap.hh
 
-- [ ] Curiosity -- probably leave out of KDD
+### utils.cc and utils.hh
 
-- [ ] Code:  We plan to make it public upon paper acceptance
+- [ ] Are we ok with the fact that the logger object is a global variable?
+- [ ] The logger and the tree both replicate some state -- how should we eliminate redundancies?
+- [ ] Can we turn it off completely or are we just not writing to a file?
+- [ ] Default setting should probably turn the logger off
+- [ ] We should measure the logger's overhead
+- [ ] The remaining state space calculation (tighter bound) probably adds noticeable overhead
+- [ ] The logger's actions are in some places quite fine-grained -- evaluate pros and cons
 
-- [ ] Let's avoid the term "ablation"
+### main.cc
 
-### Our approach
+- [ ] Can we tidy this up with a more modular structure?
+- [ ] It would be nice to support more custom scheduling policies
 
-- [ ] Incremental branch-and-bound computation (Elaine)
+### GNUmakefile
 
-- [ ] Rule mining: see Ben's paper (1 paragraph)
+- [ ] Eliminate machine-specific conditions
+- [ ] How do we improve our makefile?
 
-- [ ] Bit vector operations and rule library: see Hongyu's paper (1 paragraph,
-      a new section before or after rule mining section?) -- we use a handful of
-      operations, which ones and why?  (Why not others?)
+### README.md (start fresh)
 
-- [ ] Pseudocode closer to the algorithms we actually implement (Elaine)
+- [ ] Explain all external dependencies
+- [ ] Succinctly describe our algorithm and point to a paper
+- [ ] We should include a small dataset as a working example
 
-### Bounds
+### Other
 
-- [ ] Add theorem and proof for the identical points bound
-- [ ] Rewrite counting bounds with respect to Algorithm 2
+- [ ] Pick a license
+- [ ] Should we make a new repo `corels` (with or without our git history)?
+- [ ] Should we make R bindings?
+- [ ] Should we include any scripts
 
-### Implementation
+### Aesthetic things
 
-- [ ] Write a couple paragraphs about our data structures (cache, queue, map)
-      as well as their implementations (e.g., C++, templates, how they're
-      implemented using the C++ Standard library), how our algorithm uses them,
-      and how/when we do garbage collection (Nicholas)
+- [ ] Use `equivalent` or `identical` in names instead of `minority` or `minor`
 
-### Evaluation
+## Short paper
 
-- [ ] A few sentences describe all of the algorithms we're comparing against, with citations (Daniel)
-- [ ] Describe the physical computing environment used to conduct experiments (tbd)
-- [ ] Describe and motivate the experiments we conduct
-- [ ] Describe and interpret our results
-- [ ] Output our confusion matrix
-- [ ] Comparisons to other algorithms:  accuracy, maybe runtime
-- [ ] Comparisons to decision trees:  also number of nodes
+- [ ] Check language regarding best-first search, priority queue and metric
+- [ ] Clarify that our experiments with the priority queue use the lower bound
+- [ ] Delete references (in the intro and implementation) to things we haven't done or don't evaluate?
+- [ ] Make room for and add acknowledgements
+- [ ] Provide github link for our code
+- [ ] Revisit Johann's comments
 
-### Other sections
+## Long paper
 
-- [ ] Conclusions and future work
-- [ ] Acknowledgements -- everyone should ensure we're not missing anything or anyone here!
-
-### Definitions (Elaine)
+### Definitions
 
 - [ ] Stop overloading the notation for misclassification error (takes 3 arguments always)
 - [ ] Swap the arguments in the notation for captures
 
-### Annoying tex things
+### Bounds
 
-- [ ] Figure out how to change the label of Algorithm 3 to something like Listing 3
+- [ ] Write missing proofs for equivalent points bounds
 
-## datasets (Elaine -- but I'll take help here!)
+### Data
 
-- [ ] Stop-and-frisk dataset: whether frisked; if frisked, weapon?
-
+- [ ] Of those stopped, who is frisked (or searched)?
 - [ ] Maybe something about hospital readmissions
-
 - [ ] Kaggle had a maybe interesting housing dataset
-
 - [ ] Look at the datasets from Stat 220
+- [ ] Figure out what is going on with the nursery dataset -- maybe ping Hongyu again (Elaine)
 
-## Aesthetic things
+### Implementation (writing)
 
-- [ ] Use `identical` in names instead of `minority` or `minor`
+- [ ] Extended version of our short paper's implementation section (Nicholas)
+- [ ] Add a more detailed description of our algorithm as pseudocode, that includes all bounds and data structures (Nicholas)
+
+### Implementation (wish list)
+
+- [ ] Add BitVector node and a version of our algorithm (probably using new functions) that uses it
+
+### Experiments
+
+- [ ] Describe stop-and-frisk dataset in greater detail
+- [ ] Measurements with and without our symmetry map using captured bit vectors
+- [ ] Should we output confusion matrices?
+- [ ] Provide more examples of rule lists that we find (Elaine)
+
+### General
+
+- [ ] Curiosity is missing -- it gives significant improvement for tic-tac-toe, but what else?
+- [ ] Do we want a more thorough description of how we do rule mining, and our bit vector representation and operations?
+
+-----
 
 ## bbound improvements
 
 - [ ] Add stopping condition based on the number of iterations
 
 - [ ] Add policy that switches from curiosity to BFS
-
-- [ ] Queue elements are printed to `queue.txt` -- make this optional,
-      consider an input file name and threshold for number of printed entries
 
 - [ ] Measure our logging overhead and determine a useful heuristic threshold
       (e.g., "writing a log entry every 50 iterations incurs about 1% overhead on tdata")
@@ -152,8 +173,6 @@ Claim items by adding your name, and check them off when complete :)
 
 - [ ] Implement back-off and test on adult dataset (Nicholas)
 
-- [x] Implement (during execution) calculation for tighter bound on size of remaining search space (Elaine)
-
 - [ ] The above bound seems to incur about a 10% overhead (in time),
       so add an option to switch this off and instead use the coarse-grain bound (Elaine)
 
@@ -163,32 +182,9 @@ Claim items by adding your name, and check them off when complete :)
       see `getLogRemainingSpaceSize()` in `utils.hh` --
       you'll probably need to either write your own function or switch from `mpz` to `mpfr`
 
-## Rule mining
-
-- [ ] Fix the telco file.  Make sure to use `maxlhs=2` and `minsupport=1`.
-
 ## Framework for experiments and analysis
 
-Note that Elaine made some drafts of figures in `eval/scratch.py` -- she used
-`tabular` where you might prefer to use `pandas`, and `matplotlib` where you
-might prefer to use `seaborn` (which is built on top of `matplotlib`).  Feel
-free to use whatever data analysis and visualization tools you prefer, including
-Jupyter notebooks!
-
-- [ ] Set up scripts to help run and manage experiments (probably bash and/or Python),
-      and automatically analyze logs
-
-- [ ] Extend the analysis and visualization framework to report results across
-      all 10 folds of cross-validation -- see Cynthia's sketches in `paper/figs/`.
-      For many of the figures, we want to plot something like three trend lines
-      corresponding to a mean and standard error.
-
-- [ ] Map out what you think belongs in the ablation experiment
-
-- [ ] Bonus: Write a framework (script?) for running an ablation experiment,
-      and try it out on tdata
-
-- [ ] Add analysis of timing measurements -- where does our algorithm spend its time?
+- [ ] Analyze our timing measurements -- where does our algorithm spend its time?
       Does this change during execution?  See `eval/scratch.py` for preliminary analysis.
 
 ## Algorithms and data structures
@@ -202,8 +198,3 @@ A place to note things we haven't implemented, but might
 - [ ] Something like Thompson sampling using curiosity
 - [ ] Priority metric that blends between breadth-first and curiosity (non-stochastic)
 - [ ] Enforce that the output optimal rule list is the simplest
-
-## README, GNUmakefile, and dependencies
-
-- [ ] Remove unnecessary dependencies from GNUmakefile (e.g., profiling tools)
-- [ ] Update `readme.md` to explain all dependencies

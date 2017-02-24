@@ -29,9 +29,15 @@
 - [ ] The logger and the tree both replicate some state -- how should we eliminate redundancies?
 - [ ] Can we turn it off completely or are we just not writing to a file?
 - [ ] Default setting should probably turn the logger off
-- [ ] We should measure the logger's overhead
-- [ ] The remaining state space calculation (tighter bound) probably adds noticeable overhead
 - [ ] The logger's actions are in some places quite fine-grained -- evaluate pros and cons
+
+- [ ] The remaining state space calculation (fine-grain bound) probably adds noticeable overhead
+      (Elaine noted 10% at some point?), so add an option to switch this off and
+      instead use the coarse-grain bound -- this was the original thing implemented,
+      but I think just isn't used currently
+
+- [ ] Measure logging overhead and determine a useful heuristic threshold
+      (e.g., "writing a log entry every 50 iterations incurs about 1% overhead on tdata")
 
 ### main.cc
 
@@ -113,8 +119,21 @@
       make sense (e.g., matplotlib functions plot, semilogx, semilogy, loglog).
       Plot data for a single cross-validation folds separately, and together.
       Do line plots always make sense? (Nicholas)
+
 - [ ] Analyze our timing measurements -- where does our algorithm spend its time?
       Does this change during execution?  See `eval/scratch.py` for preliminary analysis.
+
+- [ ] **Margo question:** How many times do we look up an item in the hash map
+      that is not in the tree? See logger's `_state.pmap_null_num`
+
+- [ ] **Margo question:** When we do look up an item, how many times do we end up
+      discarding something we would have been unable to discard had we not done this?
+      See logger's `_state.pmap_discard_num`, counts number of lookups
+      that trigger a discard operation, not the total number of deleted nodes
+
+- [ ] Is there anything else we should measure?
+      E.g., think about time spent deleting nodes from the cache,
+      garbage collection triggered by a new best objective value, etc.
 
 ### General
 
@@ -131,31 +150,14 @@
 
 - [ ] Add policy that switches from curiosity to BFS
 
-- [ ] Measure our logging overhead and determine a useful heuristic threshold
-      (e.g., "writing a log entry every 50 iterations incurs about 1% overhead on tdata")
-
 - [ ] Make R/Python binding so it is easier to run experiments. (Daniel)
       Link to SBRL cran repo: https://github.com/cran/sbrl. We can follow this format.
-
-- [ ] What else should we measure?  E.g., think about time spent deleting nodes
-      from the cache, garbage collection triggered by a new best objective value,
-      etc.
-
-- [ ] Consolidate algorithm state in the logger object
 
 - [ ] The lower bound check before the call to `evaluate_children` does NOT require
       a trie lookup in the special case of a curious queue ordered by lower bound,
       in which case it could be considerably faster -- maybe want to specialize `queue_select`?
 
 - [ ] Garbage collect the permutation map of prefixes longer than the maximum prefix length
-
-- [x] How many times do we look up an item in the hash map that is not in the tree --
-      added to logger at `_state.pmap_null_num`
-
-- [x] When we do look up an item, how many times do we end up discarding
-      something we would have been unable to discard had we not done this --
-      added to logger at `_state.pmap_discard_num`, counts number of lookups
-      that trigger a discard operation, not the total number of deleted nodes
 
 - [ ] If garbage collecting the cache and queue would reduce the size of the queue
       by at least some factor (e.g., 10%) then do so -- can't iterate over
@@ -189,10 +191,7 @@
 
 - [ ] Implement back-off and test on adult dataset (Nicholas)
 
-- [ ] The above bound seems to incur about a 10% overhead (in time),
-      so add an option to switch this off and instead use the coarse-grain bound (Elaine)
-
-- [ ] Calculate above bound in a separate process
+- [ ] Calculate above size of remaining search space (fine-grain bound only?) in a separate process
 
 - [ ] Properly calculate log10 of the remaining search space --
       see `getLogRemainingSpaceSize()` in `utils.hh` --
@@ -202,10 +201,14 @@
 
 A place to note things we haven't implemented, but might
 
+- [ ] Anything we forgot about from our original Python implementation?
 - [ ] Framework to remember rejected antecedents
-- [ ] Framework aware of rules that commute
+- [ ] Framework aware of rules that commute 
 - [ ] Framework aware of dominates relationships
 - [ ] Ability to switch between scheduling policies
 - [ ] Something like Thompson sampling using curiosity
 - [ ] Priority metric that blends between breadth-first and curiosity (non-stochastic)
 - [ ] Enforce that the output optimal rule list is the simplest
+- [ ] Explore simplifying constraints, e.g., rule lists whose predictions (never or rarely) switch between classes
+- [ ] A framework for leveraging our similar support bound (via locality-sensitive hashing?)
+- [ ] Parallelism :)

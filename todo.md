@@ -27,6 +27,7 @@
 
 - [ ] Are we ok with the fact that the logger object is a global variable?
 - [ ] The logger and the tree both replicate some state -- how should we eliminate redundancies?
+      State that is vital for the execution of the algorithm (e.g. num_nodes) should be in tree. O/w in logger.
 - [ ] Can we turn it off completely or are we just not writing to a file?
 - [ ] Default setting should probably turn the logger off
 - [ ] The logger's actions are in some places quite fine-grained -- evaluate pros and cons
@@ -38,11 +39,20 @@
 
 - [ ] Measure logging overhead and determine a useful heuristic threshold
       (e.g., "writing a log entry every 50 iterations incurs about 1% overhead on tdata")
+      Can test this by just making all logger functions just return right away.
+
+- [ ] Either use inheritance or macros to allow for turning logger off
 
 ### main.cc
 
 - [ ] Can we tidy this up with a more modular structure?
 - [ ] It would be nice to support more custom scheduling policies
+
+### templates vs inheritance
+- [ ] Measure the space-time tradeoff of using templates vs inheritance
+- [ ] Rewrite Queue class using inheritance and benchmark changes
+- [ ] Extend inheritance to other data structures and rewrite main
+- [ ] Check size of executable vs runtime
 
 ### GNUmakefile
 

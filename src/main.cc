@@ -218,15 +218,13 @@ int main(int argc, char *argv[]) {
         if (use_prefix_perm_map) {
             printf("BFS Permutation Map\n");        
             CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels, meta);
-            BaseQueue bfs_q;
+            Queue<BaseNode> bfs_q;
             PrefixPermutationMap p;
             bbound_queue<BaseNode,
-                         BaseQueue,
                          PrefixPermutationMap>(&tree,
                                                max_num_nodes,
                                                &base_construct_policy,
                                                &bfs_q,
-                                               &base_queue_front,
                                                &prefix_permutation_insert,
                                                &bfs_prefix_map_garbage_collect,
                                                &p, 0, 0);
@@ -242,15 +240,13 @@ int main(int argc, char *argv[]) {
         } else if (use_captured_sym_map) {
             printf("BFS Captured Symmetry Map\n");        
             CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels, meta);
-            BaseQueue bfs_q;
+            Queue<BaseNode> bfs_q;
             CapturedPermutationMap p;
             bbound_queue<BaseNode,
-                         BaseQueue,
                          CapturedPermutationMap>(&tree,
                                                  max_num_nodes,
                                                  &base_construct_policy,
                                                  &bfs_q,
-                                                 &base_queue_front,
                                                  &captured_permutation_insert,
                                                  &captured_map_garbage_collect,
                                                  &p, 0, 0);
@@ -267,14 +263,12 @@ int main(int argc, char *argv[]) {
         else {
             printf("BFS No Permutation Map\n");        
             CacheTree<BaseNode> tree(nsamples, nrules, c, rules, labels, meta);
-            BaseQueue bfs_q;
+            Queue<BaseNode> bfs_q;
             bbound_queue<BaseNode,
-                         BaseQueue,
                          CapturedPermutationMap>(&tree,
                                                  max_num_nodes,
                                                  &base_construct_policy,
                                                  &bfs_q,
-                                                 &base_queue_front,
                                                  &captured_permutation_insert,
                                                  &captured_map_garbage_collect,
                                                  NULL, 0, 0);
@@ -295,34 +289,30 @@ int main(int argc, char *argv[]) {
             if (use_prefix_perm_map) {
                 printf("CURIOSITY Prefix Permutation Map\n");
                 CacheTree<CuriousNode> *tree = new CacheTree<CuriousNode>(nsamples, nrules, c, rules, labels, meta);
-                CuriousQueue curious_q(curious_cmp);
+                CuriousQueue<CuriousNode> curious_q;
                 PrefixPermutationMap *p = new PrefixPermutationMap;
                 size_t num_iter;
                 num_iter = bbound_queue<CuriousNode,
-                                             CuriousQueue,
                                              PrefixPermutationMap>(tree,
                                                                    max_num_nodes,
                                                                    &curious_construct_policy,
                                                                    &curious_q,
-                                                                   &curious_queue_front,
                                                                    &prefix_permutation_insert,
                                                                    &prefix_map_garbage_collect,
                                                                    p, 0, switch_iter);
                 if (curious_q.size() > 0) {
                     printf("Switching to curious lower bound policy... \n");
-                    CuriousQueue curious_lb_q(lower_bound_cmp);
+                    LowerBoundQueue<CuriousNode> curious_lb_q;
                     while(!curious_q.empty()) {
-                        CuriousNode* selected_node = curious_queue_front(&curious_q);
+                        CuriousNode* selected_node = curious_q.front();
                         curious_q.pop();
                         curious_lb_q.push(selected_node);
                     }
                     num_iter = bbound_queue<CuriousNode,
-                                 CuriousQueue,
                                  PrefixPermutationMap>(tree,
                                                        max_num_nodes,
                                                        &curious_construct_policy,
                                                        &curious_lb_q,
-                                                       &curious_queue_front,
                                                        &prefix_permutation_insert,
                                                        &prefix_map_garbage_collect,
                                                        p, num_iter, 0);
@@ -338,15 +328,13 @@ int main(int argc, char *argv[]) {
             } else if (use_captured_sym_map) {
                 printf("CURIOSITY Captured Symmetry Map\n");
                 CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
-                CuriousQueue curious_q(curious_cmp);
+                CuriousQueue<CuriousNode> curious_q;
                 CapturedPermutationMap p;
                 bbound_queue<CuriousNode,
-                             CuriousQueue,
                              CapturedPermutationMap>(&tree,
                                                      max_num_nodes,
                                                      &curious_construct_policy,
                                                      &curious_q,
-                                                     &curious_queue_front,
                                                      &captured_permutation_insert,
                                                      &captured_map_garbage_collect,
                                                      &p, 0, 0);
@@ -362,14 +350,12 @@ int main(int argc, char *argv[]) {
             else {
                 printf("CURIOSITY No Permutation Map\n");
                 CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
-                CuriousQueue curious_q(curious_cmp);
+                CuriousQueue<CuriousNode> curious_q;
                 bbound_queue<CuriousNode,
-                             CuriousQueue,
                              CapturedPermutationMap>(&tree,
                                                      max_num_nodes,
                                                      &curious_construct_policy,
                                                      &curious_q,
-                                                     &curious_queue_front,
                                                      &captured_permutation_insert,
                                                      &captured_map_garbage_collect,
                                                      NULL, 0, 0);
@@ -386,15 +372,13 @@ int main(int argc, char *argv[]) {
             if (use_prefix_perm_map) {
                 printf("CURIOUS LOWER BOUND Prefix Permutation Map\n");
                 CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
-                CuriousQueue curious_q(lower_bound_cmp);
+                LowerBoundQueue<CuriousNode> curious_q;
                 PrefixPermutationMap p;
                 bbound_queue<CuriousNode,
-                             CuriousQueue,
                              PrefixPermutationMap>(&tree,
                                                    max_num_nodes,
                                                    &curious_construct_policy,
                                                    &curious_q,
-                                                   &curious_queue_front,
                                                    &prefix_permutation_insert,
                                                    &prefix_map_garbage_collect,
                                                    &p, 0, 0);
@@ -409,15 +393,13 @@ int main(int argc, char *argv[]) {
             } else if (use_captured_sym_map) {
                 printf("CURIOUS LOWER BOUND Captured Symmetry Map\n");
                 CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
-                CuriousQueue curious_q(lower_bound_cmp);
+                LowerBoundQueue<CuriousNode> curious_q;
                 CapturedPermutationMap p;
                 bbound_queue<CuriousNode,
-                             CuriousQueue,
                              CapturedPermutationMap>(&tree,
                                                      max_num_nodes,
                                                      &curious_construct_policy,
                                                      &curious_q,
-                                                     &curious_queue_front,
                                                      &captured_permutation_insert,
                                                      &captured_map_garbage_collect,
                                                      &p, 0, 0);
@@ -432,14 +414,12 @@ int main(int argc, char *argv[]) {
             } else {
                 printf("CURIOUS LOWER BOUND No Permutation Map\n");
                 CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
-                CuriousQueue curious_q(lower_bound_cmp);
+                LowerBoundQueue<CuriousNode> curious_q;
                 bbound_queue<CuriousNode,
-                             CuriousQueue,
                              CapturedPermutationMap>(&tree,
                                                      max_num_nodes,
                                                      &curious_construct_policy,
                                                      &curious_q,
-                                                     &curious_queue_front,
                                                      &captured_permutation_insert,
                                                      &captured_map_garbage_collect,
                                                      NULL, 0, 0);
@@ -456,15 +436,13 @@ int main(int argc, char *argv[]) {
             if (use_prefix_perm_map) {
                 printf("CURIOUS OBJECTIVE Prefix Permutation Map\n");
                 CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
-                CuriousQueue curious_q(objective_cmp);
+                ObjectiveQueue<CuriousNode> curious_q;
                 PrefixPermutationMap p;
                 bbound_queue<CuriousNode,
-                             CuriousQueue,
                              PrefixPermutationMap>(&tree,
                                                    max_num_nodes,
                                                    &curious_construct_policy,
                                                    &curious_q,
-                                                   &curious_queue_front,
                                                    &prefix_permutation_insert,
                                                    &prefix_map_garbage_collect,
                                                    &p, 0, 0);
@@ -479,15 +457,13 @@ int main(int argc, char *argv[]) {
             } else if (use_captured_sym_map) {
                 printf("CURIOUS OBJECTIVE Captured Symmetry Map\n");
                 CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
-                CuriousQueue curious_q(objective_cmp);
+                ObjectiveQueue<CuriousNode> curious_q;
                 CapturedPermutationMap p;
                 bbound_queue<CuriousNode,
-                             CuriousQueue,
                              CapturedPermutationMap>(&tree,
                                                      max_num_nodes,
                                                      &curious_construct_policy,
                                                      &curious_q,
-                                                     &curious_queue_front,
                                                      &captured_permutation_insert,
                                                      &captured_map_garbage_collect,
                                                      &p, 0, 0);
@@ -502,14 +478,12 @@ int main(int argc, char *argv[]) {
             } else {
                 printf("CURIOUS OBJECTIVE No Permutation Map\n");
                 CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
-                CuriousQueue curious_q(objective_cmp);
+                ObjectiveQueue<CuriousNode> curious_q;
                 bbound_queue<CuriousNode,
-                             CuriousQueue,
                              CapturedPermutationMap>(&tree,
                                                      max_num_nodes,
                                                      &curious_construct_policy,
                                                      &curious_q,
-                                                     &curious_queue_front,
                                                      &captured_permutation_insert,
                                                      &captured_map_garbage_collect,
                                                      NULL, 0, 0);
@@ -526,15 +500,13 @@ int main(int argc, char *argv[]) {
             if (use_prefix_perm_map) {
                 printf("DFS Prefix Permutation Map\n");
                 CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
-                CuriousQueue curious_q(depth_first_cmp);
+                DFSQueue<CuriousNode> curious_q;
                 PrefixPermutationMap p;
                 bbound_queue<CuriousNode,
-                             CuriousQueue,
                              PrefixPermutationMap>(&tree,
                                                    max_num_nodes,
                                                    &curious_construct_policy,
                                                    &curious_q,
-                                                   &curious_queue_front,
                                                    &prefix_permutation_insert,
                                                    &prefix_map_garbage_collect,
                                                    &p, 0, 0);
@@ -549,15 +521,13 @@ int main(int argc, char *argv[]) {
             } else if (use_captured_sym_map) {
                 printf("DFS Captured Symmetry Map\n");
                 CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
-                CuriousQueue curious_q(depth_first_cmp);
+                DFSQueue<CuriousNode> curious_q;
                 CapturedPermutationMap p;
                 bbound_queue<CuriousNode,
-                             CuriousQueue,
                              CapturedPermutationMap>(&tree,
                                                      max_num_nodes,
                                                      &curious_construct_policy,
                                                      &curious_q,
-                                                     &curious_queue_front,
                                                      &captured_permutation_insert,
                                                      &captured_map_garbage_collect,
                                                      &p, 0, 0);
@@ -572,14 +542,12 @@ int main(int argc, char *argv[]) {
             } else {
                 printf("DFS No Permutation Map\n");
                 CacheTree<CuriousNode> tree(nsamples, nrules, c, rules, labels, meta);
-                CuriousQueue curious_q(depth_first_cmp);
+                DFSQueue<CuriousNode> curious_q;
                 bbound_queue<CuriousNode,
-                             CuriousQueue,
                              CapturedPermutationMap>(&tree,
                                                      max_num_nodes,
                                                      &curious_construct_policy,
                                                      &curious_q,
-                                                     &curious_queue_front,
                                                      &captured_permutation_insert,
                                                      &captured_map_garbage_collect,
                                                      NULL, 0, 0);

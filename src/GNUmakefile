@@ -1,4 +1,4 @@
-CFLAGS := -g -W -Wall -O$(O) -I. -DGMP
+CFLAGS := -g -W -Wall -I. -DGMP -O$(O)
 
 ifneq (,$(filter $(shell uname -n),elaines-MacBook-Pro.local Nicholass-MacBook-Air-5.local))
     LIBS := -L/usr/local/lib
@@ -32,16 +32,13 @@ CLEAN = bbcache *~ *.o *.so
 
 all: bbcache
 
-bbcache: main.o queue.o pmap.o cache.o rulelib.o utils.o
+bbcache: main.o queue.o cache.o rulelib.o utils.o
 	$(CXX) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(LIBS)
 
 main.o: main.cc $(DEPSDIR)/stamp
 	$(CXX) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@
 
 queue.o: queue.cc $(DEPSDIR)/stamp
-	$(CXX) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@
-
-pmap.o: pmap.cc $(DEPSDIR)/stamp
 	$(CXX) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@
 
 utils.o: utils.cc $(DEPSDIR)/stamp

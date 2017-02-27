@@ -42,10 +42,10 @@ CuriousNode* curious_construct_policy(unsigned short new_rule, size_t nrules, bo
  * permutation_insert -- function pointer to how to insert into the permutation map.
  * p -- the permutation map
  */
-template<class N, class P>
+template<class N>
 void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured,
                        construct_signature<N> construct_policy, Queue<N>* q,
-                       permutation_insert_signature<N, P> permutation_insert, P* p) {
+                       PermutationMap<N>* p) {
     auto pp_pair = parent->get_prefix_and_predictions();
     std::vector<unsigned short> parent_prefix = std::move(pp_pair.first);
     std::vector<bool> parent_predictions = std::move(pp_pair.second);
@@ -139,9 +139,9 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
             // check permutation bound
             if (p) {
                 double t3 = timestamp();
-                n = permutation_insert(construct_policy, i, nrules, prediction, default_prediction,
+                n = p->insert(construct_policy, i, nrules, prediction, default_prediction,
                                        lower_bound, objective, parent, num_not_captured, nsamples,
-                                       len_prefix, c, minority, tree, not_captured, parent_prefix, p);
+                                       len_prefix, c, minority, tree, not_captured, parent_prefix);
                 logger.addToPermMapInsertionTime(time_diff(t3));
                 logger.incPermMapInsertionNum();
             }
@@ -216,12 +216,10 @@ N* stochastic_select(CacheTree<N>* tree, VECTOR not_captured) {
 /*
  * Uses a stochastic search process to explore the search space.
  */
-template<class N, class P>
+template<class N>
 void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes,
                        construct_signature<N> construct_policy,
-                       permutation_insert_signature<N, P> permutation_insert,
-                       pmap_garbage_collect_signature<P> pmap_garbage_collect,
-                       P* p) {
+                       PermutationMap<N>* p) {
     double start = timestamp();
     logger.setInitialTime(start);
     // initial log record
@@ -248,9 +246,9 @@ void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes,
         if (node_ordered) {
             double t1 = timestamp();
             min_objective = tree->min_objective();
-            evaluate_children<N, P>(tree, node_ordered, not_captured,
+            evaluate_children<N>(tree, node_ordered, not_captured,
                                                   construct_policy,
-                                                  q, permutation_insert, p);
+                                                  q, p);
             logger.addToEvalChildrenTime(time_diff(t1));
             logger.incEvalChildrenNum();
 
@@ -321,14 +319,12 @@ N* queue_select(CacheTree<N>* tree, Queue<N>* q, VECTOR captured) {
  * Explores the search space by using a queue to order the search process.
  * The queue can be ordered by DFS, BFS, or an alternative priority metric (e.g. lower bound).
  */
-template<class N, class P>
+template<class N>
 int bbound_queue(CacheTree<N>* tree,
                 size_t max_num_nodes,
                 construct_signature<N> construct_policy,
-                Queue<N>* q,
-                permutation_insert_signature<N, P> permutation_insert,
-                pmap_garbage_collect_signature<P> pmap_garbage_collect,
-                P* p, size_t num_iter, size_t switch_iter) {
+                Queue<N>* q, PermutationMap<N>* p,
+                size_t num_iter, size_t switch_iter) {
     bool print_queue = 0;
     double start;
     int cnt;
@@ -374,9 +370,8 @@ int bbound_queue(CacheTree<N>* tree,
             rule_vandnot(not_captured,
                          tree->rule(tree->root()->id()).truthtable, captured,
                          tree->nsamples(), &cnt);
-            evaluate_children<N, P>(tree, node_ordered, not_captured,
-                                       construct_policy, q,
-                                       permutation_insert, p);
+            evaluate_children<N>(tree, node_ordered, not_captured,
+                                   construct_policy, q, p);
             logger.addToEvalChildrenTime(time_diff(t1));
             logger.incEvalChildrenNum();
 
@@ -394,7 +389,7 @@ int bbound_queue(CacheTree<N>* tree,
         if (queue_min_length < logger.getQueueMinLen()) {
             // garbage collect the permutation map: can be simplified for the case of BFS
             queue_min_length = logger.getQueueMinLen();
-            pmap_garbage_collect(p, queue_min_length);
+            //pmap_garbage_collect(p, queue_min_length);
         }
         ++num_iter;
         if ((num_iter % 10000) == 0) {
@@ -479,50 +474,29 @@ int bbound_queue(CacheTree<N>* tree,
 }
 
 template void
-evaluate_children<BaseNode, PrefixPermutationMap>(CacheTree<BaseNode>* tree,
-                                                  BaseNode* parent,
-                                                  VECTOR parent_not_captured,
-                                                  construct_signature<BaseNode> construct_policy,
-                                                  Queue<BaseNode>* q, 
-                                                  permutation_insert_signature<BaseNode, PrefixPermutationMap> permutation_insert,
-                                                  PrefixPermutationMap* p);
+evaluate_children<BaseNode>(CacheTree<BaseNode>* tree,
+                              BaseNode* parent,
+                              VECTOR parent_not_captured,
+                              construct_signature<BaseNode> construct_policy,
+                              Queue<BaseNode>* q, 
+                              PermutationMap<BaseNode>* p);
 
 template void
-evaluate_children<BaseNode, CapturedPermutationMap>(CacheTree<BaseNode>* tree,
-                                       BaseNode* parent,
-                                       VECTOR parent_not_captured,
-                                       construct_signature<BaseNode> construct_policy,
-                                       Queue<BaseNode>* q,
-                                       permutation_insert_signature<BaseNode, CapturedPermutationMap> permutation_insert,
-                                       CapturedPermutationMap* p);
-
-template void
-evaluate_children<CuriousNode, PrefixPermutationMap>(CacheTree<CuriousNode>* tree,
+evaluate_children<CuriousNode>(CacheTree<CuriousNode>* tree,
                                              CuriousNode* parent,
                                              VECTOR parent_not_captured,
                                              construct_signature<CuriousNode> construct_policy,
                                              Queue<CuriousNode>* q,
-                                             permutation_insert_signature<CuriousNode, PrefixPermutationMap> permutation_insert,
-                                             PrefixPermutationMap* p);
+                                             PermutationMap<CuriousNode>* p);
 
 template BaseNode*
 stochastic_select<BaseNode>(CacheTree<BaseNode>* tree, VECTOR not_captured); 
 
 template void
-bbound_stochastic<BaseNode, PrefixPermutationMap>(CacheTree<BaseNode>* tree,
+bbound_stochastic<BaseNode>(CacheTree<BaseNode>* tree,
                                                   size_t max_num_nodes,
                                                   construct_signature<BaseNode> construct_policy,
-                                                  permutation_insert_signature<BaseNode, PrefixPermutationMap> permutation_insert,
-                                                  pmap_garbage_collect_signature<PrefixPermutationMap> pmap_garbage_collect,
-                                                  PrefixPermutationMap* p);
-
-template void
-bbound_stochastic<BaseNode, CapturedPermutationMap>(CacheTree<BaseNode>* tree,
-                                                    size_t max_num_nodes,
-                                                    construct_signature<BaseNode> construct_policy,
-                                                    permutation_insert_signature<BaseNode, CapturedPermutationMap> permutation_insert,
-                                                    pmap_garbage_collect_signature<CapturedPermutationMap> pmap_garbage_collect,
-                                                    CapturedPermutationMap* p);
+                                                  PermutationMap<BaseNode>* p);
 
 template BaseNode*
 queue_select<BaseNode>(CacheTree<BaseNode>* tree,
@@ -535,37 +509,15 @@ queue_select<CuriousNode>(CacheTree<CuriousNode>* tree,
                                     VECTOR captured);
 
 template int
-bbound_queue<BaseNode, PrefixPermutationMap>(CacheTree<BaseNode>* tree,
+bbound_queue<BaseNode>(CacheTree<BaseNode>* tree,
                                   size_t max_num_nodes,
                                   construct_signature<BaseNode> construct_policy,
                                   Queue<BaseNode>* q,
-                                  permutation_insert_signature<BaseNode, PrefixPermutationMap> permutation_insert,
-                                  pmap_garbage_collect_signature<PrefixPermutationMap> pmap_garbage_collect,
-                                  PrefixPermutationMap* p, size_t num_iter, size_t switch_iter);
+                                  PermutationMap<BaseNode>* p, size_t num_iter, size_t switch_iter);
 
 template int
-bbound_queue<BaseNode, CapturedPermutationMap>(CacheTree<BaseNode>* tree,
-                                  size_t max_num_nodes,
-                                  construct_signature<BaseNode> construct_policy,
-                                  Queue<BaseNode>* q,
-                                  permutation_insert_signature<BaseNode, CapturedPermutationMap> permutation_insert,
-                                  pmap_garbage_collect_signature<CapturedPermutationMap> pmap_garbage_collect,
-                                  CapturedPermutationMap* p, size_t num_iter, size_t switch_iter);
-
-template int
-bbound_queue<CuriousNode, PrefixPermutationMap>(CacheTree<CuriousNode>* tree,
+bbound_queue<CuriousNode>(CacheTree<CuriousNode>* tree,
                                         size_t max_num_nodes,
                                         construct_signature<CuriousNode> construct_policy,
                                         Queue<CuriousNode>* q,
-                                        permutation_insert_signature<CuriousNode, PrefixPermutationMap> permutation_insert,
-                                        pmap_garbage_collect_signature<PrefixPermutationMap> pmap_garbage_collect,
-                                        PrefixPermutationMap* p, size_t num_iter, size_t switch_iter);
-
-template int
-bbound_queue<CuriousNode, CapturedPermutationMap>(CacheTree<CuriousNode>* tree,
-                                        size_t max_num_nodes,
-                                        construct_signature<CuriousNode> construct_policy,
-                                        Queue<CuriousNode>* q,
-                                        permutation_insert_signature<CuriousNode, CapturedPermutationMap> permutation_insert,
-                                        pmap_garbage_collect_signature<CapturedPermutationMap> pmap_garbage_collect,
-                                        CapturedPermutationMap* p, size_t num_iter, size_t switch_iter);
+                                        PermutationMap<CuriousNode>* p, size_t num_iter, size_t switch_iter);

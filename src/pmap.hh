@@ -81,38 +81,38 @@ using permutation_insert_signature = N* (*)(construct_signature<N>, unsigned sho
                                             std::vector<unsigned short>, PermutationMap*);
                                             */
 
-template<class N>
 class PermutationMap {
     public:
         virtual size_t size() {
             return 0;
         }
-        virtual N* insert (construct_signature<N> construct_policy, unsigned short new_rule,
+        virtual Node* insert (unsigned short new_rule,
                              size_t nrules, bool prediction, bool default_prediction, double lower_bound,
-                             double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
-                             double c, double minority, CacheTree<N>* tree, VECTOR not_captured,
+                             double objective, Node* parent, int num_not_captured, int nsamples, int len_prefix,
+                             double c, double minority, CacheTree* tree, VECTOR not_captured,
                              std::vector<unsigned short> parent_prefix)
         {
-            return construct_policy(new_rule, nrules, prediction,
+            (void) not_captured, (void) parent_prefix;
+            return tree->construct_node(new_rule, nrules, prediction,
                                     default_prediction, lower_bound, objective,
                                     parent, num_not_captured, nsamples,
                                     len_prefix, c, minority);
         }
 };
 
-template<class N>
-class PrefixPermutationMap : public PermutationMap<N> {
+class PrefixPermutationMap : public PermutationMap {
 	public:
         PrefixPermutationMap ();
-        size_t size() {
+        size_t size() override {
             return pmap->size();
         }
-        N* insert (construct_signature<N> construct_policy, unsigned short new_rule,
+        Node* insert (unsigned short new_rule,
 					 size_t nrules, bool prediction, bool default_prediction, double lower_bound,
-					 double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
-					 double c, double minority, CacheTree<N>* tree, VECTOR not_captured,
+					 double objective, Node* parent, int num_not_captured, int nsamples, int len_prefix,
+					 double c, double minority, CacheTree* tree, VECTOR not_captured,
 					 std::vector<unsigned short> parent_prefix) override
 		{
+            (void) not_captured;
             parent_prefix.push_back(new_rule);
 
             unsigned char* ordered = (unsigned char*) malloc(sizeof(unsigned char) * (len_prefix + 1));
@@ -127,33 +127,33 @@ class PrefixPermutationMap : public PermutationMap<N> {
             memcpy(&pre_key[1], &parent_prefix[0], len_prefix * sizeof(unsigned short));
             
             prefix_key key = { pre_key };
-            N* child = NULL;
+            Node* child = NULL;
             auto iter = pmap->find(key);
             if (iter != pmap->end()) {
                 double permuted_lower_bound = iter->second.first;
                 if (lower_bound < permuted_lower_bound) {
-                    N* permuted_node;
+                    Node* permuted_node;
                     unsigned char* indices = iter->second.second;
                     std::vector<unsigned short> permuted_prefix(parent_prefix.size());
                     for (unsigned char i = 0; i < indices[0]; ++i)
                         permuted_prefix[i] = parent_prefix[indices[i + 1]];
 
                     if ((permuted_node = tree->check_prefix(permuted_prefix)) != NULL) {
-                        N* permuted_parent = permuted_node->parent();
+                        Node* permuted_parent = permuted_node->parent();
                         permuted_parent->delete_child(permuted_node->id());
-                        delete_subtree<N>(tree, permuted_node, false, true);
+                        delete_subtree(tree, permuted_node, false, true);
                         logger.incPmapDiscardNum();
                     } else {
                         logger.incPmapNullNum();
                     }
-                    child = construct_policy(new_rule, nrules, prediction,
+                    child = tree->construct_node(new_rule, nrules, prediction,
                                              default_prediction, lower_bound, objective,
                                              parent, num_not_captured, nsamples,
                                              len_prefix, c, minority);
                     iter->second = std::make_pair(lower_bound, ordered);
                 }
             } else {
-                child = construct_policy(new_rule, nrules, prediction,
+                child = tree->construct_node(new_rule, nrules, prediction,
                                          default_prediction, lower_bound, objective,
                                          parent, num_not_captured, nsamples, len_prefix,
                                          c, minority);
@@ -166,25 +166,23 @@ class PrefixPermutationMap : public PermutationMap<N> {
 	private:
 		std::unordered_map<prefix_key, std::pair<double, unsigned char*>, prefix_hash>* pmap;
 };
-template<class N>
-PrefixPermutationMap<N>::PrefixPermutationMap()
+PrefixPermutationMap::PrefixPermutationMap()
     : pmap(new std::unordered_map<prefix_key, std::pair<double, unsigned char*>, prefix_hash>) {}
 
-template<class N>
-class CapturedPermutationMap : public PermutationMap<N> {
+class CapturedPermutationMap : public PermutationMap {
 	public:
         CapturedPermutationMap();
         size_t size() override {
             return cmap->size();
         }
-        N* insert(construct_signature<N> construct_policy, unsigned short new_rule,
+        Node* insert(unsigned short new_rule,
 					 size_t nrules, bool prediction, bool default_prediction, double lower_bound,
-					 double objective, N* parent, int num_not_captured, int nsamples, int len_prefix,
-					 double c, double minority, CacheTree<N>* tree, VECTOR not_captured,
-					 std::vector<unsigned short> parent_prefix)
+					 double objective, Node* parent, int num_not_captured, int nsamples, int len_prefix,
+					 double c, double minority, CacheTree* tree, VECTOR not_captured,
+					 std::vector<unsigned short> parent_prefix) override
 		{
             parent_prefix.push_back(new_rule);
-            N* child = NULL;
+            Node* child = NULL;
             captured_key key;
             rule_vinit(nsamples, &key.key);
             rule_copy(key.key, not_captured, nsamples);
@@ -196,22 +194,22 @@ class CapturedPermutationMap : public PermutationMap<N> {
                 std::vector<unsigned short> permuted_prefix = iter->second.first;
                 double permuted_lower_bound = iter->second.second;
                 if (lower_bound < permuted_lower_bound) {
-                    N* permuted_node;
+                    Node* permuted_node;
                     if ((permuted_node = tree->check_prefix(permuted_prefix)) != NULL) {
-                        N* permuted_parent = permuted_node->parent();
+                        Node* permuted_parent = permuted_node->parent();
                         permuted_parent->delete_child(permuted_node->id());
-                        delete_subtree<N>(tree, permuted_node, false, true);
+                        delete_subtree(tree, permuted_node, false, true);
                         logger.incPmapDiscardNum();
                     } else {
                         logger.incPmapNullNum();
                     }
-                    child = construct_policy(new_rule, nrules, prediction, default_prediction,
+                    child = tree->construct_node(new_rule, nrules, prediction, default_prediction,
                                                lower_bound, objective, parent,
                                                 num_not_captured, nsamples, len_prefix, c, minority);
                     iter->second = std::make_pair(parent_prefix, lower_bound);
                 }
             } else {
-                child = construct_policy(new_rule, nrules, prediction, default_prediction,
+                child = tree->construct_node(new_rule, nrules, prediction, default_prediction,
                                             lower_bound, objective, parent,
                                             num_not_captured, nsamples, len_prefix, c, minority);
                 cmap->insert(std::make_pair(key, std::make_pair(parent_prefix, lower_bound)));
@@ -223,13 +221,11 @@ class CapturedPermutationMap : public PermutationMap<N> {
 	private:
 		std::unordered_map<captured_key, std::pair<std::vector<unsigned short>, double>, captured_hash>* cmap;
 };
-template<class N>
-CapturedPermutationMap<N>::CapturedPermutationMap()
+CapturedPermutationMap::CapturedPermutationMap()
     : cmap(new std::unordered_map<captured_key, std::pair<std::vector<unsigned short>, double>, captured_hash>) {}
 
 
-template<class N>
-class NullPermutationMap : public PermutationMap<N>  {
+class NullPermutationMap : public PermutationMap  {
     public:
         size_t size() {return 0;}
 };

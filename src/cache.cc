@@ -4,26 +4,34 @@
 #include <vector>
 #include <stdlib.h>
 
-template<class T>
-Node<T>::Node(size_t nrules, bool default_prediction, double objective, double minority)
+Node::Node(size_t nrules, bool default_prediction, double objective, double minority)
     : lower_bound_(minority), objective_(objective), minority_(minority), depth_(0),
       num_captured_(0), id_(0), default_prediction_(default_prediction),
-      done_(0), deleted_(0), storage_(0) {
+      done_(0), deleted_(0) {
+          (void) nrules;
 }
 
-template<class T>
-Node<T>::Node(unsigned short id, size_t nrules, bool prediction,
+Node::Node(unsigned short id, size_t nrules, bool prediction,
               bool default_prediction, double lower_bound, double objective,
-              T storage, Node<T>* parent, size_t num_captured, double minority)
+              Node* parent, size_t num_captured, double minority)
     : parent_(parent), lower_bound_(lower_bound), objective_(objective),
       minority_(minority), depth_(1 + parent->depth_),
       num_captured_(num_captured), id_(id), prediction_(prediction),
-      default_prediction_(default_prediction), done_(0), deleted_(0),
-      storage_(storage) {
+      default_prediction_(default_prediction), done_(0), deleted_(0) {
+          (void) nrules;
 }
 
-template<class N>
-CacheTree<N>::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules,
+/*CuriousNode::CuriousNode(unsigned short id, size_t nrules, bool prediction,
+              bool default_prediction, double lower_bound, double objective,
+              double storage, CuriousNode* parent, size_t num_captured, double minority)
+    : parent_(parent), lower_bound_(lower_bound), objective_(objective),
+      minority_(minority), depth_(1 + parent->depth()),
+      num_captured_(num_captured), id_(id), prediction_(prediction),
+      default_prediction_(default_prediction), done_(0), deleted_(0),
+      storage_(storage) {
+}*/
+
+CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules,
                         rule_t *labels, rule_t *meta)
     : root_(0), nsamples_(nsamples), nrules_(nrules), c_(c),
       num_nodes_(0), num_evaluated_(0), min_objective_(0.5),
@@ -50,17 +58,36 @@ CacheTree<N>::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules,
     logger.setTreeNumEvaluated(num_evaluated_);
 }
 
-template<class N>
-CacheTree<N>::~CacheTree() {
+CacheTree::~CacheTree() {
     if (root_)
-        delete_subtree<N>(this, root_, true, false);
+        delete_subtree(this, root_, true, false);
 }
+
+Node* CacheTree::construct_node(unsigned short new_rule, size_t nrules, bool prediction,
+           bool default_prediction, double lower_bound, double objective,
+           Node* parent, int num_not_captured, int nsamples,
+           int len_prefix, double c, double minority) {
+    (void) len_prefix, (void) c;
+    size_t num_captured = nsamples - num_not_captured;
+    return (new Node(new_rule, nrules, prediction, default_prediction,
+                         lower_bound, objective, parent, num_captured, minority));
+}
+
+CuriousNode* CuriousCacheTree::construct_node(unsigned short new_rule, size_t nrules, bool prediction,
+                         bool default_prediction, double lower_bound, double objective, 
+                         CuriousNode* parent, int num_not_captured, int nsamples,
+                         int len_prefix, double c, double minority) {
+    size_t num_captured = nsamples - num_not_captured;
+    double curiosity = (lower_bound - c * len_prefix + c) * nsamples / (double)(num_captured);
+    return (new CuriousNode(new_rule, nrules, prediction, default_prediction,
+                            lower_bound, objective, curiosity, parent, num_captured, minority));
+}
+
 
 /*
  * Inserts the root of the tree, setting up the default rules.
  */
-template<class N>
-void CacheTree<N>::insert_root() {
+void CacheTree::insert_root() {
     VECTOR tmp_vec;
     size_t d0, d1;
     bool default_prediction;
@@ -78,7 +105,7 @@ void CacheTree<N>::insert_root() {
     double minority = 0.;
     if (meta_.size() > 0)
         minority = (float) count_ones_vector(meta_[0].truthtable, nsamples_) / nsamples_;
-    root_ = new N(nrules_, default_prediction, objective, minority);
+    root_ = new Node(nrules_, default_prediction, objective, minority);
     min_objective_ = objective;
     logger.setTreeMinObj(objective);
     ++num_nodes_;
@@ -90,8 +117,7 @@ void CacheTree<N>::insert_root() {
 /*
  * Insert a node into the tree.
  */
-template<class N>
-void CacheTree<N>::insert(N* node) {
+void CacheTree::insert(Node* node) {
     node->parent()->children_.insert(std::make_pair(node->id(), node));
     ++num_nodes_;
     logger.setTreeNumNodes(num_nodes_);
@@ -100,11 +126,10 @@ void CacheTree<N>::insert(N* node) {
 /*
  * Removes nodes with no children, recursively traversing tree towards the root.
  */
-template<class N>
-void CacheTree<N>::prune_up(N* node) {
+void CacheTree::prune_up(Node* node) {
     unsigned short id;
     size_t depth = node->depth();
-    N* parent;
+    Node* parent;
     while (node->children_.size() == 0) {
         if (depth > 0) {
             id = node->id();
@@ -126,9 +151,8 @@ void CacheTree<N>::prune_up(N* node) {
  * Checks that the prefix is in the tree and hasn't been deleted.
  * Returns NULL if the prefix isn't in the tree, a pointer to the prefix node otherwise.
  */
-template<class N>
-N* CacheTree<N>::check_prefix(std::vector<unsigned short>& prefix) {
-    N* node = this->root_;
+Node* CacheTree::check_prefix(std::vector<unsigned short>& prefix) {
+    Node* node = this->root_;
     for(std::vector<unsigned short>::iterator it = prefix.begin(); it != prefix.end(); ++it) {
         node = node->child(*it);
         if (node == NULL)
@@ -141,20 +165,19 @@ N* CacheTree<N>::check_prefix(std::vector<unsigned short>& prefix) {
  * Recursive helper function to traverse down the tree, deleting nodes with a lower bound greater 
  * than the minimum objective.
  */
-template<class N>
-void CacheTree<N>::gc_helper(N* node) {
+void CacheTree::gc_helper(Node* node) {
     if (!node->done())
         logger.addQueueElement(node->depth(), node->lower_bound());
-    N* child;
-    std::vector<N*> children;
-    for (typename std::map<unsigned short, N*>::iterator cit = node->children_.begin(); 
+    Node* child;
+    std::vector<Node*> children;
+    for (typename std::map<unsigned short, Node*>::iterator cit = node->children_.begin(); 
             cit != node->children_.end(); ++cit)
         children.push_back(cit->second);
-    for (typename std::vector<N*>::iterator cit = children.begin(); cit != children.end(); ++cit) {
+    for (typename std::vector<Node*>::iterator cit = children.begin(); cit != children.end(); ++cit) {
         child = *cit;
         if ((child->lower_bound() + c_) >= min_objective_) {
             node->delete_child(child->id());
-            delete_subtree<N>(this, child, false, false);
+            delete_subtree(this, child, false, false);
         } else
             gc_helper(child);
     }
@@ -163,63 +186,9 @@ void CacheTree<N>::gc_helper(N* node) {
 /*
  * Public wrapper function to garbage collect the entire tree beginning from the root.
  */
-template<class N>
-void CacheTree<N>::garbage_collect() {
+void CacheTree::garbage_collect() {
     logger.clearRemainingSpaceSize();
     gc_helper(root_);
-}
-
-/*
- * Update the minimum objective of the tree.
- */
-template<class N>
-inline void CacheTree<N>::update_min_objective(double objective) {
-    min_objective_ = objective;
-    logger.setTreeMinObj(objective);
-}
-
-/*
- * Update the optimal rulelist of the tree.
- */
-template<class N>
-inline void
-CacheTree<N>::update_opt_rulelist(std::vector<unsigned short>& parent_prefix,
-                                  unsigned short new_rule_id) {
-    opt_rulelist_.assign(parent_prefix.begin(), parent_prefix.end());
-    opt_rulelist_.push_back(new_rule_id);
-    logger.setTreePrefixLen(opt_rulelist_.size());
-}
-
-/*
- * Update the optimal rulelist predictions of the tree.
- */
-template<class N>
-inline void
-CacheTree<N>::update_opt_predictions(std::vector<bool>& parent_predictions,
-                                     bool new_pred,
-                                     bool new_default_pred) {
-    opt_predictions_.assign(parent_predictions.begin(), parent_predictions.end());
-    opt_predictions_.push_back(new_pred);
-    opt_predictions_.push_back(new_default_pred);
-}
-
-/*
- * Increment number of nodes evaluated after performing incremental computation 
- * in evaluate_children.
- */
-template<class N>
-inline void CacheTree<N>::increment_num_evaluated() {
-    ++num_evaluated_;
-    logger.setTreeNumEvaluated(num_evaluated_);
-}
-
-/*
- * Called whenever a node is deleted from the tree.
- */
-template<class N>
-inline void CacheTree<N>::decrement_num_nodes() {
-    --num_nodes_;
-    logger.setTreeNumNodes(num_nodes_);
 }
 
 /*
@@ -228,17 +197,16 @@ inline void CacheTree<N>::decrement_num_nodes() {
  * destructive -- booelan flag indicating whether to delete node or just lazily mark it.
  * update_remaining_state_space -- affects whether we remove the deleted elements from the queue.
  */
-template<class N>
-void delete_subtree(CacheTree<N>* tree, N* node, bool destructive, 
+void delete_subtree(CacheTree* tree, Node* node, bool destructive, 
         bool update_remaining_state_space) {
-    N* child;
-    typename std::map<unsigned short, N*>::iterator iter;
+    Node* child;
+    typename std::map<unsigned short, Node*>::iterator iter;
 
     if (node->done()) {
         iter = node->children_begin();
         while (iter != node->children_end()) {
             child = iter->second;
-            delete_subtree<N>(tree, child, destructive, update_remaining_state_space);
+            delete_subtree(tree, child, destructive, update_remaining_state_space);
             ++iter;
         }
         tree->decrement_num_nodes(); // always delete interior (non-leaf) nodes
@@ -256,6 +224,7 @@ void delete_subtree(CacheTree<N>* tree, N* node, bool destructive,
     }
 }
 
+/*
 // BaseNode
 template class Node<bool>;
 
@@ -271,3 +240,4 @@ delete_subtree<BaseNode>(CacheTree<BaseNode>* tree, BaseNode* n, bool destructiv
 
 template void
 delete_subtree<CuriousNode>(CacheTree<CuriousNode>* tree, CuriousNode* n, bool destructive, bool update_remaining_state_space);
+*/

@@ -1,4 +1,5 @@
 #include "queue.hh"
+#include "pmap.hh"
 #include <algorithm>
 
 extern int ablation;
@@ -31,6 +32,26 @@ BaseNode* base_construct_policy(unsigned short new_rule, size_t nrules, bool pre
     return (new CuriousNode(new_rule, nrules, prediction, default_prediction,
                             lower_bound, objective, curiosity, parent, num_captured, minority));
 }*/
+
+BaseQueue::BaseQueue(std::function<bool(Node*, Node*)> cmp)
+    : q_(new std::priority_queue<Node*, std::vector<Node*>, 
+            std::function<bool(Node*, Node*)> > (cmp)) {}
+
+CuriousQueue::CuriousQueue()
+    : q_(new std::priority_queue<Node*, std::vector<Node*>, 
+            std::function<bool(Node*, Node*)> > (curious)) {}
+
+LowerBoundQueue::LowerBoundQueue()
+    : q_(new std::priority_queue<Node*, std::vector<Node*>, 
+            std::function<bool(Node*, Node*)> > (lb)) {}
+
+ObjectiveQueue::ObjectiveQueue()
+    : q_(new std::priority_queue<Node*, std::vector<Node*>, 
+            std::function<bool(Node*, Node*)> > (objective)) {}
+
+DFSQueue::DFSQueue()
+    : q_(new std::priority_queue<Node*, std::vector<Node*>, 
+            std::function<bool(Node*, Node*)> > (dfs)) {}
 
 /*
  * Performs incremental computation on a node, evaluating the bounds and inserting into the cache,
@@ -312,7 +333,7 @@ Node* queue_select(CacheTree* tree, BaseQueue* q, VECTOR captured) {
  * Explores the search space by using a queue to order the search process.
  * The queue can be ordered by DFS, BFS, or an alternative priority metric (e.g. lower bound).
  */
-int bbound_queue(CacheTree* tree, size_t max_num_nodes, BaseQueue* q,
+int bbound_queue(CuriousCacheTree* tree, size_t max_num_nodes, BaseQueue* q,
                  PermutationMap* p, size_t num_iter, size_t switch_iter) {
     bool print_queue = 0;
     double start;

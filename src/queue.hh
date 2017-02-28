@@ -1,4 +1,5 @@
 #pragma once
+
 #include "pmap.hh"
 #include <functional>
 #include <queue>
@@ -7,13 +8,14 @@
 /*
  * Queue class -- performs BFS
  */
-std::function<bool(Node*, Node*)> base_cmp = [](Node* left, Node* right) {
+static std::function<bool(Node*, Node*)> base_cmp = [](Node* left, Node* right) {
     return left->id() > right->id();
 };
 
 class BaseQueue {
     public:
-        BaseQueue(); 
+        BaseQueue(std::function<bool(Node*, Node*)> cmp); 
+        BaseQueue() : BaseQueue(base_cmp) {};
         Node* front() {
             return get_q()->top();
         }
@@ -38,20 +40,17 @@ class BaseQueue {
         std::priority_queue<Node*, std::vector<Node*>, std::function<bool(Node*, Node*)> >* q_;
 };
 
-BaseQueue::BaseQueue()
-    : q_(new std::priority_queue<Node*, std::vector<Node*>, 
-            std::function<bool(Node*, Node*)> > (base_cmp)) {}
-
 /*
  * CuriousQueue -- orders based on curiosity metric
  */
-std::function<bool(Node*, Node*)> curious = [](Node* left, Node* right) {
+static std::function<bool(Node*, Node*)> curious = [](Node* left, Node* right) {
     return left->get_storage() > right->get_storage();
 };
 
 class CuriousQueue : public BaseQueue {
     public:
-        CuriousQueue(); 
+        //CuriousQueue() : BaseQueue(curious) {}; 
+        CuriousQueue();
         inline std::priority_queue<Node*, std::vector<Node*>, 
                std::function<bool(Node*, Node*)> >* get_q() override {
             return q_;
@@ -60,20 +59,17 @@ class CuriousQueue : public BaseQueue {
         std::priority_queue<Node*, std::vector<Node*>, std::function<bool(Node*, Node*)> >* q_;
 };
 
-CuriousQueue::CuriousQueue()
-    : q_(new std::priority_queue<Node*, std::vector<Node*>, 
-            std::function<bool(Node*, Node*)> > (curious)) {}
-
 /*
  * LowerBoundQueue -- orders based on curiosity metric
  */
-std::function<bool(Node*, Node*)> lb = [](Node* left, Node* right) {
+static std::function<bool(Node*, Node*)> lb = [](Node* left, Node* right) {
     return left->lower_bound() > right->lower_bound();
 };
 
 class LowerBoundQueue : public BaseQueue {
     public:
-        LowerBoundQueue(); 
+        LowerBoundQueue();
+        //LowerBoundQueue() : BaseQueue(lb) {}; 
         inline std::priority_queue<Node*, std::vector<Node*>, 
                std::function<bool(Node*, Node*)> >* get_q() override {
             return q_;
@@ -82,20 +78,17 @@ class LowerBoundQueue : public BaseQueue {
         std::priority_queue<Node*, std::vector<Node*>, std::function<bool(Node*, Node*)> >* q_;
 };
 
-LowerBoundQueue::LowerBoundQueue()
-    : q_(new std::priority_queue<Node*, std::vector<Node*>, 
-            std::function<bool(Node*, Node*)> > (lb)) {}
-
 /*
  * ObjectiveQueue -- orders based on curiosity metric
  */
-std::function<bool(Node*, Node*)> objective = [](Node* left, Node* right) {
+static std::function<bool(Node*, Node*)> objective = [](Node* left, Node* right) {
     return left->objective() > right->objective();
 };
 
 class ObjectiveQueue : public BaseQueue {
     public:
-        ObjectiveQueue(); 
+        ObjectiveQueue();
+        //ObjectiveQueue() : BaseQueue(objective) {}; 
         inline std::priority_queue<Node*, std::vector<Node*>, 
                std::function<bool(Node*, Node*)> >* get_q() override {
             return q_;
@@ -104,20 +97,17 @@ class ObjectiveQueue : public BaseQueue {
         std::priority_queue<Node*, std::vector<Node*>, std::function<bool(Node*, Node*)> >* q_;
 };
 
-ObjectiveQueue::ObjectiveQueue()
-    : q_(new std::priority_queue<Node*, std::vector<Node*>, 
-            std::function<bool(Node*, Node*)> > (objective)) {}
-
 /*
  * DFSQueue -- orders based on curiosity metric
  */
-std::function<bool(Node*, Node*)> dfs = [](Node* left, Node* right) {
+static std::function<bool(Node*, Node*)> dfs = [](Node* left, Node* right) {
     return left->depth() > right->depth();
 };
 
 class DFSQueue : public BaseQueue {
     public:
-        DFSQueue(); 
+        DFSQueue();
+        //DFSQueue() : BaseQueue(dfs) {}; 
         inline std::priority_queue<Node*, std::vector<Node*>, 
                std::function<bool(Node*, Node*)> >* get_q() override {
             return q_;
@@ -125,11 +115,6 @@ class DFSQueue : public BaseQueue {
     protected:
         std::priority_queue<Node*, std::vector<Node*>, std::function<bool(Node*, Node*)> >* q_;
 };
-
-DFSQueue::DFSQueue()
-    : q_(new std::priority_queue<Node*, std::vector<Node*>, 
-            std::function<bool(Node*, Node*)> > (dfs)) {}
-
 
 class NullQueue : public BaseQueue {
   public:
@@ -137,14 +122,14 @@ class NullQueue : public BaseQueue {
     inline size_t size() {return 0;};
 };
 
-Node* stochastic_select(CacheTree* tree, VECTOR not_captured);
+extern Node* stochastic_select(CacheTree* tree, VECTOR not_captured);
 
-void bbound_stochastic(CacheTree* tree, size_t max_num_nodes, PermutationMap* p);
+extern void bbound_stochastic(CacheTree* tree, size_t max_num_nodes, PermutationMap* p);
 
-Node* queue_select(CacheTree* tree, BaseQueue* q, VECTOR captured);
+extern Node* queue_select(CacheTree* tree, BaseQueue* q, VECTOR captured);
 
-int bbound_queue(CacheTree* tree, size_t max_num_nodes, BaseQueue* q, 
+extern int bbound_queue(CuriousCacheTree* tree, size_t max_num_nodes, BaseQueue* q, 
                  PermutationMap* p, size_t num_iter, size_t switch_iter);
 
-void evaluate_children(CacheTree* tree, Node* parent, VECTOR parent_not_captured,
+extern void evaluate_children(CacheTree* tree, Node* parent, VECTOR parent_not_captured,
                        BaseQueue* q, PermutationMap* p);

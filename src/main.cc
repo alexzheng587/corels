@@ -1,5 +1,6 @@
 #include "queue.hh"
 //#include "utils.hh"
+//#include "pmap.hh"
 
 #include <iostream>
 #include <stdio.h>
@@ -193,7 +194,7 @@ int main(int argc, char *argv[]) {
         }
         CacheTree tree(nsamples, nrules, c, rules, labels, meta);
         BaseQueue* bfs_q = new BaseQueue;
-        bbound_queue(&tree,
+        bbound_queue((CuriousCacheTree*) &tree,
                        max_num_nodes,
                        bfs_q,
                        p, 0, 0);
@@ -208,7 +209,8 @@ int main(int argc, char *argv[]) {
                              latex_out, rules, labels, opt_fname);
         delete p;
     } else if (run_curiosity) {
-        CuriousCacheTree *tree = (CuriousCacheTree*) new CacheTree(nsamples, nrules, c, rules, labels, meta);
+        CuriousCacheTree* tree = new CuriousCacheTree(nsamples, nrules, c, rules, labels, meta);
+        //CuriousCacheTree tree(nsamples, nrules, c, rules, labels, meta);
         if (curiosity_policy == 1) {
             if (use_prefix_perm_map) {
                 printf("Curiosity Prefix Permutation Map\n");

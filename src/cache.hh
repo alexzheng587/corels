@@ -91,11 +91,12 @@ class CuriousNode: public Node {
 //template<class N>
 class CacheTree {
   public:
+    CacheTree() {};
     CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules,
               rule_t *labels, rule_t *meta);
     ~CacheTree();
 
-    Node* construct_node(unsigned short new_rule, size_t nrules,
+    virtual Node* construct_node(unsigned short new_rule, size_t nrules,
            bool prediction, bool default_prediction,
            double lower_bound, double objective,
            Node* parent, int num_not_captured,
@@ -134,7 +135,7 @@ class CacheTree {
     void play_with_rules();
     Node* check_prefix(std::vector<unsigned short>& prefix);
 
-  private:
+  protected:
     Node* root_;
     size_t nsamples_;
     size_t nrules_;
@@ -156,11 +157,58 @@ class CacheTree {
 
 class CuriousCacheTree : public CacheTree {
     public:
-        CuriousNode* construct_node(unsigned short new_rule, size_t nrules,
+//        CuriousCacheTree() {};
+        CuriousCacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules,
+                                rule_t *labels, rule_t *meta) : CacheTree(nsamples,
+                                    nrules, c, rules, labels, meta) {
+            curiousity = true;
+        }
+
+/*        CuriousCacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules,
+                                rule_t *labels, rule_t *meta) {
+			root_ = 0;
+            num_nodes_ = 0;
+            num_evaluated_ = 0;
+			nsamples_ = nsamples;
+            nrules_ = nrules;
+            c_ = c;
+            min_objective_ = 0.5;
+            opt_rulelist_ = {};
+            opt_predictions_ = {};
+			opt_rulelist_.resize(0);
+			opt_predictions_.resize(0);
+			rules_.resize(nrules);
+			labels_.resize(2);
+			size_t i;
+			for (i = 0; i < nrules; i++) {
+			  rules_[i] = rules[i];
+			}
+			labels_[0] = labels[0];
+			labels_[1] = labels[1];
+			if (meta) {
+			  meta_.resize(1);
+			  meta_[0] = meta[0];
+			} else {
+			  meta_.resize(0);
+			}
+			//logger.setTreeMinObj(min_objective_);
+			//logger.setTreeNumNodes(num_nodes_);
+			//logger.setTreeNumEvaluated(num_evaluated_);
+        }*/
+        Node* construct_node(unsigned short new_rule, size_t nrules,
+           bool prediction, bool default_prediction,
+           double lower_bound, double objective,
+           Node* parent, int num_not_captured,
+           int nsamples, int len_prefix, double c, double minority) override;
+
+/*        CuriousNode* construct_node(unsigned short new_rule, size_t nrules,
            bool prediction, bool default_prediction,
            double lower_bound, double objective,
            CuriousNode* parent, int num_not_captured,
            int nsamples, int len_prefix, double c, double minority);
+           */
+    protected:
+        bool curiousity;
 };
 
 inline unsigned short Node::id() const {

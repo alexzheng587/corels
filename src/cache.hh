@@ -96,7 +96,7 @@ class CacheTree {
               rule_t *labels, rule_t *meta);
     ~CacheTree();
 
-    virtual Node* construct_node(unsigned short new_rule, size_t nrules,
+    CuriousNode* construct_node(unsigned short new_rule, size_t nrules,
            bool prediction, bool default_prediction,
            double lower_bound, double objective,
            Node* parent, int num_not_captured,
@@ -155,6 +155,7 @@ class CacheTree {
     void gc_helper(Node* node);
 };
 
+/*
 class CuriousCacheTree : public CacheTree {
     public:
 //        CuriousCacheTree() {};
@@ -164,7 +165,7 @@ class CuriousCacheTree : public CacheTree {
             curiousity = true;
         }
 
-/*        CuriousCacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules,
+        CuriousCacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules,
                                 rule_t *labels, rule_t *meta) {
 			root_ = 0;
             num_nodes_ = 0;
@@ -194,22 +195,22 @@ class CuriousCacheTree : public CacheTree {
 			//logger.setTreeMinObj(min_objective_);
 			//logger.setTreeNumNodes(num_nodes_);
 			//logger.setTreeNumEvaluated(num_evaluated_);
-        }*/
+        }
         Node* construct_node(unsigned short new_rule, size_t nrules,
            bool prediction, bool default_prediction,
            double lower_bound, double objective,
            Node* parent, int num_not_captured,
            int nsamples, int len_prefix, double c, double minority) override;
 
-/*        CuriousNode* construct_node(unsigned short new_rule, size_t nrules,
+        CuriousNode* construct_node(unsigned short new_rule, size_t nrules,
            bool prediction, bool default_prediction,
            double lower_bound, double objective,
            CuriousNode* parent, int num_not_captured,
            int nsamples, int len_prefix, double c, double minority);
-           */
     protected:
         bool curiousity;
 };
+           */
 
 inline unsigned short Node::id() const {
     return id_;

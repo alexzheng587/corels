@@ -13,8 +13,8 @@ void Logger::setLogFileName(char *fname) {
     _f.open(fname, ios::out | ios::trunc);
 
     _f << "total_time,evaluate_children_time,node_select_time,"
-       << "rule_evaluation_time,lower_bound_time,lower_bound_num,"
-       << "objective_time,tree_insertion_time,tree_insertion_num,"
+       << "rule_evaluation_time,lower_bound_time,lower_bound_num,objective_time,"
+       << "tree_insertion_time,tree_insertion_num,queue_insetion_time,"
        << "permutation_map_insertion_time,permutation_map_insertion_num,"
        << "current_lower_bound,tree_min_objective,tree_prefix_length,"
        << "tree_num_nodes,tree_num_evaluated,"
@@ -41,6 +41,7 @@ void Logger::dumpState() {
        << _state.objective_time << ","
        << _state.tree_insertion_time << ","
        << _state.tree_insertion_num << ","
+       << _state.queue_insertion_time << ","
        << _state.permutation_map_insertion_time << ","
        << _state.permutation_map_insertion_num << ","
        << _state.current_lower_bound << ","

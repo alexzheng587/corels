@@ -63,7 +63,7 @@ CacheTree::~CacheTree() {
         delete_subtree(this, root_, true, false);
 }
 
-Node* CacheTree::construct_node(unsigned short new_rule, size_t nrules, bool prediction,
+/*Node* CacheTree::construct_node(unsigned short new_rule, size_t nrules, bool prediction,
            bool default_prediction, double lower_bound, double objective,
            Node* parent, int num_not_captured, int nsamples,
            int len_prefix, double c, double minority) {
@@ -71,15 +71,15 @@ Node* CacheTree::construct_node(unsigned short new_rule, size_t nrules, bool pre
     size_t num_captured = nsamples - num_not_captured;
     return (new Node(new_rule, nrules, prediction, default_prediction,
                          lower_bound, objective, parent, num_captured, minority));
-}
+}*/
 
-Node* CuriousCacheTree::construct_node(unsigned short new_rule, size_t nrules, bool prediction,
+CuriousNode* CacheTree::construct_node(unsigned short new_rule, size_t nrules, bool prediction,
                          bool default_prediction, double lower_bound, double objective, 
                          Node* parent, int num_not_captured, int nsamples,
                          int len_prefix, double c, double minority) {
     size_t num_captured = nsamples - num_not_captured;
     double curiosity = (lower_bound - c * len_prefix + c) * nsamples / (double)(num_captured);
-    return (Node*) (new CuriousNode(new_rule, nrules, prediction, default_prediction,
+    return (new CuriousNode(new_rule, nrules, prediction, default_prediction,
                             lower_bound, objective, curiosity, (CuriousNode*) parent, num_captured, minority));
 }
 

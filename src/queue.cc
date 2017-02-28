@@ -115,7 +115,7 @@ void evaluate_children(CacheTree* tree, Node* parent, VECTOR parent_not_captured
         if ((ablation != 1) && (captured_correct < threshold))
             continue;
         lower_bound = parent_lower_bound - parent_minority + (float)(num_captured - captured_correct) / nsamples + c;
-        logger.setLowerBoundTime(time_diff(t1));
+        logger.addToLowerBoundTime(time_diff(t1));
         logger.incLowerBoundNum();
         // hierarchical objective lower bound
         if (lower_bound >= tree->min_objective())
@@ -157,28 +157,30 @@ void evaluate_children(CacheTree* tree, Node* parent, VECTOR parent_not_captured
         if (lb < tree->min_objective()) {
             Node* n;
             // check permutation bound
+            double t3 = timestamp();
             if (p) {
-                double t3 = timestamp();
                 n = p->insert(i, nrules, prediction, default_prediction,
                                        lower_bound, objective, parent, num_not_captured, nsamples,
                                        len_prefix, c, minority, tree, not_captured, parent_prefix);
-                logger.addToPermMapInsertionTime(time_diff(t3));
                 logger.incPermMapInsertionNum();
             }
             else
                 n = tree->construct_node(i, nrules, prediction, default_prediction,
                                     lower_bound, objective, parent,
                                     num_not_captured, nsamples, len_prefix, c, minority);
+            logger.addToPermMapInsertionTime(time_diff(t3));
             if (n) {
                 double t4 = timestamp();
                 tree->insert(n);
-                logger.addToTreeInsertionTime(time_diff(t4));
                 logger.incTreeInsertionNum();
                 logger.incPrefixLen(len_prefix);
+                logger.addToTreeInsertionTime(time_diff(t4));
                 if (q) {
+                    double t5 = timestamp();
                     q->push(n);
-                    logger.setQueueSize(q->size());
-                    logger.addQueueElement(len_prefix, lower_bound);
+                    //logger.setQueueSize(q->size());
+                    //logger.addQueueElement(len_prefix, lower_bound);
+                    logger.addToQueueInsertionTime(time_diff(t5));
                 }
             }
         } // else:  objective lower bound with one-step lookahead
@@ -333,7 +335,7 @@ Node* queue_select(CacheTree* tree, BaseQueue* q, VECTOR captured) {
  * Explores the search space by using a queue to order the search process.
  * The queue can be ordered by DFS, BFS, or an alternative priority metric (e.g. lower bound).
  */
-int bbound_queue(CuriousCacheTree* tree, size_t max_num_nodes, BaseQueue* q,
+int bbound_queue(CacheTree* tree, size_t max_num_nodes, BaseQueue* q,
                  PermutationMap* p, size_t num_iter, size_t switch_iter) {
     bool print_queue = 0;
     double start;
@@ -388,7 +390,7 @@ int bbound_queue(CuriousCacheTree* tree, size_t max_num_nodes, BaseQueue* q,
                 min_objective = tree->min_objective();
                 printf("before garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", tree->num_nodes(), logger.getLogRemainingSpaceSize());
                 logger.dumpState();
-                tree->garbage_collect();
+                //tree->garbage_collect();
                 logger.dumpState();
                 printf("after garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", tree->num_nodes(), logger.getLogRemainingSpaceSize());
             }

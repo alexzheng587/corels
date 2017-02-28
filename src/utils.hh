@@ -35,8 +35,8 @@ class Logger {
     inline int getFrequency() {
         return _freq;
     }
-    inline void setLowerBoundTime(double t) {
-        _state.lower_bound_time = t;
+    inline void addToLowerBoundTime(double t) {
+        _state.lower_bound_time += t;
     }
     inline void incLowerBoundNum() {
         ++_state.lower_bound_num;
@@ -100,6 +100,9 @@ class Logger {
     }
     inline void setTreeNumEvaluated(size_t n) {
         _state.tree_num_evaluated = n;
+    }
+    inline void addToQueueInsertionTime(double t) {
+        _state.queue_insertion_time += t;
     }
     inline void setQueueSize(size_t n) {
         _state.queue_size = n;
@@ -226,6 +229,7 @@ class Logger {
         _state.tree_prefix_length = 0;
         _state.tree_num_nodes = 0;
         _state.tree_num_evaluated = 0;
+        _state.queue_insertion_time = 0;
         _state.queue_size = 0;
         _state.queue_min_length = 0;
         _state.pmap_size = 0;
@@ -261,6 +265,7 @@ class Logger {
         size_t tree_prefix_length;
         size_t tree_num_nodes;
         size_t tree_num_evaluated;
+        double queue_insertion_time;
         size_t queue_size;
         size_t queue_min_length;                // monotonically increases
         size_t pmap_size;                       // size of pmap

@@ -194,7 +194,7 @@ int main(int argc, char *argv[]) {
         }
         CacheTree tree(nsamples, nrules, c, rules, labels, meta);
         BaseQueue* bfs_q = new BaseQueue;
-        bbound_queue((CuriousCacheTree*) &tree,
+        bbound_queue(&tree,
                        max_num_nodes,
                        bfs_q,
                        p, 0, 0);
@@ -209,7 +209,7 @@ int main(int argc, char *argv[]) {
                              latex_out, rules, labels, opt_fname);
         delete p;
     } else if (run_curiosity) {
-        CuriousCacheTree* tree = new CuriousCacheTree(nsamples, nrules, c, rules, labels, meta);
+        CacheTree* tree = new CacheTree(nsamples, nrules, c, rules, labels, meta);
         //CuriousCacheTree tree(nsamples, nrules, c, rules, labels, meta);
         if (curiosity_policy == 1) {
             if (use_prefix_perm_map) {

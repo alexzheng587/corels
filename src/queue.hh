@@ -22,14 +22,14 @@ class BaseQueue {
         inline void pop() {
             get_q()->pop();
         }
-        inline void push(Node* node) {
+        void push(Node* node) {
             get_q()->push(node);
         }
-        virtual inline std::priority_queue<Node*, std::vector<Node*>, 
+        virtual std::priority_queue<Node*, std::vector<Node*>, 
                 std::function<bool(Node*, Node*)> >* get_q() {
             return q_;
         }
-        inline size_t size() {
+        size_t size() {
             return get_q()->size();
         }
         inline bool empty() {
@@ -51,7 +51,7 @@ class CuriousQueue : public BaseQueue {
     public:
         //CuriousQueue() : BaseQueue(curious) {}; 
         CuriousQueue();
-        inline std::priority_queue<Node*, std::vector<Node*>, 
+        std::priority_queue<Node*, std::vector<Node*>, 
                std::function<bool(Node*, Node*)> >* get_q() override {
             return q_;
         }
@@ -70,7 +70,7 @@ class LowerBoundQueue : public BaseQueue {
     public:
         LowerBoundQueue();
         //LowerBoundQueue() : BaseQueue(lb) {}; 
-        inline std::priority_queue<Node*, std::vector<Node*>, 
+        std::priority_queue<Node*, std::vector<Node*>, 
                std::function<bool(Node*, Node*)> >* get_q() override {
             return q_;
         }
@@ -89,7 +89,7 @@ class ObjectiveQueue : public BaseQueue {
     public:
         ObjectiveQueue();
         //ObjectiveQueue() : BaseQueue(objective) {}; 
-        inline std::priority_queue<Node*, std::vector<Node*>, 
+        std::priority_queue<Node*, std::vector<Node*>, 
                std::function<bool(Node*, Node*)> >* get_q() override {
             return q_;
         }
@@ -108,7 +108,7 @@ class DFSQueue : public BaseQueue {
     public:
         DFSQueue();
         //DFSQueue() : BaseQueue(dfs) {}; 
-        inline std::priority_queue<Node*, std::vector<Node*>, 
+        std::priority_queue<Node*, std::vector<Node*>, 
                std::function<bool(Node*, Node*)> >* get_q() override {
             return q_;
         }
@@ -118,8 +118,8 @@ class DFSQueue : public BaseQueue {
 
 class NullQueue : public BaseQueue {
   public:
-    inline void push(Node*) {};
-    inline size_t size() {return 0;};
+    void push(Node*) {};
+    size_t size() {return 0;};
 };
 
 extern Node* stochastic_select(CacheTree* tree, VECTOR not_captured);
@@ -128,7 +128,7 @@ extern void bbound_stochastic(CacheTree* tree, size_t max_num_nodes, Permutation
 
 extern Node* queue_select(CacheTree* tree, BaseQueue* q, VECTOR captured);
 
-extern int bbound_queue(CuriousCacheTree* tree, size_t max_num_nodes, BaseQueue* q, 
+extern int bbound_queue(CacheTree* tree, size_t max_num_nodes, BaseQueue* q, 
                  PermutationMap* p, size_t num_iter, size_t switch_iter);
 
 extern void evaluate_children(CacheTree* tree, Node* parent, VECTOR parent_not_captured,

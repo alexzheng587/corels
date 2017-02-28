@@ -6,6 +6,7 @@ extern int ablation;
 /*
  * Constructs a node of type BaseNode.
  */
+/*
 BaseNode* base_construct_policy(unsigned short new_rule, size_t nrules, bool prediction,
                                 bool default_prediction, double lower_bound,
                                 double objective, BaseNode* parent,
@@ -15,12 +16,12 @@ BaseNode* base_construct_policy(unsigned short new_rule, size_t nrules, bool pre
     size_t num_captured = nsamples - num_not_captured;
     return (new BaseNode(new_rule, nrules, prediction, default_prediction,
                          lower_bound, objective, 0, parent, num_captured, minority));
-}
+}*/
 
 /*
  * Constructs a node of type CuriousNode.
  */
-CuriousNode* curious_construct_policy(unsigned short new_rule, size_t nrules, bool prediction,
+/*CuriousNode* curious_construct_policy(unsigned short new_rule, size_t nrules, bool prediction,
                                       bool default_prediction, double lower_bound,
                                       double objective, CuriousNode* parent,
                                       int num_not_captured, int nsamples,
@@ -29,7 +30,7 @@ CuriousNode* curious_construct_policy(unsigned short new_rule, size_t nrules, bo
     double curiosity = (lower_bound - c * len_prefix + c) * nsamples / (double)(num_captured);
     return (new CuriousNode(new_rule, nrules, prediction, default_prediction,
                             lower_bound, objective, curiosity, parent, num_captured, minority));
-}
+}*/
 
 /*
  * Performs incremental computation on a node, evaluating the bounds and inserting into the cache,
@@ -42,10 +43,8 @@ CuriousNode* curious_construct_policy(unsigned short new_rule, size_t nrules, bo
  * permutation_insert -- function pointer to how to insert into the permutation map.
  * p -- the permutation map
  */
-template<class N>
-void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured,
-                       construct_signature<N> construct_policy, Queue<N>* q,
-                       PermutationMap<N>* p) {
+void evaluate_children(CacheTree* tree, Node* parent, VECTOR parent_not_captured,
+                       BaseQueue* q, PermutationMap* p) {
     auto pp_pair = parent->get_prefix_and_predictions();
     std::vector<unsigned short> parent_prefix = std::move(pp_pair.first);
     std::vector<bool> parent_predictions = std::move(pp_pair.second);
@@ -135,18 +134,18 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
         else
             lb = lower_bound;
         if (lb < tree->min_objective()) {
-            N* n;
+            Node* n;
             // check permutation bound
             if (p) {
                 double t3 = timestamp();
-                n = p->insert(construct_policy, i, nrules, prediction, default_prediction,
+                n = p->insert(i, nrules, prediction, default_prediction,
                                        lower_bound, objective, parent, num_not_captured, nsamples,
                                        len_prefix, c, minority, tree, not_captured, parent_prefix);
                 logger.addToPermMapInsertionTime(time_diff(t3));
                 logger.incPermMapInsertionNum();
             }
             else
-                n = construct_policy(i, nrules, prediction, default_prediction,
+                n = tree->construct_node(i, nrules, prediction, default_prediction,
                                     lower_bound, objective, parent,
                                     num_not_captured, nsamples, len_prefix, c, minority);
             if (n) {
@@ -185,17 +184,16 @@ void evaluate_children(CacheTree<N>* tree, N* parent, VECTOR parent_not_captured
 /*
  * Randomly selects a leave node to evaluate by stochastically walking down the tree.
  */
-template<class N>
-N* stochastic_select(CacheTree<N>* tree, VECTOR not_captured) {
-    N* node = tree->root();
+Node* stochastic_select(CacheTree* tree, VECTOR not_captured) {
+    Node* node = tree->root();
     rule_copy(not_captured, tree->rule(node->id()).truthtable, tree->nsamples());
     int cnt;
     while (node->done()) {
         if ((node->lower_bound() + tree->c()) >= tree->min_objective()) {
             if (node->depth() > 0) {
-                N* parent = node->parent();
+                Node* parent = node->parent();
                 parent->delete_child(node->id());
-                delete_subtree<N>(tree, node, true, true);
+                delete_subtree(tree, node, true, true);
                 if (parent->num_children() == 0)
                     tree->prune_up(parent);
             }
@@ -216,19 +214,17 @@ N* stochastic_select(CacheTree<N>* tree, VECTOR not_captured) {
 /*
  * Uses a stochastic search process to explore the search space.
  */
-template<class N>
-void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes,
-                       construct_signature<N> construct_policy,
-                       PermutationMap<N>* p) {
+void bbound_stochastic(CacheTree* tree, size_t max_num_nodes,
+                       PermutationMap* p) {
     double start = timestamp();
     logger.setInitialTime(start);
     // initial log record
     logger.dumpState();
 
     double min_objective = 1.0;
-    N* node_ordered;
+    Node* node_ordered;
     VECTOR not_captured;
-    NullQueue<N>* q;
+    NullQueue* q = NULL;
     logger.incPrefixLen(0);
 
     rule_vinit(tree->nsamples(), &not_captured);
@@ -240,15 +236,13 @@ void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes,
     logger.dumpState();
     while ((tree->num_nodes() < max_num_nodes) and (tree->num_nodes() > 0)) {
         double t0 = timestamp();
-        node_ordered = stochastic_select<N>(tree, not_captured);
+        node_ordered = stochastic_select(tree, not_captured);
         logger.addToNodeSelectTime(time_diff(t0));
         logger.incNodeSelectNum();
         if (node_ordered) {
             double t1 = timestamp();
             min_objective = tree->min_objective();
-            evaluate_children<N>(tree, node_ordered, not_captured,
-                                                  construct_policy,
-                                                  q, p);
+            evaluate_children(tree, node_ordered, not_captured, q, p);
             logger.addToEvalChildrenTime(time_diff(t1));
             logger.incEvalChildrenNum();
 
@@ -284,15 +278,14 @@ void bbound_stochastic(CacheTree<N>* tree, size_t max_num_nodes,
  *
  * front -- determines whether the queue is FIFO or a priority queue.
  */
-template<class N>
-N* queue_select(CacheTree<N>* tree, Queue<N>* q, VECTOR captured) {
+Node* queue_select(CacheTree* tree, BaseQueue* q, VECTOR captured) {
     int cnt;
 
-    N* selected_node = q->front();
+    Node* selected_node = q->front();
     q->pop();
     logger.setCurrentLowerBound(selected_node->lower_bound() + tree->c());
 
-    N* node = selected_node;
+    Node* node = selected_node;
     // delete leaf nodes that were lazily marked
     if (node->deleted()) {
         tree->decrement_num_nodes();
@@ -319,17 +312,13 @@ N* queue_select(CacheTree<N>* tree, Queue<N>* q, VECTOR captured) {
  * Explores the search space by using a queue to order the search process.
  * The queue can be ordered by DFS, BFS, or an alternative priority metric (e.g. lower bound).
  */
-template<class N>
-int bbound_queue(CacheTree<N>* tree,
-                size_t max_num_nodes,
-                construct_signature<N> construct_policy,
-                Queue<N>* q, PermutationMap<N>* p,
-                size_t num_iter, size_t switch_iter) {
+int bbound_queue(CacheTree* tree, size_t max_num_nodes, BaseQueue* q,
+                 PermutationMap* p, size_t num_iter, size_t switch_iter) {
     bool print_queue = 0;
     double start;
     int cnt;
     double min_objective;
-    N* node_ordered;
+    Node* node_ordered;
     VECTOR captured, not_captured;
     rule_vinit(tree->nsamples(), &captured);
     rule_vinit(tree->nsamples(), &not_captured);
@@ -360,7 +349,7 @@ int bbound_queue(CacheTree<N>* tree,
     while ((tree->num_nodes() < max_num_nodes) &&
            !q->empty()) {
         double t0 = timestamp();
-        node_ordered = queue_select<N>(tree, q, captured);
+        node_ordered = queue_select(tree, q, captured);
         logger.addToNodeSelectTime(time_diff(t0));
         logger.incNodeSelectNum();
         if (node_ordered) {
@@ -370,8 +359,7 @@ int bbound_queue(CacheTree<N>* tree,
             rule_vandnot(not_captured,
                          tree->rule(tree->root()->id()).truthtable, captured,
                          tree->nsamples(), &cnt);
-            evaluate_children<N>(tree, node_ordered, not_captured,
-                                   construct_policy, q, p);
+            evaluate_children(tree, node_ordered, not_captured, q, p);
             logger.addToEvalChildrenTime(time_diff(t1));
             logger.incEvalChildrenNum();
 
@@ -433,7 +421,7 @@ int bbound_queue(CacheTree<N>* tree,
     printf("Deleting queue elements and corresponding nodes in the cache,"
             "since they may not be reachable by the tree's destructor\n");
     printf("\nminimum objective: %1.10f\n", tree->min_objective());
-    N* node;
+    Node* node;
     double min_lower_bound = 1.0;
     double lb;
     size_t num = 0;
@@ -472,52 +460,3 @@ int bbound_queue(CacheTree<N>* tree,
     rule_vfree(&not_captured);
     return num_iter;
 }
-
-template void
-evaluate_children<BaseNode>(CacheTree<BaseNode>* tree,
-                              BaseNode* parent,
-                              VECTOR parent_not_captured,
-                              construct_signature<BaseNode> construct_policy,
-                              Queue<BaseNode>* q, 
-                              PermutationMap<BaseNode>* p);
-
-template void
-evaluate_children<CuriousNode>(CacheTree<CuriousNode>* tree,
-                                             CuriousNode* parent,
-                                             VECTOR parent_not_captured,
-                                             construct_signature<CuriousNode> construct_policy,
-                                             Queue<CuriousNode>* q,
-                                             PermutationMap<CuriousNode>* p);
-
-template BaseNode*
-stochastic_select<BaseNode>(CacheTree<BaseNode>* tree, VECTOR not_captured); 
-
-template void
-bbound_stochastic<BaseNode>(CacheTree<BaseNode>* tree,
-                                                  size_t max_num_nodes,
-                                                  construct_signature<BaseNode> construct_policy,
-                                                  PermutationMap<BaseNode>* p);
-
-template BaseNode*
-queue_select<BaseNode>(CacheTree<BaseNode>* tree,
-                                  Queue<BaseNode>* q,
-                                  VECTOR captured);
-
-template CuriousNode*
-queue_select<CuriousNode>(CacheTree<CuriousNode>* tree,
-                                    Queue<CuriousNode>* q,
-                                    VECTOR captured);
-
-template int
-bbound_queue<BaseNode>(CacheTree<BaseNode>* tree,
-                                  size_t max_num_nodes,
-                                  construct_signature<BaseNode> construct_policy,
-                                  Queue<BaseNode>* q,
-                                  PermutationMap<BaseNode>* p, size_t num_iter, size_t switch_iter);
-
-template int
-bbound_queue<CuriousNode>(CacheTree<CuriousNode>* tree,
-                                        size_t max_num_nodes,
-                                        construct_signature<CuriousNode> construct_policy,
-                                        Queue<CuriousNode>* q,
-                                        PermutationMap<CuriousNode>* p, size_t num_iter, size_t switch_iter);

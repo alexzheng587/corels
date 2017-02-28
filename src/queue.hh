@@ -7,165 +7,144 @@
 /*
  * Queue class -- performs BFS
  */
-template<class N>
-std::function<bool(N*, N*)> base = [](N* left, N* right) {
+std::function<bool(Node*, Node*)> base_cmp = [](Node* left, Node* right) {
     return left->id() > right->id();
 };
 
-template<class N>
-class Queue {
+class BaseQueue {
     public:
-        Queue(); 
-        N* front() {
+        BaseQueue(); 
+        Node* front() {
             return get_q()->top();
         }
-        void pop() {
+        inline void pop() {
             get_q()->pop();
         }
-        void push(N* node) {
+        inline void push(Node* node) {
             get_q()->push(node);
         }
-        virtual std::priority_queue<N*, std::vector<N*>, std::function<bool(N*, N*)> >* get_q() {
+        virtual inline std::priority_queue<Node*, std::vector<Node*>, 
+                std::function<bool(Node*, Node*)> >* get_q() {
             return q_;
         }
-        size_t size() {
+        inline size_t size() {
             return get_q()->size();
         }
-        bool empty() {
+        inline bool empty() {
             return get_q()->empty();
         }
 
     private:
-        std::priority_queue<N*, std::vector<N*>, std::function<bool(N*, N*)> >* q_;
+        std::priority_queue<Node*, std::vector<Node*>, std::function<bool(Node*, Node*)> >* q_;
 };
 
-template<class N>
-Queue<N>::Queue()
-    : q_(new std::priority_queue<N*, std::vector<N*>, std::function<bool(N*, N*)> > (base<N>)) {}
+BaseQueue::BaseQueue()
+    : q_(new std::priority_queue<Node*, std::vector<Node*>, 
+            std::function<bool(Node*, Node*)> > (base_cmp)) {}
 
 /*
  * CuriousQueue -- orders based on curiosity metric
  */
-template<class N>
-std::function<bool(N*, N*)> curious = [](N* left, N* right) {
+std::function<bool(Node*, Node*)> curious = [](Node* left, Node* right) {
     return left->get_storage() > right->get_storage();
 };
 
-template<class N>
-class CuriousQueue : public Queue<N> {
+class CuriousQueue : public BaseQueue {
     public:
         CuriousQueue(); 
-        std::priority_queue<N*, std::vector<N*>, std::function<bool(N*, N*)> >* get_q() override {
+        inline std::priority_queue<Node*, std::vector<Node*>, 
+               std::function<bool(Node*, Node*)> >* get_q() override {
             return q_;
         }
     protected:
-        std::priority_queue<N*, std::vector<N*>, std::function<bool(N*, N*)> >* q_;
+        std::priority_queue<Node*, std::vector<Node*>, std::function<bool(Node*, Node*)> >* q_;
 };
 
-template<class N>
-CuriousQueue<N>::CuriousQueue()
-    : q_(new std::priority_queue<N*, std::vector<N*>, std::function<bool(N*, N*)> > (curious<N>)) {}
+CuriousQueue::CuriousQueue()
+    : q_(new std::priority_queue<Node*, std::vector<Node*>, 
+            std::function<bool(Node*, Node*)> > (curious)) {}
 
 /*
  * LowerBoundQueue -- orders based on curiosity metric
  */
-template<class N>
-std::function<bool(N*, N*)> lb = [](N* left, N* right) {
+std::function<bool(Node*, Node*)> lb = [](Node* left, Node* right) {
     return left->lower_bound() > right->lower_bound();
 };
 
-template<class N>
-class LowerBoundQueue : public Queue<N> {
+class LowerBoundQueue : public BaseQueue {
     public:
         LowerBoundQueue(); 
-        std::priority_queue<N*, std::vector<N*>, std::function<bool(N*, N*)> >* get_q() override {
+        inline std::priority_queue<Node*, std::vector<Node*>, 
+               std::function<bool(Node*, Node*)> >* get_q() override {
             return q_;
         }
     protected:
-        std::priority_queue<N*, std::vector<N*>, std::function<bool(N*, N*)> >* q_;
+        std::priority_queue<Node*, std::vector<Node*>, std::function<bool(Node*, Node*)> >* q_;
 };
 
-template<class N>
-LowerBoundQueue<N>::LowerBoundQueue()
-    : q_(new std::priority_queue<N*, std::vector<N*>, std::function<bool(N*, N*)> > (lb<N>)) {}
+LowerBoundQueue::LowerBoundQueue()
+    : q_(new std::priority_queue<Node*, std::vector<Node*>, 
+            std::function<bool(Node*, Node*)> > (lb)) {}
 
 /*
  * ObjectiveQueue -- orders based on curiosity metric
  */
-template<class N>
-std::function<bool(N*, N*)> objective = [](N* left, N* right) {
+std::function<bool(Node*, Node*)> objective = [](Node* left, Node* right) {
     return left->objective() > right->objective();
 };
 
-template<class N>
-class ObjectiveQueue : public Queue<N> {
+class ObjectiveQueue : public BaseQueue {
     public:
         ObjectiveQueue(); 
-        std::priority_queue<N*, std::vector<N*>, std::function<bool(N*, N*)> >* get_q() override {
+        inline std::priority_queue<Node*, std::vector<Node*>, 
+               std::function<bool(Node*, Node*)> >* get_q() override {
             return q_;
         }
     protected:
-        std::priority_queue<N*, std::vector<N*>, std::function<bool(N*, N*)> >* q_;
+        std::priority_queue<Node*, std::vector<Node*>, std::function<bool(Node*, Node*)> >* q_;
 };
 
-template<class N>
-ObjectiveQueue<N>::ObjectiveQueue()
-    : q_(new std::priority_queue<N*, std::vector<N*>, std::function<bool(N*, N*)> > (objective<N>)) {}
+ObjectiveQueue::ObjectiveQueue()
+    : q_(new std::priority_queue<Node*, std::vector<Node*>, 
+            std::function<bool(Node*, Node*)> > (objective)) {}
 
 /*
  * DFSQueue -- orders based on curiosity metric
  */
-template<class N>
-std::function<bool(N*, N*)> dfs = [](N* left, N* right) {
+std::function<bool(Node*, Node*)> dfs = [](Node* left, Node* right) {
     return left->depth() > right->depth();
 };
 
-template<class N>
-class DFSQueue : public Queue<N> {
+class DFSQueue : public BaseQueue {
     public:
         DFSQueue(); 
-        std::priority_queue<N*, std::vector<N*>, std::function<bool(N*, N*)> >* get_q() override {
+        inline std::priority_queue<Node*, std::vector<Node*>, 
+               std::function<bool(Node*, Node*)> >* get_q() override {
             return q_;
         }
     protected:
-        std::priority_queue<N*, std::vector<N*>, std::function<bool(N*, N*)> >* q_;
+        std::priority_queue<Node*, std::vector<Node*>, std::function<bool(Node*, Node*)> >* q_;
 };
 
-template<class N>
-DFSQueue<N>::DFSQueue()
-    : q_(new std::priority_queue<N*, std::vector<N*>, std::function<bool(N*, N*)> > (dfs<N>)) {}
+DFSQueue::DFSQueue()
+    : q_(new std::priority_queue<Node*, std::vector<Node*>, 
+            std::function<bool(Node*, Node*)> > (dfs)) {}
 
 
-template<class N>
-class NullQueue : public Queue<N> {
+class NullQueue : public BaseQueue {
   public:
-    void push(N*) {};
-    size_t size() {return 0;};
+    inline void push(Node*) {};
+    inline size_t size() {return 0;};
 };
 
-template<class N>
-extern N* stochastic_select(CacheTree<N>* tree, VECTOR not_captured);
+Node* stochastic_select(CacheTree* tree, VECTOR not_captured);
 
-template<class N>
-extern void bbound_stochastic(CacheTree<N>* tree,
-                              size_t max_num_nodes,
-                              construct_signature<N> construct_policy,
-                              PermutationMap<N>* p);
+void bbound_stochastic(CacheTree* tree, size_t max_num_nodes, PermutationMap* p);
 
-template<class N>
-extern N*
-queue_select(CacheTree<N>* tree, Queue<N>* q, VECTOR captured);
+Node* queue_select(CacheTree* tree, BaseQueue* q, VECTOR captured);
 
-template<class N>
-extern int bbound_queue(CacheTree<N>* tree,
-                         size_t max_num_nodes,
-                         construct_signature<N> construct_policy,
-                         Queue<N>* q,
-                         PermutationMap<N>* p, size_t num_iter, size_t switch_iter);
+int bbound_queue(CacheTree* tree, size_t max_num_nodes, BaseQueue* q, 
+                 PermutationMap* p, size_t num_iter, size_t switch_iter);
 
-template<class N>
-extern void evaluate_children(CacheTree<N>* tree, N* parent,
-                              VECTOR parent_not_captured,
-                              construct_signature<N> construct_policy,
-                              Queue<N>* q,
-                              PermutationMap<N>* p);
+void evaluate_children(CacheTree* tree, Node* parent, VECTOR parent_not_captured,
+                       BaseQueue* q, PermutationMap* p);

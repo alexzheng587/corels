@@ -2,6 +2,21 @@
 #include "cache.hh"
 #include "utils.hh"
 #include <unordered_map>
+#include <scoped_allocator>
+#include <memory>
+
+template <class T>
+struct tracking_allocator {
+    typedef T value_type;
+    tracking_allocator() noexcept {}
+    T* allocate (size_t n) { 
+        logger.addToPmapMemory(n * sizeof(T));
+        return static_cast<T*>(malloc(n*sizeof(T))); 
+    }
+    void deallocate (T* p, size_t n) { 
+        free(p);
+    }
+};
 
 /*
  * Represent prefix canonical order using an array of shorts.
@@ -12,11 +27,13 @@ struct prefix_key {
     prefix_key(unsigned short* k) {
         key = k;
     }
-    bool operator==(const prefix_key& other) const {
-        if (key[0] != other.key[0])
+};
+struct prefix_eq {
+    bool operator()(const prefix_key& k, const prefix_key& other) const {
+        if (k.key[0] != other.key[0])
             return false;
-        for(size_t i = 1; i <= *key; ++i) {
-            if (key[i] != other.key[i])
+        for(size_t i = 1; i <= *k.key; ++i) {
+            if (k.key[i] != other.key[i])
                 return false;
         }
         return true;
@@ -100,6 +117,7 @@ class PermutationMap {
         }
 };
 
+typedef std::pair<double, unsigned char*> prefix_val;
 class PrefixPermutationMap : public PermutationMap {
 	public:
         PrefixPermutationMap ();
@@ -160,11 +178,12 @@ class PrefixPermutationMap : public PermutationMap {
                 unsigned char* ordered_prefix = &ordered[0];
                 pmap->insert(std::make_pair(key, std::make_pair(lower_bound, ordered_prefix)));
                 logger.incPmapSize();
+                logger.addToPmapMemory((len_prefix + 1) * (sizeof(unsigned char) + sizeof(unsigned short)));
             }
             return child;
         }
 	private:
-		std::unordered_map<prefix_key, std::pair<double, unsigned char*>, prefix_hash>* pmap;
+		std::unordered_map<prefix_key, prefix_val, prefix_hash, prefix_eq, std::scoped_allocator_adaptor<tracking_allocator<std::pair<const prefix_key, prefix_val> > > >* pmap;
 };
 
 class CapturedPermutationMap : public PermutationMap {
@@ -224,7 +243,6 @@ class NullPermutationMap : public PermutationMap  {
     public:
         size_t size() {return 0;}
 };
-
 //typedef std::unordered_map<struct prefix_key, std::pair<double, unsigned char*>, prefix_hash> PrefixPermutationMap;
 //typedef std::unordered_map<struct captured_key, std::pair<std::vector<unsigned short>, double>, captured_hash> CapturedPermutationMap;
 

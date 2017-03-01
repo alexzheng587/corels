@@ -431,6 +431,9 @@ int bbound_queue(CacheTree* tree, size_t max_num_nodes, BaseQueue* q,
     else
         printf("Exited because max number of nodes in the tree was reached\n");
 
+    printf("TREE mem usage: %zu\n", logger.getTreeMemory());
+    printf("PMAP mem usage: %zu\n", logger.getPmapMemory());
+
     // Print out queue
     ofstream f;
     if (print_queue) {

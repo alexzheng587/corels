@@ -48,6 +48,8 @@ class NullLogger {
     virtual inline void setTreePrefixLen(size_t n) {}
     virtual inline void setTreeNumNodes(size_t n) {}
     virtual inline void setTreeNumEvaluated(size_t n) {}
+    virtual inline void addToTreeMemory(size_t n) {}
+    virtual inline size_t getTreeMemory() {}
     virtual inline void addToQueueInsertionTime(double t) {}
     virtual inline void setQueueSize(size_t n) {}
     virtual inline void setNRules(size_t nrules) {}
@@ -62,6 +64,8 @@ class NullLogger {
     virtual inline void decreasePmapSize(size_t n) {}
     virtual inline void incPmapNullNum() {}
     virtual inline void incPmapDiscardNum() {}
+    virtual inline void addToPmapMemory(size_t n) {}
+    virtual inline size_t getPmapMemory() {}
     virtual inline void subtreeSize(mpz_t tot, unsigned int len_prefix, double lower_bound) {}
     virtual inline void addQueueElement(unsigned int len_prefix, double lower_bound) {}
     virtual inline void removeQueueElement(unsigned int len_prefix, double lower_bound) {}
@@ -93,10 +97,12 @@ class NullLogger {
         _state.tree_prefix_length = 0;
         _state.tree_num_nodes = 0;
         _state.tree_num_evaluated = 0;
+        _state.tree_memory = 0;
         _state.queue_insertion_time = 0;
         _state.queue_size = 0;
         _state.queue_min_length = 0;
         _state.pmap_size = 0;
+        _state.pmap_memory = 0;
         _state.pmap_null_num = 0;
         _state.pmap_discard_num = 0;
         mpz_init(_state.remaining_space_size);
@@ -129,12 +135,14 @@ class NullLogger {
         size_t tree_prefix_length;
         size_t tree_num_nodes;
         size_t tree_num_evaluated;
+        size_t tree_memory;
         double queue_insertion_time;
         size_t queue_size;
         size_t queue_min_length;                // monotonically increases
         size_t pmap_size;                       // size of pmap
         size_t pmap_null_num;                   // number of pmap lookups that return null
         size_t pmap_discard_num;                // number of pmap lookups that trigger discard
+        size_t pmap_memory;
         size_t* prefix_lens;
         mpz_t remaining_space_size;
     };
@@ -233,6 +241,12 @@ class Logger : public NullLogger {
     inline void setTreeNumEvaluated(size_t n) override {
         _state.tree_num_evaluated = n;
     }
+    inline void addToTreeMemory(size_t n) override{
+        _state.tree_memory += n;
+    }
+    inline size_t getTreeMemory() override {
+        return _state.tree_memory;
+    }
     inline void addToQueueInsertionTime(double t) override {
         _state.queue_insertion_time += t;
     }
@@ -294,6 +308,12 @@ class Logger : public NullLogger {
     }
     inline void incPmapDiscardNum() override {
         ++_state.pmap_discard_num;
+    }
+    inline void addToPmapMemory(size_t n) override {
+        _state.pmap_memory += n;
+    }
+    inline size_t getPmapMemory() override {
+        return _state.pmap_memory;
     }
     inline void subtreeSize(mpz_t tot, unsigned int len_prefix, double lower_bound) override {
         // Theorem 4 (fine-grain upper bound on number of remaining prefix evaluations)

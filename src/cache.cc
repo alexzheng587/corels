@@ -121,6 +121,7 @@ void CacheTree::insert(Node* node) {
     node->parent()->children_.insert(std::make_pair(node->id(), node));
     ++num_nodes_;
     logger.setTreeNumNodes(num_nodes_);
+    logger.addToTreeMemory(sizeof(*node));
 }
 
 /*

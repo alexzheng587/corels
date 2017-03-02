@@ -67,8 +67,9 @@ class NullLogger {
     virtual inline void addToPmapMemory(size_t n) {}
     virtual inline size_t getPmapMemory() {}
     virtual inline void subtreeSize(mpz_t tot, unsigned int len_prefix, double lower_bound) {}
-    virtual inline void addQueueElement(unsigned int len_prefix, double lower_bound) {}
-    virtual inline void removeQueueElement(unsigned int len_prefix, double lower_bound) {}
+    virtual inline void approxRemainingSize(mpz_t tot, unsigned int len_prefix) {}
+    virtual inline void addQueueElement(unsigned int len_prefix, double lower_bound, bool approx) {}
+    virtual inline void removeQueueElement(unsigned int len_prefix, double lower_bound, bool approx) {}
     virtual inline void initRemainingSpaceSize() {}
     virtual inline void clearRemainingSpaceSize() {}
     virtual inline size_t getLogRemainingSpaceSize() {}
@@ -327,17 +328,37 @@ class Logger : public NullLogger {
             mpz_addmul_ui(tot, tot, k);
         }
     }
-    inline void addQueueElement(unsigned int len_prefix, double lower_bound) override {
+    inline void approxRemainingSize(mpz_t tot, unsigned int len_prefix) override {
+        // Proposition 3 (coarse-grain upper bound on number of remaining prefix evaluations)
+        size_t K = (size_t) (_state.tree_min_objective / _state.c);
+        if (K > _state.nrules)
+            K = _state.nrules;
+
+        // sum_{j=0}^M Q_j sum_{k=1}^{K-j} (M - j)! / (M - j - k)!
+        mpz_set_ui(tot, _state.nrules - len_prefix);
+        for(size_t k = (_state.nrules - len_prefix - 1); k >= (_state.nrules - len_prefix - K + 1); --k)
+            mpz_addmul_ui(tot, tot, k);
+
+        // multiply by Qj
+        mpz_mul_ui(tot, tot, _state.prefix_lens[len_prefix]);
+    }
+    inline void addQueueElement(unsigned int len_prefix, double lower_bound, bool approx) override {
         mpz_t tot;
         mpz_init(tot);
-        subtreeSize(tot, len_prefix, lower_bound);
+        if (approx)
+            approxRemainingSize(tot, len_prefix);
+        else
+            subtreeSize(tot, len_prefix, lower_bound);
         mpz_add(_state.remaining_space_size, _state.remaining_space_size, tot);
         mpz_clear(tot);
     }
-    inline void removeQueueElement(unsigned int len_prefix, double lower_bound) override {
+    inline void removeQueueElement(unsigned int len_prefix, double lower_bound, bool approx) override {
         mpz_t tot;
         mpz_init(tot);
-        subtreeSize(tot, len_prefix, lower_bound);
+        if (approx)
+            approxRemainingSize(tot, len_prefix);
+        else
+            subtreeSize(tot, len_prefix, lower_bound);
         mpz_sub(_state.remaining_space_size, _state.remaining_space_size, tot);
         mpz_clear(tot);
     }

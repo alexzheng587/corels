@@ -138,6 +138,7 @@ void evaluate_children(CacheTree* tree, Node* parent, VECTOR parent_not_captured
             printf("min(objective): %1.5f -> %1.5f, length: %d, cache size: %zu\n",
                    tree->min_objective(), objective, len_prefix, tree->num_nodes());
 
+            logger.setTreeMinObj(objective);
             tree->update_min_objective(objective);
             tree->update_opt_rulelist(parent_prefix, i);
             tree->update_opt_predictions(parent_predictions, prediction, default_prediction);
@@ -390,7 +391,7 @@ int bbound_queue(CacheTree* tree, size_t max_num_nodes, BaseQueue* q,
                 min_objective = tree->min_objective();
                 printf("before garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", tree->num_nodes(), logger.getLogRemainingSpaceSize());
                 logger.dumpState();
-                //tree->garbage_collect();
+                tree->garbage_collect();
                 logger.dumpState();
                 printf("after garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", tree->num_nodes(), logger.getLogRemainingSpaceSize());
             }

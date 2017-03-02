@@ -178,8 +178,8 @@ void evaluate_children(CacheTree* tree, Node* parent, VECTOR parent_not_captured
                 if (q) {
                     double t5 = timestamp();
                     q->push(n);
-                    //logger.setQueueSize(q->size());
-                    //logger.addQueueElement(len_prefix, lower_bound);
+                    logger.setQueueSize(q->size());
+                    logger.addQueueElement(len_prefix, lower_bound, true);
                     logger.addToQueueInsertionTime(time_diff(t5));
                 }
             }
@@ -195,7 +195,7 @@ void evaluate_children(CacheTree* tree, Node* parent, VECTOR parent_not_captured
     logger.addToRuleEvalTime(time_diff(t0));
     logger.incRuleEvalNum();
     logger.decPrefixLen(parent->depth());
-    logger.removeQueueElement(len_prefix - 1, parent_lower_bound);
+    logger.removeQueueElement(len_prefix - 1, parent_lower_bound, true);
     if (parent->num_children() == 0) {
         tree->prune_up(parent);
     } else {

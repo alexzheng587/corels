@@ -49,7 +49,6 @@ class NullLogger {
     virtual inline void setTreeNumNodes(size_t n) {}
     virtual inline void setTreeNumEvaluated(size_t n) {}
     virtual inline void addToTreeMemory(size_t n) {}
-    virtual inline void removeFromTreeMemory(size_t n) {}
     virtual inline size_t getTreeMemory() {}
     virtual inline void addToQueueInsertionTime(double t) {}
     virtual inline void setQueueSize(size_t n) {}
@@ -66,7 +65,6 @@ class NullLogger {
     virtual inline void incPmapNullNum() {}
     virtual inline void incPmapDiscardNum() {}
     virtual inline void addToPmapMemory(size_t n) {}
-    virtual inline void removeFromPmapMemory(size_t n) {}
     virtual inline size_t getPmapMemory() {}
     virtual inline void subtreeSize(mpz_t tot, unsigned int len_prefix, double lower_bound) {}
     virtual inline void approxRemainingSize(mpz_t tot, unsigned int len_prefix) {}
@@ -244,9 +242,6 @@ class Logger : public NullLogger {
     inline void setTreeNumEvaluated(size_t n) override {
         _state.tree_num_evaluated = n;
     }
-    inline void removeFromTreeMemory(size_t n) override{
-        _state.tree_memory -= n;
-    }
     inline void addToTreeMemory(size_t n) override{
         _state.tree_memory += n;
     }
@@ -314,9 +309,6 @@ class Logger : public NullLogger {
     }
     inline void incPmapDiscardNum() override {
         ++_state.pmap_discard_num;
-    }
-    inline void removeFromPmapMemory(size_t n) {
-        _state.pmap_memory -= n;
     }
     inline void addToPmapMemory(size_t n) override {
         _state.pmap_memory += n;

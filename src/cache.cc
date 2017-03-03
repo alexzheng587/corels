@@ -211,12 +211,10 @@ void delete_subtree(CacheTree* tree, Node* node, bool destructive,
             ++iter;
         }
         tree->decrement_num_nodes(); // always delete interior (non-leaf) nodes
-        logger.removeFromTreeMemory(sizeof(*node));
         delete node;
     } else {
         if (destructive) {  // only delete leaf nodes in destructive mode
             tree->decrement_num_nodes();
-            logger.removeFromTreeMemory(sizeof(*node));
             delete node;
         } else {
             logger.decPrefixLen(node->depth());

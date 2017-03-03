@@ -179,7 +179,7 @@ void evaluate_children(CacheTree* tree, Node* parent, VECTOR parent_not_captured
                     double t5 = timestamp();
                     q->push(n);
                     logger.setQueueSize(q->size());
-                    logger.addQueueElement(len_prefix, lower_bound, true);
+                    //logger.addQueueElement(len_prefix, lower_bound, true);
                     logger.addToQueueInsertionTime(time_diff(t5));
                 }
             }
@@ -312,6 +312,7 @@ Node* queue_select(CacheTree* tree, BaseQueue* q, VECTOR captured) {
     // delete leaf nodes that were lazily marked
     if (node->deleted()) {
         tree->decrement_num_nodes();
+        logger.removeFromTreeMemory(sizeof(*node));
         delete node;
         return NULL;
     }
@@ -320,6 +321,8 @@ Node* queue_select(CacheTree* tree, BaseQueue* q, VECTOR captured) {
 
     while (node != tree->root()) {
         if (node->deleted()) {
+            logger.removeFromTreeMemory(sizeof(*node));
+            tree->decrement_num_nodes();
             delete node;
             return NULL;
         }
@@ -456,6 +459,7 @@ int bbound_queue(CacheTree* tree, size_t max_num_nodes, BaseQueue* q,
         q->pop();
         if (node->deleted()) {
             tree->decrement_num_nodes();
+            logger.removeFromTreeMemory(sizeof(*node));
             delete node;
         } else {
             lb = node->lower_bound() + tree->c();

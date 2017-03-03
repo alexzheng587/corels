@@ -1,6 +1,6 @@
 CFLAGS := -g -W -Wall -I. -DGMP -O$(O)
 
-ifneq (,$(filter $(shell uname -n),elaines-MacBook-Pro.local Nicholass-MacBook-Air-5.local))
+ifneq (,$(filter $(shell uname -n),elaines-MacBook-Pro.local Nicholass-Air-5.wireless.yale.internal))
     LIBS := -L/usr/local/lib
     CFLAGS += -I/usr/local/include
 else

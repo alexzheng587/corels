@@ -25,6 +25,7 @@ template <class T>
 		return static_cast<T*>(malloc(n*sizeof(T)));
 	}
 	void deallocate (T* p, size_t n) {
+        printf("DEALLOCATE\n");
 		free(p);
 	}
 };
@@ -49,7 +50,7 @@ class Node {
     inline void set_deleted();
 
     // Returns pair of prefixes and predictions for the path from this node to the root
-    inline std::pair<std::vector<unsigned short>, std::vector<bool>>
+    inline std::pair<std::vector<unsigned short, tracking_allocator<unsigned short> >, std::vector<bool>>
         get_prefix_and_predictions();
 
     inline size_t depth() const;
@@ -136,7 +137,7 @@ class CacheTree {
     inline Node* root() const;
 
     void update_min_objective(double objective);
-    void update_opt_rulelist(std::vector<unsigned short>& parent_prefix,
+    void update_opt_rulelist(std::vector<unsigned short, tracking_allocator<unsigned short> >& parent_prefix,
                              unsigned short new_rule_id);
     void update_opt_predictions(std::vector<bool>& parent_predictions,
                                 bool new_pred,
@@ -150,7 +151,7 @@ class CacheTree {
     void prune_up(Node* node);
     void garbage_collect();
     void play_with_rules();
-    Node* check_prefix(std::vector<unsigned short>& prefix);
+    Node* check_prefix(std::vector<unsigned short, tracking_allocator<unsigned short> >& prefix);
 
   protected:
     Node* root_;
@@ -265,9 +266,9 @@ inline void Node::set_deleted() {
     deleted_ = 1;
 }
 
-inline std::pair<std::vector<unsigned short>, std::vector<bool>>
+inline std::pair<std::vector<unsigned short, tracking_allocator<unsigned short> >, std::vector<bool>>
     Node::get_prefix_and_predictions() {
-    std::vector<unsigned short> prefix;
+    std::vector<unsigned short, tracking_allocator<unsigned short> > prefix;
     std::vector<bool> predictions;
     auto it1 = prefix.begin();
     auto it2 = predictions.begin();
@@ -403,7 +404,7 @@ inline void CacheTree::update_min_objective(double objective) {
  * Update the optimal rulelist of the tree.
  */
 inline void
-CacheTree::update_opt_rulelist(std::vector<unsigned short>& parent_prefix,
+CacheTree::update_opt_rulelist(std::vector<unsigned short, tracking_allocator<unsigned short> >& parent_prefix,
                                   unsigned short new_rule_id) {
     opt_rulelist_.assign(parent_prefix.begin(), parent_prefix.end());
     opt_rulelist_.push_back(new_rule_id);

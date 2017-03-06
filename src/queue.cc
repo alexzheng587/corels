@@ -68,7 +68,8 @@ DFSQueue::DFSQueue()
 void evaluate_children(CacheTree* tree, Node* parent, VECTOR parent_not_captured,
                        BaseQueue* q, PermutationMap* p) {
     auto pp_pair = parent->get_prefix_and_predictions();
-    std::vector<unsigned short> parent_prefix = std::move(pp_pair.first);
+    auto parent_prefix = std::move(pp_pair.first);
+    //std::vector<unsigned short> parent_prefix = std::move(pp_pair.first);
     std::vector<bool> parent_predictions = std::move(pp_pair.second);
 
     VECTOR captured, captured_zeros, not_captured, not_captured_zeros;
@@ -505,7 +506,8 @@ int bbound_queue(CacheTree* tree, size_t max_num_nodes, BaseQueue* q,
                 min_lower_bound = lb;
             if (print_queue) {
                 auto pp_pair = node->get_prefix_and_predictions();
-                std::vector<unsigned short> prefix = std::move(pp_pair.first);
+                auto prefix = std::move(pp_pair.first);
+                //std::vector<unsigned short> prefix = std::move(pp_pair.first);
                 std::vector<bool> predictions = std::move(pp_pair.second);
                 f << node->lower_bound() << " " << node->objective() << " " << node->depth() << " "
                   << (double) node->num_captured() / (double) tree->nsamples() << " ";

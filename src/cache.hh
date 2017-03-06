@@ -1,16 +1,33 @@
 #pragma once
 
+#include "utils.hh"
 #include "rule.h"
 #include <iterator>
 #include <map>
 #include <vector>
 #include <stdlib.h>
+#include <memory>
+#include <scoped_allocator>
 
 //template <class T> class Node;
 //template <class N> class CacheTree;
 
 //typedef Node<bool> BaseNode;       // nothing extra
 //typedef Node<double> CuriousNode;  // curiosity
+
+template <class T> 
+	struct tracking_allocator { 
+	typedef T value_type;
+	tracking_allocator() noexcept {}
+	T* allocate (size_t n) {
+		logger.addToPmapMemory(n * sizeof(T));
+		//printf("SZ N: %zu\n", n * sizeof(T));
+		return static_cast<T*>(malloc(n*sizeof(T)));
+	}
+	void deallocate (T* p, size_t n) {
+		free(p);
+	}
+};
 
 //template <class T>
 class Node {
@@ -52,7 +69,7 @@ class Node {
     }
 
   protected:
-    std::map<unsigned short, Node*> children_;
+    std::map<unsigned short, Node*, std::less<unsigned short>, std::scoped_allocator_adaptor<tracking_allocator<std::pair<unsigned short, Node*> > > >children_;
     Node* parent_;
     double lower_bound_;
     double objective_;

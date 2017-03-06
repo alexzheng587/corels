@@ -2,6 +2,7 @@
 //#include "utils.hh"
 //#include "pmap.hh"
 
+#include <gperftools/heap-profiler.h>
 #include <iostream>
 #include <stdio.h>
 #include <getopt.h>
@@ -145,6 +146,7 @@ int main(int argc, char *argv[]) {
         rule_print_all(labels, nlabels, nsamples);
     }
 
+    HeapProfilerStart("/tmp/mybin.hprof");
     logger.setC(c);
     logger.setNRules(nrules);
     logger.initPrefixVec();
@@ -183,7 +185,6 @@ int main(int argc, char *argv[]) {
                              latex_out, rules, labels, opt_fname);
 
         logger.dumpState();
-        delete p;
     } else if (run_bfs) {
         if (use_prefix_perm_map) {
             printf("BFS Permutation Map\n");
@@ -274,7 +275,6 @@ int main(int argc, char *argv[]) {
         print_final_rulelist(r_list, tree->opt_predictions(),
                              latex_out, rules, labels, opt_fname);
     }
-    delete p;
 
     printf("final total time: %f\n", time_diff(init));
     logger.dumpState();
@@ -288,5 +288,7 @@ int main(int argc, char *argv[]) {
 	printf("delete labels\n");
 	rules_free(labels, nlabels, 0);
 	printf("tree destructors\n");
+    HeapProfilerDump("/tmp/mybin.hprof");
+    HeapProfilerStop();
     return 0;
 }

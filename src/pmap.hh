@@ -2,21 +2,7 @@
 #include "cache.hh"
 #include "utils.hh"
 #include <unordered_map>
-#include <scoped_allocator>
-#include <memory>
-
-template <class T>
-struct tracking_allocator {
-    typedef T value_type;
-    tracking_allocator() noexcept {}
-    T* allocate (size_t n) { 
-        logger.addToPmapMemory(n * sizeof(T));
-        return static_cast<T*>(malloc(n*sizeof(T))); 
-    }
-    void deallocate (T* p, size_t n) { 
-        free(p);
-    }
-};
+//#include <scoped_allocator>
 
 /*
  * Represent prefix canonical order using an array of shorts.
@@ -115,6 +101,8 @@ class PermutationMap {
                                     parent, num_not_captured, nsamples,
                                     len_prefix, c, minority);
         }
+        virtual size_t bucket_count() { return 0; }
+        virtual float max_load_factor() { return 0.0;}
 };
 
 typedef std::pair<double, unsigned char*> prefix_val;
@@ -182,6 +170,12 @@ class PrefixPermutationMap : public PermutationMap {
             }
             return child;
         }
+    size_t bucket_count() {
+        return pmap->bucket_count();
+    }
+    float max_load_factor() { 
+        return pmap->max_load_factor();
+    }
 	private:
 		std::unordered_map<prefix_key, prefix_val, prefix_hash, prefix_eq, std::scoped_allocator_adaptor<tracking_allocator<std::pair<const prefix_key, prefix_val> > > >* pmap;
 };

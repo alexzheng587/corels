@@ -1,6 +1,7 @@
 #include "queue.hh"
 #include "pmap.hh"
 #include <algorithm>
+#include <sys/resource.h>
 
 extern int ablation;
 
@@ -293,6 +294,23 @@ void bbound_stochastic(CacheTree* tree, size_t max_num_nodes,
             logger.dumpState();     
         }
     }
+    printf("TREE mem usage: %zu\n", logger.getTreeMemory());
+    printf("PMAP mem usage: %zu\n", logger.getPmapMemory());
+
+    unsigned sz = p->size() * 40; //sizeof(M::value_type)
+    sz += p->bucket_count() * (sizeof(size_t) + sizeof(void*));
+    sz += p->size() * sizeof(void*);
+    //sz += p->size() * (sizeof(void*) + 40); //sizeof((M::value_type))
+    printf("SZ: %zu\n", sz);
+
+    struct rusage* memory = (struct rusage*) malloc(sizeof(struct rusage));
+    getrusage(RUSAGE_SELF, memory);
+
+    printf("Usage: %ld\n", memory->ru_ixrss);
+    printf("Usage: %ld\n", memory->ru_isrss);
+    printf("Usage: %ld\n", memory->ru_idrss);
+    printf("Max: %ld\n", memory->ru_maxrss);
+
     logger.dumpState();
     rule_vfree(&not_captured);
 }
@@ -437,6 +455,25 @@ int bbound_queue(CacheTree* tree, size_t max_num_nodes, BaseQueue* q,
 
     printf("TREE mem usage: %zu\n", logger.getTreeMemory());
     printf("PMAP mem usage: %zu\n", logger.getPmapMemory());
+
+    unsigned sz = p->size() * 40; //sizeof(M::value_type)
+    //sz += p->bucket_count() * (sizeof(size_t) + sizeof(void*));
+    sz += p->size() * sizeof(void*);
+    sz += p->size() * (sizeof(void*) + 40); //sizeof((M::value_type))
+    printf("SZ: %zu\n", sz);
+    //printf("BUCKET: %zu\n", p->bucket_count());
+    //printf("MAX LOAD: %f\n", p->max_load_factor());
+    //printf("LOAD: %f\n", p->size() / (float) p->bucket_count());
+
+    struct rusage* memory = (struct rusage*) malloc(sizeof(struct rusage));
+    getrusage(RUSAGE_SELF, memory);
+
+    printf("Usage: %ld\n", memory->ru_ixrss);
+    printf("Usage: %ld\n", memory->ru_isrss);
+    printf("Usage: %ld\n", memory->ru_idrss);
+    printf("Max: %ld\n", memory->ru_maxrss);
+    //printf("VM: %ll\n", usage.ru_ixrss);
+    //printf("VM2: %ll\n", usage.ru_idrss);
 
     // Print out queue
     ofstream f;

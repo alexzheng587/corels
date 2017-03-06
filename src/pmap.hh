@@ -93,7 +93,7 @@ class PermutationMap {
                              size_t nrules, bool prediction, bool default_prediction, double lower_bound,
                              double objective, Node* parent, int num_not_captured, int nsamples, int len_prefix,
                              double c, double minority, CacheTree* tree, VECTOR not_captured,
-                             std::vector<unsigned short> parent_prefix)
+                             std::vector<unsigned short, tracking_allocator<unsigned short> > parent_prefix)
         {
             (void) not_captured, (void) parent_prefix;
             return tree->construct_node(new_rule, nrules, prediction,
@@ -116,7 +116,7 @@ class PrefixPermutationMap : public PermutationMap {
 					 size_t nrules, bool prediction, bool default_prediction, double lower_bound,
 					 double objective, Node* parent, int num_not_captured, int nsamples, int len_prefix,
 					 double c, double minority, CacheTree* tree, VECTOR not_captured,
-					 std::vector<unsigned short> parent_prefix) override
+					 std::vector<unsigned short, tracking_allocator<unsigned short> > parent_prefix) override
 		{
             (void) not_captured;
             parent_prefix.push_back(new_rule);
@@ -140,7 +140,7 @@ class PrefixPermutationMap : public PermutationMap {
                 if (lower_bound < permuted_lower_bound) {
                     Node* permuted_node;
                     unsigned char* indices = iter->second.second;
-                    std::vector<unsigned short> permuted_prefix(parent_prefix.size());
+                    std::vector<unsigned short, tracking_allocator<unsigned short> > permuted_prefix(parent_prefix.size());
                     for (unsigned char i = 0; i < indices[0]; ++i)
                         permuted_prefix[i] = parent_prefix[indices[i + 1]];
 
@@ -190,7 +190,7 @@ class CapturedPermutationMap : public PermutationMap {
 					 size_t nrules, bool prediction, bool default_prediction, double lower_bound,
 					 double objective, Node* parent, int num_not_captured, int nsamples, int len_prefix,
 					 double c, double minority, CacheTree* tree, VECTOR not_captured,
-					 std::vector<unsigned short> parent_prefix) override
+					 std::vector<unsigned short, tracking_allocator<unsigned short> > parent_prefix) override
 		{
             parent_prefix.push_back(new_rule);
             Node* child = NULL;
@@ -202,7 +202,7 @@ class CapturedPermutationMap : public PermutationMap {
 #endif
             auto iter = cmap->find(key);
             if (iter != cmap->end()) {
-                std::vector<unsigned short> permuted_prefix = iter->second.first;
+                std::vector<unsigned short, tracking_allocator<unsigned short> > permuted_prefix = iter->second.first;
                 double permuted_lower_bound = iter->second.second;
                 if (lower_bound < permuted_lower_bound) {
                     Node* permuted_node;
@@ -217,7 +217,7 @@ class CapturedPermutationMap : public PermutationMap {
                     child = tree->construct_node(new_rule, nrules, prediction, default_prediction,
                                                lower_bound, objective, parent,
                                                 num_not_captured, nsamples, len_prefix, c, minority);
-                    iter->second = std::make_pair(parent_prefix, lower_bound);
+                    //iter->second = std::make_pair(parent_prefix, lower_bound);
                 }
             } else {
                 child = tree->construct_node(new_rule, nrules, prediction, default_prediction,
@@ -230,7 +230,7 @@ class CapturedPermutationMap : public PermutationMap {
 		}
  
 	private:
-		std::unordered_map<captured_key, std::pair<std::vector<unsigned short>, double>, captured_hash>* cmap;
+		std::unordered_map<captured_key, std::pair<std::vector<unsigned short, tracking_allocator<unsigned short> >, double>, captured_hash>* cmap;
 };
 
 class NullPermutationMap : public PermutationMap  {

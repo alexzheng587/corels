@@ -1,9 +1,27 @@
 #pragma once
 
 #include "pmap.hh"
+#include "alloc.hh"
 #include <functional>
 #include <queue>
 #include <set>
+
+/*
+template <class T> 
+struct queue_alloc : track_alloc<T> {
+    typedef T value_type;
+    T* allocate (size_t n) {
+        logger.addToQueueMemory(n * sizeof(T));
+        return static_cast<T*>(malloc(n*sizeof(T)));
+    }   
+    void deallocate (T* p, size_t n) {
+        logger.removeFromQueueMemory(n * sizeof(*p));
+        free(p);
+    }   
+};
+*/
+
+typedef std::priority_queue<Node*, std::vector<Node*, queue_alloc<Node*> >, std::function<bool(Node*, Node*)> > q_alloc;
 
 /*
  * Queue class -- performs BFS
@@ -25,8 +43,7 @@ class BaseQueue {
         void push(Node* node) {
             get_q()->push(node);
         }
-        virtual std::priority_queue<Node*, std::vector<Node*>, 
-                std::function<bool(Node*, Node*)> >* get_q() {
+        virtual q_alloc* get_q() {
             return q_;
         }
         size_t size() {
@@ -37,7 +54,7 @@ class BaseQueue {
         }
 
     private:
-        std::priority_queue<Node*, std::vector<Node*>, std::function<bool(Node*, Node*)> >* q_;
+        q_alloc* q_;
 };
 
 /*
@@ -51,12 +68,11 @@ class CuriousQueue : public BaseQueue {
     public:
         //CuriousQueue() : BaseQueue(curious) {}; 
         CuriousQueue();
-        std::priority_queue<Node*, std::vector<Node*>, 
-               std::function<bool(Node*, Node*)> >* get_q() override {
+        q_alloc* get_q() override {
             return q_;
         }
     protected:
-        std::priority_queue<Node*, std::vector<Node*>, std::function<bool(Node*, Node*)> >* q_;
+        q_alloc* q_;
 };
 
 /*
@@ -70,12 +86,11 @@ class LowerBoundQueue : public BaseQueue {
     public:
         LowerBoundQueue();
         //LowerBoundQueue() : BaseQueue(lb) {}; 
-        std::priority_queue<Node*, std::vector<Node*>, 
-               std::function<bool(Node*, Node*)> >* get_q() override {
+        q_alloc* get_q() override {
             return q_;
         }
     protected:
-        std::priority_queue<Node*, std::vector<Node*>, std::function<bool(Node*, Node*)> >* q_;
+        q_alloc* q_;
 };
 
 /*
@@ -89,12 +104,11 @@ class ObjectiveQueue : public BaseQueue {
     public:
         ObjectiveQueue();
         //ObjectiveQueue() : BaseQueue(objective) {}; 
-        std::priority_queue<Node*, std::vector<Node*>, 
-               std::function<bool(Node*, Node*)> >* get_q() override {
+        q_alloc* get_q() override {
             return q_;
         }
     protected:
-        std::priority_queue<Node*, std::vector<Node*>, std::function<bool(Node*, Node*)> >* q_;
+        q_alloc* q_;
 };
 
 /*
@@ -108,12 +122,11 @@ class DFSQueue : public BaseQueue {
     public:
         DFSQueue();
         //DFSQueue() : BaseQueue(dfs) {}; 
-        std::priority_queue<Node*, std::vector<Node*>, 
-               std::function<bool(Node*, Node*)> >* get_q() override {
+        q_alloc* get_q() override {
             return q_;
         }
     protected:
-        std::priority_queue<Node*, std::vector<Node*>, std::function<bool(Node*, Node*)> >* q_;
+        q_alloc* q_;
 };
 
 class NullQueue : public BaseQueue {

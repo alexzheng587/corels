@@ -152,7 +152,7 @@ void CacheTree::prune_up(Node* node) {
  * Checks that the prefix is in the tree and hasn't been deleted.
  * Returns NULL if the prefix isn't in the tree, a pointer to the prefix node otherwise.
  */
-Node* CacheTree::check_prefix(std::vector<unsigned short, tracking_allocator<unsigned short> >& prefix) {
+Node* CacheTree::check_prefix(std::vector<unsigned short, cache_alloc<unsigned short> >& prefix) {
     Node* node = this->root_;
     for(auto it = prefix.begin(); it != prefix.end(); ++it) {
         node = node->child(*it);

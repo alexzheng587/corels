@@ -12,6 +12,23 @@
 
 using namespace std;
 
+/*
+template <class T>  
+    struct track_alloc { 
+    typedef T value_type;
+    track_alloc() noexcept {}
+    template <class U> track_alloc (const track_alloc<U>&) noexcept {}
+    T* allocate (size_t n) {
+        printf("SZ N: %zu\n", n * sizeof(T));
+        return static_cast<T*>(malloc(n*sizeof(T)));
+    }   
+    void deallocate (T* p, size_t n) {
+        printf("DEALLOCATE\n");
+        free(p);
+    }   
+};
+*/
+
 class NullLogger {
   public:
     virtual void closeFile() {}
@@ -50,9 +67,12 @@ class NullLogger {
     virtual inline void setTreeNumEvaluated(size_t n) {}
     virtual inline void addToTreeMemory(size_t n) {}
     virtual inline void removeFromTreeMemory(size_t n) {}
-    virtual inline size_t getTreeMemory() {}
+    virtual inline std::pair<size_t, size_t> getTreeMemory() {}
     virtual inline void addToQueueInsertionTime(double t) {}
     virtual inline void setQueueSize(size_t n) {}
+    virtual inline void addToQueueMemory(size_t n) {}
+    virtual inline void removeFromQueueMemory(size_t n) {}
+    virtual inline std::pair<size_t, size_t> getQueueMemory() {}
     virtual inline void setNRules(size_t nrules) {}
     virtual inline void setC(double c) {}
     virtual inline void initPrefixVec() {}
@@ -67,7 +87,7 @@ class NullLogger {
     virtual inline void incPmapDiscardNum() {}
     virtual inline void addToPmapMemory(size_t n) {}
     virtual inline void removeFromPmapMemory(size_t n) {}
-    virtual inline size_t getPmapMemory() {}
+    virtual inline std::pair<size_t, size_t> getPmapMemory() {}
     virtual inline void subtreeSize(mpz_t tot, unsigned int len_prefix, double lower_bound) {}
     virtual inline void approxRemainingSize(mpz_t tot, unsigned int len_prefix) {}
     virtual inline void addQueueElement(unsigned int len_prefix, double lower_bound, bool approx) {}
@@ -101,11 +121,15 @@ class NullLogger {
         _state.tree_num_nodes = 0;
         _state.tree_num_evaluated = 0;
         _state.tree_memory = 0;
+        _state.tree_max_memory = 0;
         _state.queue_insertion_time = 0;
         _state.queue_size = 0;
         _state.queue_min_length = 0;
+        _state.queue_memory = 0;
+        _state.queue_max_memory = 0;
         _state.pmap_size = 0;
         _state.pmap_memory = 0;
+        _state.pmap_max_memory = 0;
         _state.pmap_null_num = 0;
         _state.pmap_discard_num = 0;
         mpz_init(_state.remaining_space_size);
@@ -139,13 +163,17 @@ class NullLogger {
         size_t tree_num_nodes;
         size_t tree_num_evaluated;
         size_t tree_memory;
+        size_t tree_max_memory;
         double queue_insertion_time;
         size_t queue_size;
         size_t queue_min_length;                // monotonically increases
+        size_t queue_memory;
+        size_t queue_max_memory;
         size_t pmap_size;                       // size of pmap
         size_t pmap_null_num;                   // number of pmap lookups that return null
         size_t pmap_discard_num;                // number of pmap lookups that trigger discard
         size_t pmap_memory;
+        size_t pmap_max_memory;
         size_t* prefix_lens;
         mpz_t remaining_space_size;
     };
@@ -244,20 +272,31 @@ class Logger : public NullLogger {
     inline void setTreeNumEvaluated(size_t n) override {
         _state.tree_num_evaluated = n;
     }
+    inline void addToTreeMemory(size_t n) override{
+        _state.tree_memory += n;
+        _state.tree_max_memory += n;
+    }
     inline void removeFromTreeMemory(size_t n) override{
         _state.tree_memory -= n;
     }
-    inline void addToTreeMemory(size_t n) override{
-        _state.tree_memory += n;
-    }
-    inline size_t getTreeMemory() override {
-        return _state.tree_memory;
+    inline std::pair<size_t, size_t> getTreeMemory() override {
+        return std::make_pair(_state.tree_memory, _state.tree_max_memory);
     }
     inline void addToQueueInsertionTime(double t) override {
         _state.queue_insertion_time += t;
     }
     inline void setQueueSize(size_t n) override {
         _state.queue_size = n;
+    }
+    inline void addToQueueMemory(size_t n) override{
+        _state.queue_memory += n;
+        _state.queue_max_memory += n;
+    }
+    inline void removeFromQueueMemory(size_t n) override{
+        _state.queue_memory -= n;
+    }
+    inline std::pair<size_t, size_t> getQueueMemory() override {
+        return std::make_pair(_state.queue_memory, _state.queue_max_memory);
     }
     inline void setNRules(size_t nrules) override {
         // the first rule is the default rule
@@ -315,14 +354,15 @@ class Logger : public NullLogger {
     inline void incPmapDiscardNum() override {
         ++_state.pmap_discard_num;
     }
+    inline void addToPmapMemory(size_t n) override {
+        _state.pmap_memory += n;
+        _state.pmap_max_memory += n;
+    }
     inline void removeFromPmapMemory(size_t n) {
         _state.pmap_memory -= n;
     }
-    inline void addToPmapMemory(size_t n) override {
-        _state.pmap_memory += n;
-    }
-    inline size_t getPmapMemory() override {
-        return _state.pmap_memory;
+    inline std::pair<size_t, size_t> getPmapMemory() override {
+        return std::make_pair(_state.pmap_memory, _state.pmap_max_memory);
     }
     inline void subtreeSize(mpz_t tot, unsigned int len_prefix, double lower_bound) override {
         // Theorem 4 (fine-grain upper bound on number of remaining prefix evaluations)
@@ -421,6 +461,8 @@ class Logger : public NullLogger {
      */
 };
 
+extern Logger logger;
+
 inline double timestamp() {
     struct timeval now;
     gettimeofday(&now, 0);
@@ -431,18 +473,17 @@ inline double time_diff(double t0) {
     return timestamp() - t0;
 }
 
+#include "alloc.hh"
 /* 
  * Prints the final rulelist that CORELS returns.
  * rulelist -- rule ids of optimal rulelist
  * preds -- corresponding predictions of rules (+ default prediction)
  */
-void print_final_rulelist(const std::vector<unsigned short>& rulelist,
-                          const std::vector<bool>& preds,
+void print_final_rulelist(const std::vector<unsigned short, cache_alloc<unsigned short> >& rulelist,
+                          const std::vector<bool, cache_alloc<bool> >& preds,
                           const bool latex_out,
                           const rule_t rules[],
                           const rule_t labels[],
                           char fname[]);
-
-extern Logger logger;
 
 void print_machine_info();

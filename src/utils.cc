@@ -89,8 +89,8 @@ std::string Logger::dumpPrefixLens() {
 /*
  * Given a rulelist and predictions, will output a human-interpretable form to a file.
  */
-void print_final_rulelist(const std::vector<unsigned short>& rulelist,
-                          const std::vector<bool>& preds,
+void print_final_rulelist(const std::vector<unsigned short, cache_alloc<unsigned short> >& rulelist,
+                          const std::vector<bool, cache_alloc<bool> >& preds,
                           const bool latex_out,
                           const rule_t rules[],
                           const rule_t labels[], 

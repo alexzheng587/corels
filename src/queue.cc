@@ -35,24 +35,19 @@ BaseNode* base_construct_policy(unsigned short new_rule, size_t nrules, bool pre
 }*/
 
 BaseQueue::BaseQueue(std::function<bool(Node*, Node*)> cmp)
-    : q_(new std::priority_queue<Node*, std::vector<Node*>, 
-            std::function<bool(Node*, Node*)> > (cmp)) {}
+    : q_(new q_alloc (cmp)) {}
 
 CuriousQueue::CuriousQueue()
-    : q_(new std::priority_queue<Node*, std::vector<Node*>, 
-            std::function<bool(Node*, Node*)> > (curious)) {}
+    : q_(new q_alloc (curious)) {}
 
 LowerBoundQueue::LowerBoundQueue()
-    : q_(new std::priority_queue<Node*, std::vector<Node*>, 
-            std::function<bool(Node*, Node*)> > (lb)) {}
+    : q_(new q_alloc (lb)) {}
 
 ObjectiveQueue::ObjectiveQueue()
-    : q_(new std::priority_queue<Node*, std::vector<Node*>, 
-            std::function<bool(Node*, Node*)> > (objective)) {}
+    : q_(new q_alloc (objective)) {}
 
 DFSQueue::DFSQueue()
-    : q_(new std::priority_queue<Node*, std::vector<Node*>, 
-            std::function<bool(Node*, Node*)> > (dfs)) {}
+    : q_(new q_alloc (dfs)) {}
 
 /*
  * Performs incremental computation on a node, evaluating the bounds and inserting into the cache,
@@ -70,7 +65,8 @@ void evaluate_children(CacheTree* tree, Node* parent, VECTOR parent_not_captured
     auto pp_pair = parent->get_prefix_and_predictions();
     auto parent_prefix = std::move(pp_pair.first);
     //std::vector<unsigned short> parent_prefix = std::move(pp_pair.first);
-    std::vector<bool> parent_predictions = std::move(pp_pair.second);
+    //std::vector<bool> parent_predictions = std::move(pp_pair.second);
+    auto parent_predictions = std::move(pp_pair.second);
 
     VECTOR captured, captured_zeros, not_captured, not_captured_zeros;
     int num_captured, c0, c1, captured_correct;
@@ -295,8 +291,12 @@ void bbound_stochastic(CacheTree* tree, size_t max_num_nodes,
             logger.dumpState();     
         }
     }
-    printf("TREE mem usage: %zu\n", logger.getTreeMemory());
-    printf("PMAP mem usage: %zu\n", logger.getPmapMemory());
+    auto tree_mem = logger.getTreeMemory();
+    auto pmap_mem = logger.getPmapMemory();
+    auto q_mem = logger.getQueueMemory();
+    printf("TREE max mem usage: %zu, end mem usage: %zu\n", tree_mem.first, tree_mem.second);
+    printf("PMAP max mem usage: %zu, end mem usage: %zu\n", pmap_mem.first, pmap_mem.second);
+    printf("QUEUE max mem usage: %zu, end mem usage: %zu\n", q_mem.first, q_mem.second);
 
     unsigned sz = p->size() * 40; //sizeof(M::value_type)
     sz += p->bucket_count() * (sizeof(size_t) + sizeof(void*));
@@ -454,8 +454,12 @@ int bbound_queue(CacheTree* tree, size_t max_num_nodes, BaseQueue* q,
     else
         printf("Exited because max number of nodes in the tree was reached\n");
 
-    printf("TREE mem usage: %zu\n", logger.getTreeMemory());
-    printf("PMAP mem usage: %zu\n", logger.getPmapMemory());
+    auto tree_mem = logger.getTreeMemory(); 
+    auto pmap_mem = logger.getPmapMemory(); 
+    auto queue_mem = logger.getQueueMemory(); 
+    printf("TREE mem usage: %zu, max mem usage: %zu\n", tree_mem.first, tree_mem.second);
+    printf("PMAP mem usage: %zu, max mem usage: %zu\n", pmap_mem.first, pmap_mem.second);
+    printf("QUEUE mem usage: %zu, max mem usage: %zu\n", queue_mem.first, queue_mem.second);
 
     unsigned sz = p->size() * 40; //sizeof(M::value_type)
     //sz += p->bucket_count() * (sizeof(size_t) + sizeof(void*));
@@ -508,7 +512,8 @@ int bbound_queue(CacheTree* tree, size_t max_num_nodes, BaseQueue* q,
                 auto pp_pair = node->get_prefix_and_predictions();
                 auto prefix = std::move(pp_pair.first);
                 //std::vector<unsigned short> prefix = std::move(pp_pair.first);
-                std::vector<bool> predictions = std::move(pp_pair.second);
+                //std::vector<bool> predictions = std::move(pp_pair.second);
+                auto predictions = std::move(pp_pair.second);
                 f << node->lower_bound() << " " << node->objective() << " " << node->depth() << " "
                   << (double) node->num_captured() / (double) tree->nsamples() << " ";
                 for(size_t i = 0; i < prefix.size(); ++i) {

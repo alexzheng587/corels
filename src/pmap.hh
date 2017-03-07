@@ -1,8 +1,25 @@
 #pragma once
 #include "cache.hh"
 #include "utils.hh"
+#include "alloc.hh"
 #include <unordered_map>
 //#include <scoped_allocator>
+
+/*
+template <class T>
+struct pmap_alloc : track_alloc<T> {
+    typedef T value_type;
+    T* allocate (size_t n) {
+        //printf("SZ N: %zu\n", n * sizeof(T));
+        logger.addToPmapMemory(sizeof(T) * n);
+        return static_cast<T*>(malloc(n*sizeof(T)));
+    }   
+    void deallocate (T* p, size_t n) {
+        logger.removeFromPmapMemory(sizeof(*p) * n);
+        free(p);
+    }
+};
+*/
 
 /*
  * Represent prefix canonical order using an array of shorts.
@@ -93,7 +110,7 @@ class PermutationMap {
                              size_t nrules, bool prediction, bool default_prediction, double lower_bound,
                              double objective, Node* parent, int num_not_captured, int nsamples, int len_prefix,
                              double c, double minority, CacheTree* tree, VECTOR not_captured,
-                             std::vector<unsigned short, tracking_allocator<unsigned short> > parent_prefix)
+                             std::vector<unsigned short, cache_alloc<unsigned short> > parent_prefix)
         {
             (void) not_captured, (void) parent_prefix;
             return tree->construct_node(new_rule, nrules, prediction,
@@ -116,7 +133,7 @@ class PrefixPermutationMap : public PermutationMap {
 					 size_t nrules, bool prediction, bool default_prediction, double lower_bound,
 					 double objective, Node* parent, int num_not_captured, int nsamples, int len_prefix,
 					 double c, double minority, CacheTree* tree, VECTOR not_captured,
-					 std::vector<unsigned short, tracking_allocator<unsigned short> > parent_prefix) override
+					 std::vector<unsigned short, cache_alloc<unsigned short> > parent_prefix) override
 		{
             (void) not_captured;
             parent_prefix.push_back(new_rule);
@@ -125,13 +142,13 @@ class PrefixPermutationMap : public PermutationMap {
             ordered[0] = (unsigned char)len_prefix;
             auto cmp = [&](int i, int j) { return parent_prefix[i] < parent_prefix[j]; };
             std::sort(&ordered[1], &ordered[len_prefix], cmp);
-
             std::sort(parent_prefix.begin(), parent_prefix.end());
             
             unsigned short *pre_key = (unsigned short*) malloc(sizeof(unsigned short) * (len_prefix + 1));
             pre_key[0] = (unsigned short)len_prefix;
             memcpy(&pre_key[1], &parent_prefix[0], len_prefix * sizeof(unsigned short));
             
+            logger.addToPmapMemory((len_prefix + 1) * (sizeof(unsigned char) + sizeof(unsigned short)));
             prefix_key key = { pre_key };
             Node* child = NULL;
             auto iter = pmap->find(key);
@@ -140,7 +157,7 @@ class PrefixPermutationMap : public PermutationMap {
                 if (lower_bound < permuted_lower_bound) {
                     Node* permuted_node;
                     unsigned char* indices = iter->second.second;
-                    std::vector<unsigned short, tracking_allocator<unsigned short> > permuted_prefix(parent_prefix.size());
+                    std::vector<unsigned short, cache_alloc<unsigned short> > permuted_prefix(parent_prefix.size());
                     for (unsigned char i = 0; i < indices[0]; ++i)
                         permuted_prefix[i] = parent_prefix[indices[i + 1]];
 
@@ -166,7 +183,6 @@ class PrefixPermutationMap : public PermutationMap {
                 unsigned char* ordered_prefix = &ordered[0];
                 pmap->insert(std::make_pair(key, std::make_pair(lower_bound, ordered_prefix)));
                 logger.incPmapSize();
-                logger.addToPmapMemory((len_prefix + 1) * (sizeof(unsigned char) + sizeof(unsigned short)));
             }
             return child;
         }
@@ -177,7 +193,7 @@ class PrefixPermutationMap : public PermutationMap {
         return pmap->max_load_factor();
     }
 	private:
-		std::unordered_map<prefix_key, prefix_val, prefix_hash, prefix_eq, std::scoped_allocator_adaptor<tracking_allocator<std::pair<const prefix_key, prefix_val> > > >* pmap;
+		std::unordered_map<prefix_key, prefix_val, prefix_hash, prefix_eq, pmap_alloc<std::pair<const prefix_key, prefix_val> > >* pmap;
 };
 
 class CapturedPermutationMap : public PermutationMap {
@@ -190,7 +206,7 @@ class CapturedPermutationMap : public PermutationMap {
 					 size_t nrules, bool prediction, bool default_prediction, double lower_bound,
 					 double objective, Node* parent, int num_not_captured, int nsamples, int len_prefix,
 					 double c, double minority, CacheTree* tree, VECTOR not_captured,
-					 std::vector<unsigned short, tracking_allocator<unsigned short> > parent_prefix) override
+					 std::vector<unsigned short, cache_alloc<unsigned short> > parent_prefix) override
 		{
             parent_prefix.push_back(new_rule);
             Node* child = NULL;
@@ -202,7 +218,7 @@ class CapturedPermutationMap : public PermutationMap {
 #endif
             auto iter = cmap->find(key);
             if (iter != cmap->end()) {
-                std::vector<unsigned short, tracking_allocator<unsigned short> > permuted_prefix = iter->second.first;
+                std::vector<unsigned short, cache_alloc<unsigned short> > permuted_prefix = iter->second.first;
                 double permuted_lower_bound = iter->second.second;
                 if (lower_bound < permuted_lower_bound) {
                     Node* permuted_node;
@@ -230,7 +246,7 @@ class CapturedPermutationMap : public PermutationMap {
 		}
  
 	private:
-		std::unordered_map<captured_key, std::pair<std::vector<unsigned short, tracking_allocator<unsigned short> >, double>, captured_hash>* cmap;
+		std::unordered_map<captured_key, std::pair<std::vector<unsigned short, cache_alloc<unsigned short> >, double>, captured_hash>* cmap;
 };
 
 class NullPermutationMap : public PermutationMap  {

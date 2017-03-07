@@ -1,6 +1,7 @@
 #pragma once
 
 #include "utils.hh"
+#include "alloc.hh"
 #include "rule.h"
 #include <iterator>
 #include <map>
@@ -15,20 +16,20 @@
 //typedef Node<bool> BaseNode;       // nothing extra
 //typedef Node<double> CuriousNode;  // curiosity
 
+/*
 template <class T> 
-	struct tracking_allocator { 
+struct cache_alloc : track_alloc<T> { 
 	typedef T value_type;
-	tracking_allocator() noexcept {}
 	T* allocate (size_t n) {
-		logger.addToPmapMemory(n * sizeof(T));
-		//printf("SZ N: %zu\n", n * sizeof(T));
+		logger.addToTreeMemory(n * sizeof(T));
 		return static_cast<T*>(malloc(n*sizeof(T)));
 	}
 	void deallocate (T* p, size_t n) {
-        printf("DEALLOCATE\n");
+		logger.removeFromTreeMemory(n * sizeof(*p));
 		free(p);
 	}
 };
+*/
 
 //template <class T>
 class Node {
@@ -50,7 +51,7 @@ class Node {
     inline void set_deleted();
 
     // Returns pair of prefixes and predictions for the path from this node to the root
-    inline std::pair<std::vector<unsigned short, tracking_allocator<unsigned short> >, std::vector<bool>>
+    inline std::pair<std::vector<unsigned short, cache_alloc<unsigned short> >, std::vector<bool, cache_alloc<bool> > >
         get_prefix_and_predictions();
 
     inline size_t depth() const;
@@ -70,7 +71,7 @@ class Node {
     }
 
   protected:
-    std::map<unsigned short, Node*, std::less<unsigned short>, std::scoped_allocator_adaptor<tracking_allocator<std::pair<unsigned short, Node*> > > >children_;
+    std::map<unsigned short, Node*, std::less<unsigned short>, cache_alloc<std::pair<unsigned short, Node*> > > children_;
     Node* parent_;
     double lower_bound_;
     double objective_;
@@ -121,8 +122,8 @@ class CacheTree {
            int nsamples, int len_prefix, double c, double minority);
 
     inline double min_objective() const;
-    inline std::vector<unsigned short> opt_rulelist() const;
-    inline std::vector<bool> opt_predictions() const;
+    inline std::vector<unsigned short, cache_alloc<unsigned short> > opt_rulelist() const;
+    inline std::vector<bool, cache_alloc<bool> > opt_predictions() const;
 
     inline size_t num_nodes() const;
     inline size_t num_evaluated() const;
@@ -137,9 +138,9 @@ class CacheTree {
     inline Node* root() const;
 
     void update_min_objective(double objective);
-    void update_opt_rulelist(std::vector<unsigned short, tracking_allocator<unsigned short> >& parent_prefix,
+    void update_opt_rulelist(std::vector<unsigned short, cache_alloc<unsigned short> >& parent_prefix,
                              unsigned short new_rule_id);
-    void update_opt_predictions(std::vector<bool>& parent_predictions,
+    void update_opt_predictions(std::vector<bool, cache_alloc<bool> >& parent_predictions,
                                 bool new_pred,
                                 bool new_default_pred);
 
@@ -151,7 +152,7 @@ class CacheTree {
     void prune_up(Node* node);
     void garbage_collect();
     void play_with_rules();
-    Node* check_prefix(std::vector<unsigned short, tracking_allocator<unsigned short> >& prefix);
+    Node* check_prefix(std::vector<unsigned short, cache_alloc<unsigned short> >& prefix);
 
   protected:
     Node* root_;
@@ -163,8 +164,8 @@ class CacheTree {
     size_t num_evaluated_;
 
     double min_objective_;
-    std::vector<unsigned short> opt_rulelist_;
-    std::vector<bool> opt_predictions_;
+    std::vector<unsigned short, cache_alloc<unsigned short> > opt_rulelist_;
+    std::vector<bool, cache_alloc<bool> > opt_predictions_;
 
     std::vector<rule_t> rules_;
     std::vector<rule_t> labels_;
@@ -266,10 +267,10 @@ inline void Node::set_deleted() {
     deleted_ = 1;
 }
 
-inline std::pair<std::vector<unsigned short, tracking_allocator<unsigned short> >, std::vector<bool>>
+inline std::pair<std::vector<unsigned short, cache_alloc<unsigned short> >, std::vector<bool, cache_alloc<bool> > >
     Node::get_prefix_and_predictions() {
-    std::vector<unsigned short, tracking_allocator<unsigned short> > prefix;
-    std::vector<bool> predictions;
+    std::vector<unsigned short, cache_alloc<unsigned short> > prefix;
+    std::vector<bool, cache_alloc<bool> > predictions;
     auto it1 = prefix.begin();
     auto it2 = predictions.begin();
     Node* node = this;
@@ -340,11 +341,11 @@ inline double CacheTree::min_objective() const {
     return min_objective_;
 }
 
-inline std::vector<unsigned short> CacheTree::opt_rulelist() const {
+inline std::vector<unsigned short, cache_alloc<unsigned short> > CacheTree::opt_rulelist() const {
     return opt_rulelist_;
 }
 
-inline std::vector<bool> CacheTree::opt_predictions() const {
+inline std::vector<bool, cache_alloc<bool> > CacheTree::opt_predictions() const {
     return opt_predictions_;
 }
 
@@ -404,7 +405,7 @@ inline void CacheTree::update_min_objective(double objective) {
  * Update the optimal rulelist of the tree.
  */
 inline void
-CacheTree::update_opt_rulelist(std::vector<unsigned short, tracking_allocator<unsigned short> >& parent_prefix,
+CacheTree::update_opt_rulelist(std::vector<unsigned short, cache_alloc<unsigned short> >& parent_prefix,
                                   unsigned short new_rule_id) {
     opt_rulelist_.assign(parent_prefix.begin(), parent_prefix.end());
     opt_rulelist_.push_back(new_rule_id);
@@ -415,7 +416,7 @@ CacheTree::update_opt_rulelist(std::vector<unsigned short, tracking_allocator<un
  * Update the optimal rulelist predictions of the tree.
  */
 inline void
-CacheTree::update_opt_predictions(std::vector<bool>& parent_predictions,
+CacheTree::update_opt_predictions(std::vector<bool, cache_alloc<bool> >& parent_predictions,
                                      bool new_pred,
                                      bool new_default_pred) {
     opt_predictions_.assign(parent_predictions.begin(), parent_predictions.end());

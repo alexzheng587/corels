@@ -92,6 +92,7 @@ rules_init(const char *infile, int *nrules,
 	 */
 	rule_cnt = add_default_rule != 0 ? 1 : 0;
 	while (getline(&line, &len, fi) != -1) {
+        char* line_cpy = line;
 		if (rule_cnt >= rsize) {
 			rsize += RULE_INC;
                 	rules = realloc(rules, rsize * sizeof(rule_t));
@@ -100,7 +101,7 @@ rules_init(const char *infile, int *nrules,
 		}
 
 		/* Get the rule string; line will contain the bits. */
-		if ((rulestr = strsep(&line, " ")) == NULL)
+		if ((rulestr = strsep(&line_cpy, " ")) == NULL)
 			goto err;
 
 		rulelen = strlen(rulestr) + 1;
@@ -114,8 +115,8 @@ rules_init(const char *infile, int *nrules,
 		 * at line[len-1]; let's make it a NUL and shorten the line
 		 * length by one.
 		 */
-		line[len-1] = '\0';
-		if (ascii_to_vector(line, len, &sample_cnt, &ones,
+		line_cpy[len-1] = '\0';
+		if (ascii_to_vector(line_cpy, len, &sample_cnt, &ones,
 		    &rules[rule_cnt].truthtable) != 0)
 		    	goto err;
 		rules[rule_cnt].support = ones;
@@ -126,6 +127,7 @@ rules_init(const char *infile, int *nrules,
 			if (*cp == ',')
 				rules[rule_cnt].cardinality++;
 		rule_cnt++;
+        free(line);
         line = NULL;
 	}
 	/* All done! */

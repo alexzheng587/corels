@@ -79,8 +79,10 @@ CuriousNode* CacheTree::construct_node(unsigned short new_rule, size_t nrules, b
                          int len_prefix, double c, double minority) {
     size_t num_captured = nsamples - num_not_captured;
     double curiosity = (lower_bound - c * len_prefix + c) * nsamples / (double)(num_captured);
-    return (new CuriousNode(new_rule, nrules, prediction, default_prediction,
+    CuriousNode* n = (new CuriousNode(new_rule, nrules, prediction, default_prediction,
                             lower_bound, objective, curiosity, (CuriousNode*) parent, num_captured, minority));
+    logger.addToTreeMemory(sizeof(*n));
+    return n;
 }
 
 
@@ -121,7 +123,7 @@ void CacheTree::insert(Node* node) {
     node->parent()->children_.insert(std::make_pair(node->id(), node));
     ++num_nodes_;
     logger.setTreeNumNodes(num_nodes_);
-    logger.addToTreeMemory(sizeof(*node));
+    //logger.addToTreeMemory(sizeof(*node));
 }
 
 /*

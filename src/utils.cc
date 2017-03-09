@@ -18,7 +18,7 @@ void Logger::setLogFileName(char *fname) {
        << "permutation_map_insertion_time,permutation_map_insertion_num,permutation_map_memory,"
        << "current_lower_bound,tree_min_objective,tree_prefix_length,"
        << "tree_num_nodes,tree_num_evaluated,tree_memory,"
-       << "queue_size,queue_min_length,"
+       << "queue_size,queue_min_length,queue_memory,"
        << "pmap_size,pmap_null_num,pmap_discard_num,"
        << "log_remaining_space_size,prefix_lengths" << endl;
 }
@@ -53,6 +53,7 @@ void Logger::dumpState() {
        << _state.tree_memory << ","
        << _state.queue_size << ","
        << _state.queue_min_length << ","
+       << _state.queue_memory << ","
        << _state.pmap_size << ","
        << _state.pmap_null_num << ","
        << _state.pmap_discard_num << ","

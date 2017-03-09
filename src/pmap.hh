@@ -75,6 +75,19 @@ struct captured_key {
 #endif
     }
 };
+struct cap_eq {
+    bool operator()(const captured_key& k, const captured_key& other) const {
+#ifdef GMP
+        return !mpz_cmp(other.key, k.key);
+#else
+        size_t nentries = (k.len + BITS_PER_ENTRY - 1)/BITS_PER_ENTRY;
+        for (size_t i = 0; i < nentries; i++)
+            if (other.key[i] != k.key[i])
+                return false;
+        return true;
+#endif
+    }
+};
 
 /*
  * Hash function from: http://www.cse.yorku.ca/~oz/hash.html
@@ -196,6 +209,7 @@ class PrefixPermutationMap : public PermutationMap {
 		std::unordered_map<prefix_key, prefix_val, prefix_hash, prefix_eq, pmap_alloc<std::pair<const prefix_key, prefix_val> > >* pmap;
 };
 
+typedef std::pair<std::vector<unsigned short, cache_alloc<unsigned short> >, double> cap_val;
 class CapturedPermutationMap : public PermutationMap {
 	public:
         CapturedPermutationMap();
@@ -246,7 +260,7 @@ class CapturedPermutationMap : public PermutationMap {
 		}
  
 	private:
-		std::unordered_map<captured_key, std::pair<std::vector<unsigned short, cache_alloc<unsigned short> >, double>, captured_hash>* cmap;
+		std::unordered_map<captured_key, cap_val, captured_hash, cap_eq, pmap_alloc<std::pair<const captured_key, cap_val> > >* cmap;
 };
 
 class NullPermutationMap : public PermutationMap  {

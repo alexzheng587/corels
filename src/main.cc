@@ -194,21 +194,21 @@ int main(int argc, char *argv[]) {
         } else {
             printf("BFS No Permutation Map \n");
         }
-        CacheTree tree(nsamples, nrules, c, rules, labels, meta);
+        CacheTree* tree = new CacheTree(nsamples, nrules, c, rules, labels, meta);
         BaseQueue* bfs_q = new BaseQueue;
-        bbound_queue(&tree,
+        bbound_queue(tree,
                        max_num_nodes,
                        bfs_q,
                        p, 0, 0);
 
-        printf("final num_nodes: %zu\n", tree.num_nodes());
-        printf("final num_evaluated: %zu\n", tree.num_evaluated());
-        printf("final min_objective: %1.5f\n", tree.min_objective());
-        const std::vector<unsigned short, cache_alloc<unsigned short> >& r_list = tree.opt_rulelist();
+        printf("final num_nodes: %zu\n", tree->num_nodes());
+        printf("final num_evaluated: %zu\n", tree->num_evaluated());
+        printf("final min_objective: %1.5f\n", tree->min_objective());
+        const std::vector<unsigned short, cache_alloc<unsigned short> >& r_list = tree->opt_rulelist();
         //auto r_list = tree.opt_rulelist();
         printf("final accuracy: %1.5f\n",
-               1 - tree.min_objective() + c*r_list.size());
-        print_final_rulelist(r_list, tree.opt_predictions(),
+               1 - tree->min_objective() + c*r_list.size());
+        print_final_rulelist(r_list, tree->opt_predictions(),
                              latex_out, rules, labels, opt_fname);
         delete p;
     } else if (run_curiosity) {

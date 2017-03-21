@@ -3,6 +3,8 @@
 #include "utils.hh"
 #include "alloc.hh"
 #include <unordered_map>
+#include <algorithm>
+#include <set>
 //#include <scoped_allocator>
 
 /*
@@ -25,14 +27,16 @@ struct pmap_alloc : track_alloc<T> {
  * Represent prefix canonical order using an array of shorts.
  * The 0th index of the pointer contains the length of the prefix.
  */
+
 struct prefix_key {
     unsigned short *key;
     prefix_key(unsigned short* k) {
         key = k;
     }
 };
+//typedef std::vector<unsigned short, pmap_alloc<unsigned short> > prefix_key;
 struct prefix_eq {
-    bool operator()(const prefix_key& k, const prefix_key& other) const {
+   bool operator()(const prefix_key& k, const prefix_key& other) const {
         if (k.key[0] != other.key[0])
             return false;
         for(size_t i = 1; i <= *k.key; ++i) {
@@ -41,8 +45,13 @@ struct prefix_eq {
         }
         return true;
     }
+    /*bool operator()(const prefix_key& k, const prefix_key& other) const {
+        return k == other;
+    }*/
 };
 
+typedef std::pair<double, unsigned char*> prefix_val;
+//typedef std::pair<double, std::vector<unsigned short, pmap_alloc<unsigned short> > >prefix_val;
 /*
  * Hash function from: http://www.cse.yorku.ca/~oz/hash.html
  */
@@ -52,7 +61,13 @@ struct prefix_hash {
         for(size_t i = 1; i <= *k.key; ++i)
             hash = k.key[i] + (hash << 6) + (hash << 16) - hash;
         return hash;
-    }
+    }/*
+    std::size_t operator()(const prefix_key& k) const {
+        unsigned long hash = 0;
+        for(auto i = k.begin(); i != k.end(); ++i)
+            hash = *i + (hash << 6) + (hash << 16) - hash;
+        return hash;
+    }*/
 };
 
 /*
@@ -135,7 +150,6 @@ class PermutationMap {
         virtual float max_load_factor() { return 0.0;}
 };
 
-typedef std::pair<double, unsigned char*> prefix_val;
 class PrefixPermutationMap : public PermutationMap {
 	public:
         PrefixPermutationMap ();
@@ -150,30 +164,37 @@ class PrefixPermutationMap : public PermutationMap {
 		{
             (void) not_captured;
             parent_prefix.push_back(new_rule);
+            //prefix_key key(parent_prefix.begin(), parent_prefix.end());
+            //std::sort(key.begin(), key.end());
 
+            
             unsigned char* ordered = (unsigned char*) malloc(sizeof(unsigned char) * (len_prefix + 1));
             ordered[0] = (unsigned char)len_prefix;
             auto cmp = [&](int i, int j) { return parent_prefix[i] < parent_prefix[j]; };
             std::sort(&ordered[1], &ordered[len_prefix], cmp);
-            std::sort(parent_prefix.begin(), parent_prefix.end());
             
+            std::sort(parent_prefix.begin(), parent_prefix.end());
             unsigned short *pre_key = (unsigned short*) malloc(sizeof(unsigned short) * (len_prefix + 1));
             pre_key[0] = (unsigned short)len_prefix;
             memcpy(&pre_key[1], &parent_prefix[0], len_prefix * sizeof(unsigned short));
             
+            
             logger.addToPmapMemory((len_prefix + 1) * (sizeof(unsigned char) + sizeof(unsigned short)));
             prefix_key key = { pre_key };
+            //logger.addToPmapMemory((len_prefix + 1) * (sizeof(unsigned short)));
+            
             Node* child = NULL;
+            //std::vector<unsigned short, pmap_alloc<unsigned short> > val(parent_prefix.begin(), parent_prefix.end());
             auto iter = pmap->find(key);
             if (iter != pmap->end()) {
                 double permuted_lower_bound = iter->second.first;
                 if (lower_bound < permuted_lower_bound) {
                     Node* permuted_node;
-                    unsigned char* indices = iter->second.second;
+                    //std::vector<unsigned short, cache_alloc<unsigned short> > permuted_prefix(iter->second.second.begin(), iter->second.second.end());
                     std::vector<unsigned short, cache_alloc<unsigned short> > permuted_prefix(parent_prefix.size());
+                    unsigned char* indices = iter->second.second;
                     for (unsigned char i = 0; i < indices[0]; ++i)
                         permuted_prefix[i] = parent_prefix[indices[i + 1]];
-
                     if ((permuted_node = tree->check_prefix(permuted_prefix)) != NULL) {
                         Node* permuted_parent = permuted_node->parent();
                         permuted_parent->delete_child(permuted_node->id());
@@ -186,6 +207,7 @@ class PrefixPermutationMap : public PermutationMap {
                                              default_prediction, lower_bound, objective,
                                              parent, num_not_captured, nsamples,
                                              len_prefix, c, minority);
+                    //iter->second = std::make_pair(lower_bound, val);
                     iter->second = std::make_pair(lower_bound, ordered);
                 }
             } else {
@@ -194,16 +216,17 @@ class PrefixPermutationMap : public PermutationMap {
                                          parent, num_not_captured, nsamples, len_prefix,
                                          c, minority);
                 unsigned char* ordered_prefix = &ordered[0];
+                //pmap->insert(std::make_pair(key, std::make_pair(lower_bound, val)));
                 pmap->insert(std::make_pair(key, std::make_pair(lower_bound, ordered_prefix)));
                 logger.incPmapSize();
             }
             return child;
         }
     size_t bucket_count() {
-        return pmap->bucket_count();
+        return 0;//pmap->bucket_count();
     }
     float max_load_factor() { 
-        return pmap->max_load_factor();
+        return 0.0;//pmap->max_load_factor();
     }
 	private:
 		std::unordered_map<prefix_key, prefix_val, prefix_hash, prefix_eq, pmap_alloc<std::pair<const prefix_key, prefix_val> > >* pmap;

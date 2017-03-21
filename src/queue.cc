@@ -1,6 +1,7 @@
 #include "queue.hh"
 #include "pmap.hh"
 #include <algorithm>
+#include <numeric>
 #include <sys/resource.h>
 
 extern int ablation;
@@ -61,7 +62,7 @@ DFSQueue::DFSQueue()
  * p -- the permutation map
  */
 void evaluate_children(CacheTree* tree, Node* parent, VECTOR parent_not_captured,
-                       BaseQueue* q, PermutationMap* p) {
+                       BaseQueue* q, PermutationMap* p, std::vector<unsigned short>& rules, double* min_objective) {
     auto pp_pair = parent->get_prefix_and_predictions();
     auto parent_prefix = std::move(pp_pair.first);
     //std::vector<unsigned short> parent_prefix = std::move(pp_pair.first);
@@ -91,7 +92,9 @@ void evaluate_children(CacheTree* tree, Node* parent, VECTOR parent_not_captured
     parent_lower_bound = parent->lower_bound();
     parent_minority = parent->minority();
     double t0 = timestamp();
-    for (i = 1; i < nrules; i++) {
+    for(std::vector<unsigned short>::iterator it = rules.begin(); it != rules.end(); ++it) {
+    //for (i = 1; i < nrules; i++) {
+        i = *it;
         double t1 = timestamp();
         if (std::find(parent_prefix.begin(), parent_prefix.end(), i) != parent_prefix.end())
             continue;
@@ -132,12 +135,13 @@ void evaluate_children(CacheTree* tree, Node* parent, VECTOR parent_not_captured
         objective = lower_bound + (float)(num_not_captured - default_correct) / nsamples;
         logger.addToObjTime(time_diff(t2));
         logger.incObjNum();
-        if (objective < tree->min_objective()) {
+        if (objective < *min_objective) {//tree->min_objective()) {
             printf("min(objective): %1.5f -> %1.5f, length: %d, cache size: %zu\n",
                    tree->min_objective(), objective, len_prefix, tree->num_nodes());
 
             logger.setTreeMinObj(objective);
             tree->update_min_objective(objective);
+            *min_objective = objective;
             tree->update_opt_rulelist(parent_prefix, i);
             tree->update_opt_predictions(parent_predictions, prediction, default_prediction);
 
@@ -251,6 +255,10 @@ void bbound_stochastic(CacheTree* tree, size_t max_num_nodes,
 
     rule_vinit(tree->nsamples(), &not_captured);
 
+    int nrules = tree->nrules();
+    std::vector<unsigned short> rules(nrules - 1);
+    std::iota(rules.begin(), rules.end(), 1);
+
     size_t num_iter = 0;
     tree->insert_root();
     logger.incTreeInsertionNum();
@@ -264,7 +272,7 @@ void bbound_stochastic(CacheTree* tree, size_t max_num_nodes,
         if (node_ordered) {
             double t1 = timestamp();
             min_objective = tree->min_objective();
-            evaluate_children(tree, node_ordered, not_captured, q, p);
+            evaluate_children(tree, node_ordered, not_captured, q, p, rules, &min_objective);
             logger.addToEvalChildrenTime(time_diff(t1));
             logger.incEvalChildrenNum();
 
@@ -354,25 +362,44 @@ Node* queue_select(CacheTree* tree, BaseQueue* q, VECTOR captured) {
     return selected_node;
 }
 
+void bbound_queue_init(CacheTree* tree, BaseQueue* q, PermutationMap* p, std::vector<unsigned short> rules, double* min_objective) {
+    // Initialize tree and queue
+    tree->insert_root();
+    logger.incPrefixLen(0);
+    logger.incTreeInsertionNum();
+    //q->push(tree->root());
+    logger.setQueueSize(0);//q->size());
+    // Initialize log
+    logger.dumpState();
+    logger.initRemainingSpaceSize();
+    logger.setInitialTime(timestamp());
+    Node* node = tree->root();
+    // Initialize rules
+    VECTOR not_captured;
+    rule_vinit(tree->nsamples(), &not_captured);
+    rule_copy(not_captured, tree->rule(node->id()).truthtable, tree->nsamples());
+
+    evaluate_children(tree, node, not_captured, q, p, rules, min_objective);
+}
+
+
 /*
  * Explores the search space by using a queue to order the search process.
  * The queue can be ordered by DFS, BFS, or an alternative priority metric (e.g. lower bound).
  */
 int bbound_queue(CacheTree* tree, size_t max_num_nodes, BaseQueue* q,
-                 PermutationMap* p, size_t num_iter, size_t switch_iter) {
+                 PermutationMap* p, size_t num_iter, size_t switch_iter, double* min_objective) {
     bool print_queue = 0;
-    double start;
+    double start = logger.getInitialTime();
     int cnt;
-    double min_objective;
+    double cur_min_objective;
     Node* node_ordered;
     VECTOR captured, not_captured;
     rule_vinit(tree->nsamples(), &captured);
     rule_vinit(tree->nsamples(), &not_captured);
 
-    size_t queue_min_length = logger.getQueueMinLen();
-
     // Set up is different when we initialize the tree as opposed to when we restart execution.
-    if (tree->num_nodes() == 0) {
+/*    if (tree->num_nodes() == 0) {
         start = timestamp();
         logger.setInitialTime(start);
         logger.initializeState();
@@ -391,7 +418,13 @@ int bbound_queue(CacheTree* tree, size_t max_num_nodes, BaseQueue* q,
     } else {
         start = logger.getInitialTime();
         min_objective = tree->min_objective();
-    }
+    } */
+    int nrules = tree->nrules();
+    std::vector<unsigned short> rules(nrules - 1);
+    std::iota(rules.begin(), rules.end(), 1);
+
+    size_t queue_min_length = logger.getQueueMinLen();
+
     while ((tree->num_nodes() < max_num_nodes) &&
            !q->empty()) {
         double t0 = timestamp();
@@ -400,20 +433,20 @@ int bbound_queue(CacheTree* tree, size_t max_num_nodes, BaseQueue* q,
         logger.incNodeSelectNum();
         if (node_ordered) {
             double t1 = timestamp();
-            min_objective = tree->min_objective();
+            cur_min_objective = *min_objective;
             // not_captured = default rule truthtable & ~ captured
             rule_vandnot(not_captured,
                          tree->rule(tree->root()->id()).truthtable, captured,
                          tree->nsamples(), &cnt);
-            evaluate_children(tree, node_ordered, not_captured, q, p);
+            evaluate_children(tree, node_ordered, not_captured, q, p, rules, min_objective);
             logger.addToEvalChildrenTime(time_diff(t1));
             logger.incEvalChildrenNum();
 
-            if (tree->min_objective() < min_objective) {
-                min_objective = tree->min_objective();
+            if (*min_objective < cur_min_objective) {
+                tree->update_min_objective(*min_objective);
                 printf("before garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", tree->num_nodes(), logger.getLogRemainingSpaceSize());
                 logger.dumpState();
-                tree->garbage_collect();
+                //tree->garbage_collect();
                 logger.dumpState();
                 printf("after garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", tree->num_nodes(), logger.getLogRemainingSpaceSize());
             }

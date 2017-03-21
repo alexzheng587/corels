@@ -7,7 +7,9 @@
 #include <map>
 #include <vector>
 #include <stdlib.h>
+#include <fstream>
 #include <memory>
+#include <thread>
 #include <scoped_allocator>
 
 //template <class T> class Node;
@@ -151,10 +153,13 @@ class CacheTree {
     void insert(Node* node);
     void prune_up(Node* node);
     void garbage_collect();
+    void print_tree();
+    void open_print_file(size_t thread_num, size_t num_threads);
     void play_with_rules();
     Node* check_prefix(std::vector<unsigned short, cache_alloc<unsigned short> >& prefix);
 
   protected:
+    std::ofstream t_;
     Node* root_;
     size_t nsamples_;
     size_t nrules_;
@@ -172,6 +177,8 @@ class CacheTree {
     std::vector<rule_t> meta_;
 
     void gc_helper(Node* node);
+    void print_tree_helper(Node* node, std::vector<short>& rlist);
+    void close_print_file();
 };
 
 /*

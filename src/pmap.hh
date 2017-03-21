@@ -2,9 +2,10 @@
 #include "cache.hh"
 #include "utils.hh"
 #include "alloc.hh"
-#include <unordered_map>
 #include <algorithm>
+#include <mutex>
 #include <set>
+#include <unordered_map>
 //#include <scoped_allocator>
 
 /*
@@ -148,6 +149,7 @@ class PermutationMap {
         }
         virtual size_t bucket_count() { return 0; }
         virtual float max_load_factor() { return 0.0;}
+        std::mutex lk_;
 };
 
 class PrefixPermutationMap : public PermutationMap {
@@ -163,6 +165,7 @@ class PrefixPermutationMap : public PermutationMap {
 					 std::vector<unsigned short, cache_alloc<unsigned short> > parent_prefix) override
 		{
             (void) not_captured;
+            lk_.lock();
             parent_prefix.push_back(new_rule);
             //prefix_key key(parent_prefix.begin(), parent_prefix.end());
             //std::sort(key.begin(), key.end());
@@ -220,6 +223,7 @@ class PrefixPermutationMap : public PermutationMap {
                 pmap->insert(std::make_pair(key, std::make_pair(lower_bound, ordered_prefix)));
                 logger.incPmapSize();
             }
+            lk_.unlock();
             return child;
         }
     size_t bucket_count() {

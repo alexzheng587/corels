@@ -1,4 +1,4 @@
-CFLAGS := -g -W -Wall -I. -DGMP -O$(O)
+CFLAGS := -g -W -Wall -I. -DGMP #-O$(O)
 
 ifneq (,$(filter $(shell uname -n),elaines-MacBook-Pro.local Nicholass-Air-5.wireless.yale.internal))
     LIBS := -L/usr/local/lib

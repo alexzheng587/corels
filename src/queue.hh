@@ -142,7 +142,8 @@ extern void bbound_stochastic(CacheTree* tree, size_t max_num_nodes, Permutation
 extern Node* queue_select(CacheTree* tree, BaseQueue* q, VECTOR captured);
 
 extern int bbound_queue(CacheTree* tree, size_t max_num_nodes, BaseQueue* q, 
-                 PermutationMap* p, size_t num_iter, size_t switch_iter);
+                 PermutationMap* p, size_t num_iter, size_t switch_iter, double* min_objective);
 
 extern void evaluate_children(CacheTree* tree, Node* parent, VECTOR parent_not_captured,
-                       BaseQueue* q, PermutationMap* p);
+                       BaseQueue* q, PermutationMap* p, std::vector<unsigned short>& rules, double* min_objective);
+extern void bbound_queue_init(CacheTree* tree, BaseQueue* q, PermutationMap* p, std::vector<unsigned short> rules, double* min_objective);

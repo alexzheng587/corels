@@ -59,8 +59,21 @@ CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules,
 }
 
 CacheTree::~CacheTree() {
-    if (root_)
+	if (t_)
+        close_print_file();
+	if (root_)
         delete_subtree(this, root_, true, false);
+}
+
+
+void CacheTree::close_print_file() {
+    t_.close();
+}
+
+void CacheTree::open_print_file(size_t t_num, size_t num_threads) {
+    char tname[64];
+    sprintf(tname, "tree_%zu_of_%zu.txt", t_num, num_threads);
+    t_.open(tname, ios::out | ios::trunc);
 }
 
 /*Node* CacheTree::construct_node(unsigned short new_rule, size_t nrules, bool prediction,
@@ -192,6 +205,37 @@ void CacheTree::gc_helper(Node* node) {
 void CacheTree::garbage_collect() {
     logger.clearRemainingSpaceSize();
     gc_helper(root_);
+}
+
+inline void
+CacheTree::print_tree_helper(Node* node, std::vector<short>& rlist) {
+    //printf("%i ", node->id());
+    //N* child;
+    //std::vector<N*> children;
+    bool empty = true;
+    for (typename std::map<unsigned short, Node*>::iterator cit = node->children_.begin(); cit != node->children_.end(); ++cit) {
+        empty = false;
+        std::vector<short> extended(rlist);
+        extended.push_back(cit->second->id());
+        print_tree_helper(cit->second, extended);
+    }
+
+    if (empty && rlist.size() > 1) {
+        for(auto it = rlist.begin(); it != rlist.end(); ++it) { 
+            t_ << *it << " ";
+        }
+        t_ << "\n";
+    }
+        //children.push_back(cit->second);
+    //for (typename std::vector<N*>::iterator cit = children.begin(); cit != children.end(); ++cit) {
+    //}
+}
+
+inline void
+CacheTree::print_tree() {
+    printf("TREE ID: %i\n", std::this_thread::get_id());
+    std::vector<short> rlist(root_->id());
+    print_tree_helper(root_, rlist);
 }
 
 /*

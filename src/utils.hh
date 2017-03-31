@@ -95,6 +95,8 @@ class NullLogger {
     virtual inline void initRemainingSpaceSize() {}
     virtual inline void clearRemainingSpaceSize() {}
     virtual inline size_t getLogRemainingSpaceSize() {}
+    virtual inline void addToLockContentionTime(double n) {}
+    virtual inline double getLockContentionTime() {}
     /*
      * Initializes the logger by setting all fields to 0.
      * This allwos us to write a log record immediately.
@@ -132,6 +134,7 @@ class NullLogger {
         _state.pmap_max_memory = 0;
         _state.pmap_null_num = 0;
         _state.pmap_discard_num = 0;
+        _state.lock_contention_time = 0;
         mpz_init(_state.remaining_space_size);
         initRemainingSpaceSize();
     }
@@ -174,6 +177,7 @@ class NullLogger {
         size_t pmap_discard_num;                // number of pmap lookups that trigger discard
         size_t pmap_memory;
         size_t pmap_max_memory;
+        double lock_contention_time;
         size_t* prefix_lens;
         mpz_t remaining_space_size;
     };
@@ -425,40 +429,12 @@ class Logger : public NullLogger {
         // This is approximate.
         return mpz_sizeinbase(_state.remaining_space_size, 10); 
     }
-    /*
-     * Initializes the logger by setting all fields to 0.
-     * This allwos us to write a log record immediately.
-    inline void initializeState() override {
-        _state.total_time = 0.;
-        _state.evaluate_children_time = 0.;
-        _state.evaluate_children_num = 0;
-        _state.node_select_time = 0.;
-        _state.node_select_num = 0;
-        _state.rule_evaluation_time = 0.;
-        _state.rule_evaluation_num = 0;
-        _state.lower_bound_time = 0.;
-        _state.lower_bound_num = 0;
-        _state.objective_time = 0.;
-        _state.objective_num = 0;
-        _state.tree_insertion_time = 0.;
-        _state.tree_insertion_num = 0;
-        _state.permutation_map_insertion_time = 0.;
-        _state.permutation_map_insertion_num = 0;
-        _state.current_lower_bound = 0.;
-        _state.tree_min_objective = 1.;
-        _state.tree_prefix_length = 0;
-        _state.tree_num_nodes = 0;
-        _state.tree_num_evaluated = 0;
-        _state.queue_insertion_time = 0;
-        _state.queue_size = 0;
-        _state.queue_min_length = 0;
-        _state.pmap_size = 0;
-        _state.pmap_null_num = 0;
-        _state.pmap_discard_num = 0;
-        mpz_init(_state.remaining_space_size);
-        initRemainingSpaceSize();
+    inline void addToLockContentionTime(double n) {
+        _state.lock_contention_time += n;
     }
-     */
+    inline double getLockContentionTime() {
+        return _state.lock_contention_time;
+    }
 };
 
 extern Logger logger;

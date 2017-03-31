@@ -35,7 +35,7 @@ import mine
 import utils
 
 
-city_dict = {1: 'Manhattan', 2: 'Brooklyn', 3: 'Bronx', 4: 'Queens', 5: 'Staten Island'}
+city_dict = {1: 'Manhattan', 2: 'Brooklyn', 3: 'Bronx', 4: 'Queens', 5: 'Staten-Island'}
 
 sex_dict = {0: 'female', 1: 'male'}
 

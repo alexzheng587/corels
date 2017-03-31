@@ -1,6 +1,7 @@
 #include "pmap.hh"
 
 PrefixPermutationMap::PrefixPermutationMap()
+//    : pmap(new cuckoohash_map<prefix_key, prefix_val, prefix_hash, prefix_eq>) {}//, pmap_alloc<std::pair<const prefix_key, prefix_val> > >) {}
     : pmap(new std::unordered_map<prefix_key, prefix_val, prefix_hash, prefix_eq, pmap_alloc<std::pair<const prefix_key, prefix_val> > >) {}
 
 CapturedPermutationMap::CapturedPermutationMap()

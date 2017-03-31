@@ -6,8 +6,11 @@
 #include <mutex>
 #include <set>
 #include <unordered_map>
+#include <libcuckoo/cuckoohash_map.hh>
 //#include <scoped_allocator>
 
+extern int lock_ac;
+extern pthread_rwlock_t pmap_lk;
 /*
 template <class T>
 struct pmap_alloc : track_alloc<T> {
@@ -165,7 +168,6 @@ class PrefixPermutationMap : public PermutationMap {
 					 std::vector<unsigned short, cache_alloc<unsigned short> > parent_prefix) override
 		{
             (void) not_captured;
-            lk_.lock();
             parent_prefix.push_back(new_rule);
             //prefix_key key(parent_prefix.begin(), parent_prefix.end());
             //std::sort(key.begin(), key.end());
@@ -188,13 +190,25 @@ class PrefixPermutationMap : public PermutationMap {
             
             Node* child = NULL;
             //std::vector<unsigned short, pmap_alloc<unsigned short> > val(parent_prefix.begin(), parent_prefix.end());
+            //lk_.lock();
+            ++lock_ac;
+            //double t0;
+            //pthread_rwlock_rdlock(&pmap_lk);
+            lk_.lock();
             auto iter = pmap->find(key);
+            lk_.unlock();
+            //pthread_rwlock_unlock(&pmap_lk);
+            //logger.addToLockContentionTime(
             if (iter != pmap->end()) {
+          //  if (pmap->contains(key)) {
+                //auto iter = pmap->find(key);
                 double permuted_lower_bound = iter->second.first;
+                //double permuted_lower_bound = iter.first; //iter->second.first;
                 if (lower_bound < permuted_lower_bound) {
                     Node* permuted_node;
                     //std::vector<unsigned short, cache_alloc<unsigned short> > permuted_prefix(iter->second.second.begin(), iter->second.second.end());
                     std::vector<unsigned short, cache_alloc<unsigned short> > permuted_prefix(parent_prefix.size());
+                    //unsigned char* indices = iter.second; //iter->second.second;
                     unsigned char* indices = iter->second.second;
                     for (unsigned char i = 0; i < indices[0]; ++i)
                         permuted_prefix[i] = parent_prefix[indices[i + 1]];
@@ -212,21 +226,30 @@ class PrefixPermutationMap : public PermutationMap {
                                              len_prefix, c, minority);
                     //iter->second = std::make_pair(lower_bound, val);
                     iter->second = std::make_pair(lower_bound, ordered);
+                    //auto newval = std::make_pair(lower_bound, ordered);
+                    //pmap->update(key, newval);
                 }
             } else {
+            //    pthread_rwlock_unlock(&pmap_lk);
                 child = tree->construct_node(new_rule, nrules, prediction,
                                          default_prediction, lower_bound, objective,
                                          parent, num_not_captured, nsamples, len_prefix,
                                          c, minority);
                 unsigned char* ordered_prefix = &ordered[0];
                 //pmap->insert(std::make_pair(key, std::make_pair(lower_bound, val)));
+                //pthread_rwlock_wrlock(&pmap_lk);
+                lk_.lock();
                 pmap->insert(std::make_pair(key, std::make_pair(lower_bound, ordered_prefix)));
+              //  pmap->insert(key, std::make_pair(lower_bound, ordered_prefix));
+                lk_.unlock();
+                //pthread_rwlock_unlock(&pmap_lk);
+                //lk_.unlock();
                 logger.incPmapSize();
             }
-            lk_.unlock();
             return child;
         }
     size_t bucket_count() {
+        //pmap->reserve(715000);
         return 0;//pmap->bucket_count();
     }
     float max_load_factor() { 
@@ -234,6 +257,7 @@ class PrefixPermutationMap : public PermutationMap {
     }
 	private:
 		std::unordered_map<prefix_key, prefix_val, prefix_hash, prefix_eq, pmap_alloc<std::pair<const prefix_key, prefix_val> > >* pmap;
+        //cuckoohash_map<prefix_key, prefix_val, prefix_hash, prefix_eq>* pmap; //, pmap_alloc<std::pair<const prefix_key, prefix_val> > >* pmap;
 };
 
 typedef std::pair<std::vector<unsigned short, cache_alloc<unsigned short> >, double> cap_val;
@@ -254,10 +278,16 @@ class CapturedPermutationMap : public PermutationMap {
             captured_key key;
             rule_vinit(nsamples, &key.key);
             rule_copy(key.key, not_captured, nsamples);
+#ifdef GMP
+            logger.addToPmapMemory(nsamples/ 8);
+#endif
 #ifndef GMP
             key.len = (short) nsamples;
+            logger.addToPmapMemory((k.len + BITS_PER_ENTRY - 1)/BITS_PER_ENTRY * sizeof(unsigned long));
 #endif
+            lk_.lock();
             auto iter = cmap->find(key);
+            lk_.unlock();
             if (iter != cmap->end()) {
                 std::vector<unsigned short, cache_alloc<unsigned short> > permuted_prefix = iter->second.first;
                 double permuted_lower_bound = iter->second.second;
@@ -280,7 +310,9 @@ class CapturedPermutationMap : public PermutationMap {
                 child = tree->construct_node(new_rule, nrules, prediction, default_prediction,
                                             lower_bound, objective, parent,
                                             num_not_captured, nsamples, len_prefix, c, minority);
+                lk_.lock();
                 cmap->insert(std::make_pair(key, std::make_pair(parent_prefix, lower_bound)));
+                lk_.unlock();
                 logger.incPmapSize();
             }
             return child;

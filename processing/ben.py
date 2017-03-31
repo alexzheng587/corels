@@ -235,3 +235,6 @@ def monks23(din='../data/small', dout='../data', froot='monks2', maxlhs=3, minsu
 def telco3(din='../data/telco', dout='../data', froot='telco.shuffled', maxlhs=3, minsupport=1):
     driver(din=din, dout=dout, froot=froot, train_suffix='.txt', delimiter=',',
            is_binary=False, maxlhs=maxlhs, minsupport=minsupport, out_suffix='-3')
+def mushroom(din='../data/mushroom', dout='../data', froot='mushroom', maxlhs=3, minsupport=1):
+    driver(din=din, dout=dout, froot=froot, train_suffix='.data',
+            delimiter=',', is_binary=False, maxlhs=maxlhs, minsupport=minsupport)

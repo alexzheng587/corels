@@ -1,8 +1,8 @@
-CFLAGS := -g -W -Wall -I. -DGMP #-O$(O)
+CFLAGS := -g -W -Wall -I. -I/Users/nlarusstone/Documents/Research/libcuckoo/install/include/ -DGMP -O$(O)
 
-ifneq (,$(filter $(shell uname -n),elaines-MacBook-Pro.local Nicholass-Air-5.wireless.yale.internal))
+ifneq (,$(filter $(shell uname -n),elaines-MacBook-Pro.local Nicholass-Air-5.local))
     LIBS := -L/usr/local/lib
-    CFLAGS += -I/usr/local/include
+    CFLAGS += -I/usr/local/include -I/Users/nlarusstone/Documents/Research/libcuckoo/install/include/
 else
     LIBS :=
 endif

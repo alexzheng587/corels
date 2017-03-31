@@ -8,9 +8,14 @@
 #include <getopt.h>
 #include <numeric>
 #include <thread>
+#include <mutex>
+#include <pthread.h>
 
 Logger logger;
 int ablation = 0;
+std::mutex log_lk;
+int lock_ac = 0;
+pthread_rwlock_t pmap_lk = PTHREAD_RWLOCK_INITIALIZER;
 
 int main(int argc, char *argv[]) {
     const char usage[] = "USAGE: %s [-s] [-b] [-t num_threads]"
@@ -115,10 +120,12 @@ int main(int argc, char *argv[]) {
     argc -= optind;
     argv += optind;
 
-    int nrules, nsamples, nlabels, nsamples_chk;
+    int nrules, nsamples, nlabels, nsamples_chk, errno;
     rule_t *rules, *labels;
-    rules_init(argv[0], &nrules, &nsamples, &rules, 1);
-    rules_init(argv[1], &nlabels, &nsamples_chk, &labels, 0);
+    errno = rules_init(argv[0], &nrules, &nsamples, &rules, 1);
+    printf("Rules ERRNO: %d\n", errno);
+    errno = rules_init(argv[1], &nlabels, &nsamples_chk, &labels, 0);
+    printf("Labels ERRNO: %d\n", errno);
 
     int nmeta, nsamples_check;
     rule_t *meta;
@@ -180,6 +187,9 @@ int main(int argc, char *argv[]) {
                                                       &indices[(size_t)((i + 1) * ((nrules-1)/(float)num_threads))]);
         ranges[i] = range;
     }
+    //pthread_rwlockattr_t attr;
+    //pthread_rwlockattr_init(&attr);
+    //pthread_rwlock_init(pmap_lk, &attr);
 
     double init = timestamp();
     BaseQueue* qs;
@@ -218,6 +228,7 @@ int main(int argc, char *argv[]) {
     if (use_prefix_perm_map) {
         printf("Prefix Permutation Map\n");
         PrefixPermutationMap* prefix_pmap = new PrefixPermutationMap;
+        //prefix_pmap->bucket_count();
         p = (PermutationMap*) prefix_pmap;
     } else if (use_captured_sym_map) {
         printf("Captured Symmetry Map\n");
@@ -357,6 +368,7 @@ int main(int argc, char *argv[]) {
     free(min_objective);
 
     printf("final total time: %f\n", time_diff(init));
+    printf("Number of lock acquistions: %d\n", lock_ac);
     logger.dumpState();
     logger.closeFile();
     if (meta) {

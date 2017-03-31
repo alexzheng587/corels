@@ -2,7 +2,9 @@
 #include <stdio.h>
 #include <assert.h>
 #include <sys/utsname.h>
+#include <mutex>
 
+extern std::mutex log_lk;
 /*
  * Sets the logger file name and writes the header line to the file.
  */
@@ -30,6 +32,7 @@ void Logger::setLogFileName(char *fname) {
 void Logger::dumpState() {
     if (_v < 1) return;
 
+    log_lk.lock();
     // update timestamp here
     setTotalTime(time_diff(_state.initial_time));
 
@@ -62,6 +65,7 @@ void Logger::dumpState() {
        << _state.pmap_discard_num << ","
        << getLogRemainingSpaceSize() << ","
        << dumpPrefixLens().c_str() << endl;
+    log_lk.unlock();
 }
 
 /*

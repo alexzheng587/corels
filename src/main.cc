@@ -276,6 +276,8 @@ int main(int argc, char *argv[]) {
         for(size_t i = 0; i < num_threads; ++i) {
             threads[i].join();
             CacheTree* tree = trees[i];
+            num_nodes += tree->num_nodes();
+            num_evaluated += tree->num_evaluated();
             printf("final num_nodes: %zu\n", tree->num_nodes());
             printf("final num_evaluated: %zu\n", tree->num_evaluated());
             printf("final min_objective: %1.5f\n", tree->min_objective());
@@ -358,12 +360,12 @@ int main(int argc, char *argv[]) {
     }
         */
 
-/*    printf("final num_nodes: %zu\n", num_nodes);
+    printf("final num_nodes: %zu\n", num_nodes);
     printf("final num_evaluated: %zu\n", num_evaluated);
     printf("final min_objective: %1.5f\n", *min_objective);
-    printf("final accuracy: %1.5f\n", 1 - *min_objective + c*r_list.size());
-    print_final_rulelist(r_list, preds, latex_out, rules, labels, opt_fname);
-    */
+    //printf("final accuracy: %1.5f\n", 1 - *min_objective + c*r_list.size());
+    //print_final_rulelist(r_list, preds, latex_out, rules, labels, opt_fname);
+    
     logger.dumpState();
     free(min_objective);
 

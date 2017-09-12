@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import time
 
@@ -8,7 +9,13 @@ import mine
 import utils
 
 
-def age_func(a):
+def get_age(dob, cd):
+    dob = datetime.strptime(dob, "%Y-%m-%d")
+    cd = datetime.strptime(cd, "%Y-%m-%d")
+    return ((cd - dob) + datetime(1, 1, 1)).year
+
+def age_func(dob, cd):
+    a = get_age(dob, cd)
     if (a <= 20):       # minimum age is 18
         return '18-20'  # support = 220
     elif (a <= 22):
@@ -73,7 +80,7 @@ columns = [(x['sex'] == 'Male'),
            ((x['age'] >= 45) & (x['age'] <= 59))]
 """
 
-age = np.array([age_func(i) for i in x['age']])
+age = np.array([age_func(dob, cd) for dob, cd in zip(x['dob'], x['compas_screening_date'])])
 
 juvenile_felonies = np.array(['>0' if (i > 0) else '=0' for i in x['juv_fel_count']])   # support = 282
 

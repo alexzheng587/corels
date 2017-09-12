@@ -6,144 +6,110 @@
 #include <queue>
 #include <set>
 
-/*
-template <class T> 
-struct queue_alloc : track_alloc<T> {
-    typedef T value_type;
-    T* allocate (size_t n) {
-        logger.addToQueueMemory(n * sizeof(T));
-        return static_cast<T*>(malloc(n*sizeof(T)));
-    }   
-    void deallocate (T* p, size_t n) {
-        logger.removeFromQueueMemory(n * sizeof(*p));
-        free(p);
-    }   
-};
-*/
+// pass custom allocator function to track memory allocations in the queue
+typedef std::priority_queue<Node*, tracking_vector<Node*, DataStruct::Queue>, 
+        std::function<bool(Node*, Node*)> > q;
 
-typedef std::priority_queue<Node*, std::vector<Node*, queue_alloc<Node*> >, std::function<bool(Node*, Node*)> > q_alloc;
-
-/*
- * Queue class -- performs BFS
- */
+// orders based on depth (BFS)
 static std::function<bool(Node*, Node*)> base_cmp = [](Node* left, Node* right) {
-    return left->id() > right->id();
+    return left->depth() >= right->depth();
 };
 
-class BaseQueue {
+// orders based on curiosity metric.
+static std::function<bool(Node*, Node*)> curious_cmp = [](Node* left, Node* right) {
+    return left->get_curiosity() >= right->get_curiosity();
+};
+
+// orders based on lower bound.
+static std::function<bool(Node*, Node*)> lb_cmp = [](Node* left, Node* right) {
+    return left->lower_bound() >= right->lower_bound();
+};
+
+// orders based on objective.
+static std::function<bool(Node*, Node*)> objective_cmp = [](Node* left, Node* right) {
+    return left->objective() >= right->objective();
+};
+
+// orders based on depth (DFS)
+static std::function<bool(Node*, Node*)> dfs_cmp = [](Node* left, Node* right) {
+    return left->depth() <= right->depth();
+};
+
+class Queue {
     public:
-        BaseQueue(std::function<bool(Node*, Node*)> cmp); 
-        BaseQueue() : BaseQueue(base_cmp) {};
+        Queue(std::function<bool(Node*, Node*)> cmp, char const *type);
+        // by default, initialize this as a BFS queue
+        Queue() : Queue(base_cmp, "BFS") {};
         Node* front() {
-            return get_q()->top();
+            return q_->top();
         }
         inline void pop() {
-            get_q()->pop();
+            q_->pop();
         }
         void push(Node* node) {
-            get_q()->push(node);
-        }
-        virtual q_alloc* get_q() {
-            return q_;
+            q_->push(node);
         }
         size_t size() {
-            return get_q()->size();
+            return q_->size();
         }
-        inline bool empty() {
-            return get_q()->empty();
+        bool empty() {
+            return q_->empty();
+        }
+        inline char const * type() {
+            return type_;
+        }
+
+        std::pair<Node*, tracking_vector<unsigned short, DataStruct::Tree> > select(CacheTree* tree, VECTOR captured) {
+            int cnt;
+            tracking_vector<unsigned short, DataStruct::Tree> prefix;
+            Node *selected_node, *node;
+            bool valid = true;
+            double lb;
+            do {
+                selected_node = q_->top();
+                q_->pop();
+                if (tree->ablation() != 2)
+                    lb = selected_node->lower_bound() + tree->c();
+                else
+                    lb = selected_node->lower_bound();
+                logger->setCurrentLowerBound(lb);
+
+                node = selected_node;
+                // delete leaf nodes that were lazily marked
+                if (node->deleted() || (lb >= tree->min_objective())) {
+                    tree->decrement_num_nodes();
+                    logger->removeFromMemory(sizeof(*node), DataStruct::Tree);
+                    delete node;
+                    valid = false;
+                } else {
+                    valid = true;
+                }
+            } while (!q_->empty() && !valid); 
+            if (!valid) {
+                return std::make_pair((Node*)NULL, prefix);
+            }
+
+            rule_vclear(tree->nsamples(), captured);
+            while (node != tree->root()) {
+                rule_vor(captured,
+                         captured, tree->rule(node->id()).truthtable,
+                         tree->nsamples(), &cnt);
+                prefix.push_back(node->id());
+                node = node->parent();
+            }
+            std::reverse(prefix.begin(), prefix.end());
+            return std::make_pair(selected_node, prefix);
         }
 
     private:
-        q_alloc* q_;
+        q* q_;
+        char const *type_;
 };
 
-/*
- * CuriousQueue -- orders based on curiosity metric
- */
-static std::function<bool(Node*, Node*)> curious = [](Node* left, Node* right) {
-    return left->get_storage() > right->get_storage();
-};
+extern int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p, double* min_objective);
 
-class CuriousQueue : public BaseQueue {
-    public:
-        //CuriousQueue() : BaseQueue(curious) {}; 
-        CuriousQueue();
-        q_alloc* get_q() override {
-            return q_;
-        }
-    protected:
-        q_alloc* q_;
-};
+extern void bbound_init(CacheTree* tree, Queue* q, PermutationMap* p, 
+        std::vector<unsigned short> rules, double* min_objective);
 
-/*
- * LowerBoundQueue -- orders based on curiosity metric
- */
-static std::function<bool(Node*, Node*)> lb = [](Node* left, Node* right) {
-    return left->lower_bound() > right->lower_bound();
-};
-
-class LowerBoundQueue : public BaseQueue {
-    public:
-        LowerBoundQueue();
-        //LowerBoundQueue() : BaseQueue(lb) {}; 
-        q_alloc* get_q() override {
-            return q_;
-        }
-    protected:
-        q_alloc* q_;
-};
-
-/*
- * ObjectiveQueue -- orders based on curiosity metric
- */
-static std::function<bool(Node*, Node*)> objective = [](Node* left, Node* right) {
-    return left->objective() > right->objective();
-};
-
-class ObjectiveQueue : public BaseQueue {
-    public:
-        ObjectiveQueue();
-        //ObjectiveQueue() : BaseQueue(objective) {}; 
-        q_alloc* get_q() override {
-            return q_;
-        }
-    protected:
-        q_alloc* q_;
-};
-
-/*
- * DFSQueue -- orders based on curiosity metric
- */
-static std::function<bool(Node*, Node*)> dfs = [](Node* left, Node* right) {
-    return left->depth() > right->depth();
-};
-
-class DFSQueue : public BaseQueue {
-    public:
-        DFSQueue();
-        //DFSQueue() : BaseQueue(dfs) {}; 
-        q_alloc* get_q() override {
-            return q_;
-        }
-    protected:
-        q_alloc* q_;
-};
-
-class NullQueue : public BaseQueue {
-  public:
-    void push(Node*) {};
-    size_t size() {return 0;};
-};
-
-extern Node* stochastic_select(CacheTree* tree, VECTOR not_captured);
-
-extern void bbound_stochastic(CacheTree* tree, size_t max_num_nodes, PermutationMap* p);
-
-extern Node* queue_select(CacheTree* tree, BaseQueue* q, VECTOR captured);
-
-extern int bbound_queue(CacheTree* tree, size_t max_num_nodes, BaseQueue* q, 
-                 PermutationMap* p, size_t num_iter, size_t switch_iter, double* min_objective);
-
-extern void evaluate_children(CacheTree* tree, Node* parent, VECTOR parent_not_captured,
-                       BaseQueue* q, PermutationMap* p, std::vector<unsigned short>& rules, double* min_objective);
-extern void bbound_queue_init(CacheTree* tree, BaseQueue* q, PermutationMap* p, std::vector<unsigned short> rules, double* min_objective);
+extern void evaluate_children(CacheTree* tree, Node* parent, tracking_vector<unsigned short, DataStruct::Tree> parent_prefix,
+        VECTOR parent_not_captured, std::vector<unsigned short>& rules, Queue* q, PermutationMap* p, double* min_objective);

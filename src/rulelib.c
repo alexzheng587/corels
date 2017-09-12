@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2016 Hongyu Yang, Cynthia Rudin, Margo Seltzer, and
  * The President and Fellows of Harvard College
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
  * "Software"), to deal in the Software without restriction, including
@@ -9,10 +9,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject
  * to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -42,9 +42,9 @@ int byte_ones[] = {
 /*   0 */ 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
 /*  16 */ 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
 /*  32 */ 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
-/*  48 */ 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 
-/*  64 */ 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,	
-/*  80 */ 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 
+/*  48 */ 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+/*  64 */ 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+/*  80 */ 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
 /*  96 */ 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
 /* 112 */ 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
 /* 128 */ 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
@@ -77,7 +77,6 @@ rules_init(const char *infile, int *nrules,
 	int rule_cnt, sample_cnt, rsize;
 	int i, ones, ret;
 	rule_t *rules=NULL;
-	rule_t default_rule;
 	size_t len = 0;
     size_t rulelen;
 
@@ -106,7 +105,6 @@ rules_init(const char *infile, int *nrules,
 
 		/* Get the rule string; line will contain the bits. */
 		if ((rulestr = strsep(&line_cpy, " ")) == NULL) {
-            printf("HI2\n");
 			goto err;
         }
 
@@ -126,7 +124,6 @@ rules_init(const char *infile, int *nrules,
 		line_cpy[len-1] = '\0';
 		if (ascii_to_vector(line_cpy, len, &sample_cnt, &ones,
 		    &rules[rule_cnt].truthtable) != 0) {
-                printf("HI, rule:cnt %d\n", rule_cnt);
 		    	goto err;
         }
 		rules[rule_cnt].support = ones;
@@ -172,7 +169,7 @@ err:
 #else
 			free(rules[i].truthtable);
 #endif
-		}	
+		}
 		free(rules);
 	}
 	(void)fclose(fi);
@@ -262,7 +259,7 @@ ascii_to_vector(char *line, size_t len, int *nsamples, int *nones, VECTOR *ret)
 	}
 	if ((s = mpz_sizeinbase (*ret, 2)) > (size_t) *nsamples)
 		*nsamples = (int) s;
-		
+
 	*nones = mpz_popcount(*ret);
 	return (0);
 #else
@@ -287,7 +284,7 @@ ascii_to_vector(char *line, size_t len, int *nsamples, int *nones, VECTOR *ret)
 		bufsize = (*nsamples + BITS_PER_ENTRY - 1) / BITS_PER_ENTRY;
 	if ((buf = malloc(bufsize * sizeof(v_entry))) == NULL)
 		return(errno);
-	
+
 	bufp = buf;
 	val = 0;
 	i = 0;
@@ -368,7 +365,7 @@ make_default(VECTOR *ttp, int len)
 	m = len % BITS_PER_ENTRY;
 	if (m != 0)
 		tt[nventry - 1] = tt[nventry - 1] >> (BITS_PER_ENTRY - m);
-    
+
 	return (0);
 #endif
 }
@@ -378,7 +375,7 @@ int
 ruleset_init(int nrules,
     int nsamples, int *idarray, rule_t *rules, ruleset_t **retruleset)
 {
-	int cnt, i, ret, tmp;
+	int cnt, i;
 	rule_t *cur_rule;
 	ruleset_t *rs;
 	ruleset_entry_t *cur_re;
@@ -435,7 +432,7 @@ int
 ruleset_backup(ruleset_t *rs, int **rs_idarray)
 {
 	int *ids;
-	
+
 	ids = *rs_idarray;
 
 	if ((ids = realloc(ids, (rs->n_rules * sizeof(int)))) == NULL)
@@ -466,7 +463,7 @@ ruleset_copy(ruleset_t **ret_dest, ruleset_t *src)
 	dest->n_alloc = src->n_rules;
 	dest->n_rules = src->n_rules;
 	dest->n_samples = src->n_samples;
-    
+
 	for (i = 0; i < src->n_rules; i++) {
 		dest->rules[i].rule_id = src->rules[i].rule_id;
 		dest->rules[i].ncaptured = src->rules[i].ncaptured;
@@ -507,7 +504,7 @@ ruleset_add(rule_t *rules, int nrules, ruleset_t **rsp, int newrule, int ndx)
 		expand = realloc(rs, sizeof(ruleset_t) +
 		    (rs->n_rules + 1) * sizeof(ruleset_entry_t));
 		if (expand == NULL)
-			return (errno);			
+			return (errno);
 		rs = expand;
 		rs->n_alloc = rs->n_rules + 1;
 		*rsp = rs;
@@ -542,7 +539,7 @@ ruleset_add(rule_t *rules, int nrules, ruleset_t **rsp, int newrule, int ndx)
 	 * Now, recompute all the captures entries for the new rule and
 	 * all rules following it.
 	 */
-    
+
 	for (i = ndx; i < rs->n_rules; i++) {
 		cur_re = rs->rules + i;
 		/*
@@ -644,15 +641,15 @@ try_again:	next = RANDOM_RANGE(1, (nrules - 1));
 int
 pick_random_rule(int nrules, ruleset_t *rs)
 {
-	int cnt, new_rule;
+	unsigned new_rule;
 
-	cnt = 0;
+	int cnt = 0;
 pickrule:
 	if (cnt < MAX_TRIES)
 		new_rule = RANDOM_RANGE(1, (nrules-1));
 	else
 		new_rule = 1 + (new_rule % (nrules-2));
-		
+
 	for (int j = 0; j < rs->n_rules; j++) {
 		if (rs->rules[j].rule_id == new_rule) {
 			cnt++;
@@ -861,6 +858,31 @@ rule_vandnot(VECTOR dest,
 #endif
 }
 
+/*
+ * Doesn't handle two's complement
+ */
+void
+rule_not(VECTOR dest, VECTOR src, int nsamples, int *ret_cnt)
+{
+#ifdef GMP
+    mpz_com(dest, src);
+    *ret_cnt = 0;
+    *ret_cnt = mpz_popcount(dest);
+#else
+	int i, count, nentries;
+
+	nentries = (nsamples + BITS_PER_ENTRY - 1)/BITS_PER_ENTRY;
+	count = 0;
+	assert(dest != NULL);
+	for (i = 0; i < nentries; i++) {
+		dest[i] = ~src[i];
+		count += count_ones(dest[i]);
+	}
+	*ret_cnt = count;
+    return;
+#endif
+}
+
 int
 count_ones_vector(VECTOR v, int len) {
 #ifdef GMP
@@ -877,10 +899,10 @@ count_ones_vector(VECTOR v, int len) {
 int
 count_ones(v_entry val)
 {
-	int count, i;
+	int count;
 
 	count = 0;
-	for (i = 0; i < sizeof(v_entry); i++) {
+	for (size_t i = 0; i < sizeof(v_entry); i++) {
 		count += byte_ones[val & BYTE_MASK];
 		val >>= 8;
 	}
@@ -890,9 +912,8 @@ count_ones(v_entry val)
 void
 ruleset_print(ruleset_t *rs, rule_t *rules, int detail)
 {
-	int i, j, n;
+	int i, n;
 	int total_support;
-	rule_t *r;
 
 	printf("%d rules %d samples\n", rs->n_rules, rs->n_samples);
 	n = (rs->n_samples + BITS_PER_ENTRY - 1) / BITS_PER_ENTRY;
@@ -960,4 +981,35 @@ rule_isset(VECTOR v, int e) {
 #else
 	return ((v[e/BITS_PER_ENTRY] & (1 << (e % BITS_PER_ENTRY))) != 0);
 #endif
+}
+
+int
+rule_vector_equal(const VECTOR v1, const VECTOR v2, short len1, short len2) {
+#ifdef GMP
+    return !mpz_cmp(v1, v2);
+#else
+    if (len1 != len2)
+        return 0;
+    size_t nentries = (len1 + BITS_PER_ENTRY - 1)/BITS_PER_ENTRY;
+    for (size_t i = 0; i < nentries; i++) {
+        if (v1[i] != v2[i])
+            return 0;
+    }
+    return 1;
+#endif
+}
+
+size_t
+rule_vector_hash(const VECTOR v, short len) {
+        unsigned long hash = 0;
+		size_t i;
+#ifdef GMP
+        for(i = 0; i < mpz_size(v); ++i)
+            hash = mpz_getlimbn(v, i) + (hash << 6) + (hash << 16) - hash;
+#else
+   		size_t nentries = (len + BITS_PER_ENTRY - 1)/BITS_PER_ENTRY;
+		for(i = 0; i < nentries; ++i)
+            hash = v[i] + (hash << 6) + (hash << 16) - hash;
+#endif
+        return hash;
 }

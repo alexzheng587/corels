@@ -162,8 +162,11 @@ void rule_vclear(int, VECTOR);
 void rule_vand(VECTOR, VECTOR, VECTOR, int, int *);
 void rule_vandnot(VECTOR, VECTOR, VECTOR, int, int *);
 void rule_vor(VECTOR, VECTOR, VECTOR, int, int *);
+void rule_not(VECTOR, VECTOR, int, int *);
 int count_ones(v_entry);
 int count_ones_vector(VECTOR, int);
+int rule_vector_equal(const VECTOR, const VECTOR, short, short);
+size_t rule_vector_hash(const VECTOR, short);
 
 /* Functions for the Scalable Baysian Rule Lists */
 double *predict(data_t *, pred_model_t *, params_t *);

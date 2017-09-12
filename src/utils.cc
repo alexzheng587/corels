@@ -5,6 +5,16 @@
 #include <mutex>
 
 extern std::mutex log_lk;
+
+Logger::Logger(double c, size_t nrules, int verbosity, char* log_fname, int freq) {
+      _c = c;
+      _nrules = nrules - 1;
+      _v = verbosity;
+      _freq = freq;
+      setLogFileName(log_fname);
+      initPrefixVec();
+}
+
 /*
  * Sets the logger file name and writes the header line to the file.
  */
@@ -83,9 +93,9 @@ std::string Logger::dumpRemainingSpaceSize() {
  */
 std::string Logger::dumpPrefixLens() {
     std::string s = "";
-    for(size_t i = 0; i < _state.nrules; ++i) {
+    for(size_t i = 0; i < _nrules; ++i) {
         if (_state.prefix_lens[i] > 0) {
-            s += std::to_string(i); 
+            s += std::to_string(i);
             s += ":";
             s += std::to_string(_state.prefix_lens[i]);
             s += ";";
@@ -97,13 +107,13 @@ std::string Logger::dumpPrefixLens() {
 /*
  * Given a rulelist and predictions, will output a human-interpretable form to a file.
  */
-void print_final_rulelist(const std::vector<unsigned short, cache_alloc<unsigned short> >& rulelist,
-                          const std::vector<bool, cache_alloc<bool> >& preds,
+void print_final_rulelist(const tracking_vector<unsigned short, DataStruct::Tree>& rulelist,
+                          const tracking_vector<bool, DataStruct::Tree>& preds,
                           const bool latex_out,
                           const rule_t rules[],
-                          const rule_t labels[], 
+                          const rule_t labels[],
                           char fname[]) {
-    assert(rulelist.size() >= 0 && rulelist.size() == preds.size() - 1);
+    assert(rulelist.size() == preds.size() - 1);
 
     printf("\nOPTIMAL RULE LIST\n");
     if (rulelist.size() > 0) {

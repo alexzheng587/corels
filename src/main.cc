@@ -1,56 +1,60 @@
 #include "queue.hh"
-//#include "utils.hh"
-//#include "pmap.hh"
-
-#include <gperftools/heap-profiler.h>
 #include <iostream>
-#include <stdio.h>
-#include <getopt.h>
 #include <numeric>
-#include <thread>
 #include <mutex>
+#include <string>
+#include <thread>
+#include <getopt.h>
 #include <pthread.h>
+#include <stdio.h>
 
-Logger logger;
-int ablation = 0;
+#define BUFSZ 512
+
 std::mutex log_lk;
 int lock_ac = 0;
-pthread_rwlock_t pmap_lk = PTHREAD_RWLOCK_INITIALIZER;
+std::mutex lk_;
+//pthread_rwlock_t pmap_lk = PTHREAD_RWLOCK_INITIALIZER;
+
+/*
+ * Logs statistics about the execution of the algorithm and dumps it to a file.
+ * To turn off, pass verbosity <= 1
+ */
+NullLogger* logger;
 
 int main(int argc, char *argv[]) {
-    const char usage[] = "USAGE: %s [-s] [-b] [-t num_threads]"
+    const char usage[] = "USAGE: %s [-b] [-t num_threads]"
         "[-n max_num_nodes] [-r regularization] [-v verbosity] "
         "-c (1|2|3|4) -p (0|1|2) [-f logging_frequency]"
-        "-a (1|2|3)"
+        "-a (0|1|2) [-s] [-L latex_out]"
         "data.out data.label\n\n"
         "%s\n";
 
     extern char *optarg;
-    bool run_stochastic = false;
     bool run_bfs = false;
     bool run_curiosity = false;
     int curiosity_policy = 0;
     bool latex_out = false;
-    bool run_pmap = false;
     bool use_prefix_perm_map = false;
     bool use_captured_sym_map = false;
-    int verbosity = 1;
+    int verbosity = 0;
+    int map_type = 0;
     int max_num_nodes = 100000;
     double c = 0.01;
     char ch;
     bool error = false;
-    char error_txt[512];
+    char error_txt[BUFSZ];
     int freq = 1000;
-    size_t switch_iter = 0;
     size_t num_threads = 1;
+    int ablation = 0;
+    bool calculate_size = false;
     /* only parsing happens here */
-    while ((ch = getopt(argc, argv, "sbLc:p:v:n:r:f:w:a:t:")) != -1) {
+    while ((ch = getopt(argc, argv, "bsLc:p:v:n:r:f:a:t:")) != -1) {
         switch (ch) {
-        case 's':
-            run_stochastic = true;
-            break;
         case 'b':
             run_bfs = true;
+            break;
+        case 's':
+            calculate_size = true;
             break;
         case 'c':
             run_curiosity = true;
@@ -60,9 +64,9 @@ int main(int argc, char *argv[]) {
             latex_out = true;
             break;
         case 'p':
-	        run_pmap = true;
-            use_prefix_perm_map = atoi(optarg) == 1;
-            use_captured_sym_map = atoi(optarg) == 2;
+            map_type = atoi(optarg);
+            use_prefix_perm_map = map_type == 1;
+            use_captured_sym_map = map_type == 2;
             break;
         case 'v':
             verbosity = atoi(optarg);
@@ -76,9 +80,6 @@ int main(int argc, char *argv[]) {
         case 'f':
             freq = atoi(optarg);
             break;
-        case 'w':
-            switch_iter = atoi(optarg);
-            break;
         case 'a':
             ablation = atoi(optarg);
             break;
@@ -87,22 +88,34 @@ int main(int argc, char *argv[]) {
             break;
         default:
             error = true;
-            sprintf(error_txt, "unknown option: %c", ch);
+            snprintf(error_txt, BUFSZ, "unknown option: %c", ch);
         }
     }
-    if ((run_stochastic + run_bfs + run_curiosity) != 1) {
+    if (max_num_nodes < 0) {
         error = true;
-        sprintf(error_txt,
-                "you must use at least and at most one of (-s | -b | -c)");
+        snprintf(error_txt, BUFSZ, "number of nodes must be positive");
+    }
+    if (c < 0) {
+        error = true;
+        snprintf(error_txt, BUFSZ, "regularization constant must be postitive");
+    }
+    if (map_type > 2 || map_type < 0) {
+        error = true;
+        snprintf(error_txt, BUFSZ, "symmetry-aware map must be (0|1|2)");
+    }
+    if ((run_bfs + run_curiosity) != 1) {
+        error = true;
+        snprintf(error_txt, BUFSZ,
+                "you must use at least and at most one of (-b | -c)");
     }
     if (argc < 2 + optind) {
         error = true;
-        sprintf(error_txt,
+        snprintf(error_txt, BUFSZ,
                 "you must specify data files for rules and labels");
     }
     if (run_curiosity && !((curiosity_policy >= 1) && (curiosity_policy <= 4))) {
         error = true;
-        sprintf(error_txt,
+        snprintf(error_txt, BUFSZ,
                 "you must specify a curiosity type (1|2|3|4)");
     }
 
@@ -128,28 +141,30 @@ int main(int argc, char *argv[]) {
     printf("Labels ERRNO: %d\n", errno);
 
     int nmeta, nsamples_check;
+    // Equivalent points information is precomputed, read in from file, and stored in meta
     rule_t *meta;
     if (argc == 3)
         rules_init(argv[2], &nmeta, &nsamples_check, &meta, 0);
     else
         meta = NULL;
 
-    print_machine_info();
-    char froot[512];
-    char log_fname[512];
-    char opt_fname[512];
+    if (verbosity >= 10)
+        print_machine_info();
+    char froot[BUFSZ];
+    char log_fname[BUFSZ];
+    char opt_fname[BUFSZ];
     const char* pch = strrchr(argv[0], '/');
-    sprintf(froot, "../logs/for-%s-%s%s%s-%s-%s-removed=%s-t=%d-max_num_nodes=%d-c=%.7f-v=%d-f=%d",
+    snprintf(froot, BUFSZ, "../logs/for-%s-%s%s-%s-%s-removed=%s-t=%d-max_num_nodes=%d-c=%.7f-v=%d-f=%d",
             pch ? pch + 1 : "",
-            run_stochastic ? "stochastic" : "",
             run_bfs ? "bfs" : "",
             run_curiosity ? curiosity_map[curiosity_policy].c_str() : "",
-            run_pmap ? (use_prefix_perm_map ? "with_prefix_perm_map" : "with_captured_symmetry_map") : "no_pmap",
+            use_prefix_perm_map ? "with_prefix_perm_map" : 
+                (use_captured_sym_map ? "with_captured_symmetry_map" : "no_pmap"),
             meta ? "minor" : "no_minor",
             ablation ? ((ablation == 1) ? "support" : "lookahead") : "none",
             num_threads, max_num_nodes, c, verbosity, freq);
-    sprintf(log_fname, "%s.txt", froot);
-    sprintf(opt_fname, "%s-opt.txt", froot);
+    snprintf(log_fname, BUFSZ, "%s.txt", froot);
+    snprintf(opt_fname, BUFSZ, "%s-opt.txt", froot);
 
     if (verbosity >= 1000) {
         printf("\n%d rules %d samples\n\n", nrules, nsamples);
@@ -159,14 +174,12 @@ int main(int argc, char *argv[]) {
         rule_print_all(labels, nlabels, nsamples);
     }
 
-    logger.setC(c);
-    logger.setNRules(nrules);
-    logger.initPrefixVec();
-    logger.setVerbosity(verbosity);
-    logger.setLogFileName(log_fname);
-    logger.setFrequency(freq);
+    if (verbosity > 1)
+        logger = new Logger(c, nrules, verbosity, log_fname, freq);
+    else
+        logger = new NullLogger();
 
-	// Variables for tree iteration
+
     size_t num_nodes = 0;
     size_t num_evaluated = 0;
     //std::vector<unsigned short> r_list;
@@ -192,7 +205,9 @@ int main(int argc, char *argv[]) {
     //pthread_rwlock_init(pmap_lk, &attr);
 
     double init = timestamp();
-    BaseQueue* qs;
+    char run_type[BUFSZ];
+
+    /*BaseQueue* qs;
     if (curiosity_policy == 1) {
         printf("Curious ");
         CuriousQueue* curious_q = new CuriousQueue[num_threads];
@@ -222,165 +237,92 @@ int main(int argc, char *argv[]) {
         qs = new BaseQueue[num_threads];
         //for (size_t i = 0; i < num_threads; ++i)
         //    qs[i] = new BaseQueue;
+    }*/
+
+    strcpy(run_type, "LEARNING RULE LIST via ");
+    char const *type = "node";
+    std::function<bool(Node*, Node*)> cmp;
+    if (curiosity_policy == 1) {
+        strcat(run_type, "CURIOUS");
+        cmp = curious_cmp;
+        type = "curious";
+    } else if (curiosity_policy == 2) {
+        strcat(run_type, "LOWER BOUND");
+        cmp = lb_cmp;
+    } else if (curiosity_policy == 3) {
+        strcat(run_type, "OBJECTIVE");
+        cmp = objective_cmp;
+    } else if (curiosity_policy == 4) {
+        strcat(run_type, "DFS");
+        cmp = dfs_cmp;
+    } else {
+        strcat(run_type, "BFS");
+        cmp = base_cmp;
+    }
+    Queue qs[num_threads];
+    for(int i = 0; i < num_threads; ++i) {
+        qs[i] = Queue(cmp, run_type);
     }
 
     PermutationMap* p;
     if (use_prefix_perm_map) {
-        printf("Prefix Permutation Map\n");
+        strcat(run_type, " Prefix Map\n");
         PrefixPermutationMap* prefix_pmap = new PrefixPermutationMap;
-        //prefix_pmap->bucket_count();
         p = (PermutationMap*) prefix_pmap;
     } else if (use_captured_sym_map) {
-        printf("Captured Symmetry Map\n");
+        strcat(run_type, " Captured Symmetry Map\n");
         CapturedPermutationMap* cap_pmap = new CapturedPermutationMap;
         p = (PermutationMap*) cap_pmap;
     } else {
-        printf("No Permutation Map \n");
+        strcat(run_type, " No Permutation Map\n");
         NullPermutationMap* null_pmap = new NullPermutationMap;
         p = (PermutationMap*) null_pmap;
     }
 
     CacheTree** trees = new CacheTree*[num_threads];
-    if (run_stochastic) {
-        if (use_prefix_perm_map) {
-            printf("BBOUND_STOCHASTIC Permutation Map\n");
-        } else if (use_captured_sym_map) {
-            printf("BBOUND_STOCHASTIC Captured Symmetry Map\n");
-        } else {
-            printf("BBOUND_STOCHASTIC No Permutation Map \n");
-        }
-        CacheTree tree(nsamples, nrules, c, rules, labels, meta);
-        bbound_stochastic(&tree, max_num_nodes, p);
-        printf("final num_nodes: %zu\n", tree.num_nodes());
-        printf("final num_evaluated: %zu\n", tree.num_evaluated());
-        printf("final min_objective: %1.5f\n", tree.min_objective());
-        const std::vector<unsigned short, cache_alloc<unsigned short> >& r_list = tree.opt_rulelist();
-        //auto r_list = tree.opt_rulelist();
-        printf("final accuracy: %1.5f\n",
-               1 - tree.min_objective() + c*r_list.size());
-        print_final_rulelist(r_list, tree.opt_predictions(),
-                             latex_out, rules, labels, opt_fname);
+    //CacheTree* tree = new CacheTree(nsamples, nrules, c, rules, labels, meta, ablation, calculate_size, type);
+    printf("%s", run_type);
+    // runs our algorithm
 
-        logger.dumpState();
-    } else {
-        //BFS
-        for(size_t i = 0; i < num_threads; ++i) {
-            trees[i] = new CacheTree(nsamples, nrules, c, rules, labels, meta);
-            trees[i]->open_print_file(i + 1, num_threads);
-            threads[i] = std::thread(bbound_queue_init, trees[i], &qs[i],
-                                  p, ranges[i], min_objective);
-            threads[i].join();
-            threads[i] = std::thread(bbound_queue, trees[i], max_num_nodes/num_threads,
-                                  &qs[i], p, 0, 0, min_objective);
-        }
-        for(size_t i = 0; i < num_threads; ++i) {
-            threads[i].join();
-            CacheTree* tree = trees[i];
-            num_nodes += tree->num_nodes();
-            num_evaluated += tree->num_evaluated();
-            printf("final num_nodes: %zu\n", tree->num_nodes());
-            printf("final num_evaluated: %zu\n", tree->num_evaluated());
-            printf("final min_objective: %1.5f\n", tree->min_objective());
-            const std::vector<unsigned short, cache_alloc<unsigned short> >& r_list = tree->opt_rulelist();
-            //auto r_list = tree.opt_rulelist();
-            printf("final accuracy: %1.5f\n",
-                   1 - tree->min_objective() + c*r_list.size());
-            print_final_rulelist(r_list, tree->opt_predictions(),
-                                 latex_out, rules, labels, opt_fname);
-        }
+    //bbound(tree, max_num_nodes, q, p);
+    for(size_t i = 0; i < num_threads; ++i) {
+        trees[i] = new CacheTree(nsamples, nrules, c, rules, labels, meta, ablation, calculate_size, type);
+        trees[i]->open_print_file(i + 1, num_threads);
+        threads[i] = std::thread(bbound_init, trees[i], &qs[i],
+                              p, ranges[i], min_objective);
+        threads[i].join();
+        threads[i] = std::thread(bbound, trees[i], max_num_nodes/num_threads,
+                              &qs[i], p, min_objective);
     }
-    /*
-    } else if (run_curiosity) {
-        bbound_queue(tree, max_num_nodes, q, p, 0, 0, NULL);
-        CacheTree* tree = new CacheTree(nsamples, nrules, c, rules, labels, meta);
-        //CuriousCacheTree tree(nsamples, nrules, c, rules, labels, meta);
-        if (curiosity_policy == 1) {
-            if (use_prefix_perm_map) {
-                printf("Curiosity Prefix Permutation Map\n");
-            } else if (use_captured_sym_map) {
-                printf("Curiosity Captured Symmetry Map\n");
-            } else {
-                printf("Curiosity No Permutation Map \n");
-            }
-            CuriousQueue* curious_q = new CuriousQueue;
-            size_t num_iter;
-            num_iter = bbound_queue(tree, max_num_nodes,
-                                    curious_q, p, 0, switch_iter, NULL);
-            if (curious_q->size() > 0) {
-                printf("Switching to curious lower bound policy... \n");
-                LowerBoundQueue* curious_lb_q = new LowerBoundQueue;
-                while(!curious_q->empty()) {
-                    CuriousNode* selected_node = (CuriousNode*) curious_q->front();
-                    curious_q->pop();
-                    curious_lb_q->push(selected_node);
-                }
-                num_iter = bbound_queue(tree, max_num_nodes,
-                                        curious_lb_q, p, num_iter, 0, NULL);
-            }
-        } else if (curiosity_policy == 2) {
-            if (use_prefix_perm_map) {
-                printf("CURIOUS LOWER BOUND Prefix Permutation Map\n");
-            } else if (use_captured_sym_map) {
-                printf("CURIOUS LOWER BOUND Captured Symmetry Map\n");
-            } else {
-                printf("CURIOUS LOWER BOUND No Permutation Map\n");
-            }
-            LowerBoundQueue* lb_q = new LowerBoundQueue;
-            bbound_queue(tree, max_num_nodes, lb_q, p, 0, 0, NULL);
-        } else if (curiosity_policy == 3) {
-            if (use_prefix_perm_map) {
-                printf("CURIOUS OBJECTIVE Prefix Permutation Map\n");
-            } else if (use_captured_sym_map) {
-                printf("CURIOUS OBJECTIVE Captured Symmetry Map\n");
-            } else {
-                printf("CURIOUS OBJECTIVE No Permutation Map\n");
-            }
-            ObjectiveQueue* objective_q = new ObjectiveQueue;
-            bbound_queue(tree, max_num_nodes, objective_q, p, 0, 0, NULL);
-        } else if (curiosity_policy == 4) {
-            if (use_prefix_perm_map) {
-                printf("DFS Prefix Permutation Map\n");
-            } else if (use_captured_sym_map) {
-                printf("DFS Captured Symmetry Map\n");
-            } else {
-                printf("DFS No Permutation Map\n");
-            }
-            DFSQueue* dfs_q = new DFSQueue;
-            bbound_queue(tree, max_num_nodes, dfs_q, p, 0, 0, NULL);
-        }
+    for(size_t i = 0; i < num_threads; ++i) {
+        threads[i].join();
+        CacheTree* tree = trees[i];
+        num_nodes += tree->num_nodes();
+        num_evaluated += tree->num_evaluated();
         printf("final num_nodes: %zu\n", tree->num_nodes());
         printf("final num_evaluated: %zu\n", tree->num_evaluated());
         printf("final min_objective: %1.5f\n", tree->min_objective());
-        const std::vector<unsigned short, cache_alloc<unsigned short> >& r_list = tree->opt_rulelist();
-        //auto r_list = tree->opt_rulelist();
+        const tracking_vector<unsigned short, DataStruct::Tree>& r_list = tree->opt_rulelist();
         printf("final accuracy: %1.5f\n",
                1 - tree->min_objective() + c*r_list.size());
         print_final_rulelist(r_list, tree->opt_predictions(),
                              latex_out, rules, labels, opt_fname);
     }
-        */
-
-    printf("final num_nodes: %zu\n", num_nodes);
-    printf("final num_evaluated: %zu\n", num_evaluated);
-    printf("final min_objective: %1.5f\n", *min_objective);
-    //printf("final accuracy: %1.5f\n", 1 - *min_objective + c*r_list.size());
-    //print_final_rulelist(r_list, preds, latex_out, rules, labels, opt_fname);
-    
-    logger.dumpState();
-    free(min_objective);
 
     printf("final total time: %f\n", time_diff(init));
+    free(min_objective);
     printf("Number of lock acquistions: %d\n", lock_ac);
-    logger.dumpState();
-    logger.closeFile();
+
+    logger->dumpState();
+    logger->closeFile();
     if (meta) {
         printf("\ndelete identical points indicator");
         rules_free(meta, nmeta, 0);
     }
     printf("\ndelete rules\n");
-	rules_free(rules, nrules, 1);
-	printf("delete labels\n");
-	rules_free(labels, nlabels, 0);
-	printf("tree destructors\n");
+    rules_free(rules, nrules, 1);
+    printf("delete labels\n");
+    rules_free(labels, nlabels, 0);
+    printf("tree destructors\n");
     return 0;
 }

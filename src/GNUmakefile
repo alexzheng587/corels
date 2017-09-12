@@ -1,8 +1,11 @@
-CFLAGS := -g -W -Wall -I. -I/Users/nlarusstone/Documents/Research/libcuckoo/install/include/ -DGMP -O$(O)
+#-I/Users/nlarusstone/Documents/Research/libcuckoo/install/include/
+CFLAGS := -g -W -Wall -Wno-unused-parameter -I. -DGMP -O0 -fno-omit-frame-pointer
+CXXFLAGS := $(CFLAGS) -std=c++11
+CFLAGS += -std=c99
 
 ifneq (,$(filter $(shell uname -n),elaines-MacBook-Pro.local Nicholass-Air-5.local))
     LIBS := -L/usr/local/lib
-    CFLAGS += -I/usr/local/include -I/Users/nlarusstone/Documents/Research/libcuckoo/install/include/
+    CFLAGS += -I/usr/local/include
 else
     LIBS :=
 endif
@@ -10,7 +13,7 @@ endif
 LIBS += -L/usr/local/lib -lgmpxx -lgmp
 
 ifneq ($(shell uname -n),beepboop)
-    LDFLAGS := -Wl,-no_pie
+    LDFLAGS :=
     CFLAGS += -fno-omit-frame-pointer
     ifneq ($(shell uname -r),15.6.0)
         LIBS += -lprofiler -ltcmalloc
@@ -24,34 +27,45 @@ ifneq ($(shell uname),Darwin)
 endif
 
 CC = gcc
-CXX = g++ -std=c++11
+CXX = g++ #-std=c++11
+#CC = clang
+#CXX = clang++ -std=c++11
 
 DEPSDIR := .deps
 
-CLEAN = bbcache *~ *.o *.so
+CLEAN = corels *~ *.o *.so
 
-all: bbcache
+all: corels
 
-bbcache: main.o queue.o pmap.o cache.o rulelib.o utils.o
-	$(CXX) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(LIBS)
+corels: main.o corels.o pmap.o cache.o rulelib.o utils.o
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(LIBS)
+
+evaluate-test: evaluate-test.o evaluate.o corels.o pmap.o cache.o rulelib.o utils.o
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(LIBS)
 
 main.o: main.cc $(DEPSDIR)/stamp
-	$(CXX) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(DEPCFLAGS) -c $< -o $@
 
-queue.o: queue.cc $(DEPSDIR)/stamp
-	$(CXX) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@
+corels.o: corels.cc $(DEPSDIR)/stamp
+	$(CXX) $(CXXFLAGS) $(DEPCFLAGS) -c $< -o $@
 
 pmap.o: pmap.cc $(DEPSDIR)/stamp
-	$(CXX) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(DEPCFLAGS) -c $< -o $@
 
 utils.o: utils.cc $(DEPSDIR)/stamp
-	$(CXX) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(DEPCFLAGS) -c $< -o $@
 
 cache.o: cache.cc $(DEPSDIR)/stamp
-	$(CXX) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(DEPCFLAGS) -c $< -o $@
 
 rulelib.o: rulelib.c $(DEPSDIR)/stamp
 	$(CC) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@
+
+evaluate-test.o: evaluate-test.cc $(DEPSDIR)/stamp
+	$(CXX) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@
+
+evaluate.o: evaluate.cc $(DEPSDIR)/stamp
+	$(CXX) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@
 
 $(DEPSDIR)/stamp:
 	mkdir -p $(dir $@)

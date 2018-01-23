@@ -182,9 +182,6 @@ int main(int argc, char *argv[]) {
 
     size_t num_nodes = 0;
     size_t num_evaluated = 0;
-    //std::vector<unsigned short> r_list;
-    //std::vector<unsigned short, cache_alloc<unsigned short> > r_list;
-    //std::vector<bool, cache_alloc<bool> > preds;
 
     double* min_objective = (double*) malloc(sizeof(double*));
     *min_objective = 1.0;
@@ -206,38 +203,6 @@ int main(int argc, char *argv[]) {
 
     double init = timestamp();
     char run_type[BUFSZ];
-
-    /*BaseQueue* qs;
-    if (curiosity_policy == 1) {
-        printf("Curious ");
-        CuriousQueue* curious_q = new CuriousQueue[num_threads];
-        //for (size_t i = 0; i < num_threads; ++i)
-        //    curious_q[i] = new CuriousQueue;
-        qs = (BaseQueue*) curious_q;
-    } else if (curiosity_policy == 2) {
-        printf("Lower Bound ");
-        LowerBoundQueue* lb_q = new LowerBoundQueue[num_threads];
-        //for (size_t i = 0; i < num_threads; ++i)
-        //    lb_q[i] = new LowerBoundQueue;
-        qs = (BaseQueue*) lb_q;
-    } else if (curiosity_policy == 3) {
-        printf("Objective ");
-        ObjectiveQueue* obj_q = new ObjectiveQueue[num_threads];
-        //for (size_t i = 0; i < num_threads; ++i)
-        //    obj_q[i] = new ObjectiveQueue;
-        qs = (BaseQueue*) obj_q;
-    } else if (curiosity_policy == 4) {
-        printf("DFS ");
-        DFSQueue* dfs_q = new DFSQueue[num_threads];
-        //for (size_t i = 0; i < num_threads; ++i)
-        //    dfs_q[i] = new DFSQueue;
-        qs = (BaseQueue*) dfs_q;
-    } else {
-        printf("BFS ");
-        qs = new BaseQueue[num_threads];
-        //for (size_t i = 0; i < num_threads; ++i)
-        //    qs[i] = new BaseQueue;
-    }*/
 
     strcpy(run_type, "LEARNING RULE LIST via ");
     char const *type = "node";
@@ -282,9 +247,7 @@ int main(int argc, char *argv[]) {
     CacheTree** trees = new CacheTree*[num_threads];
     //CacheTree* tree = new CacheTree(nsamples, nrules, c, rules, labels, meta, ablation, calculate_size, type);
     printf("%s", run_type);
-    // runs our algorithm
 
-    //bbound(tree, max_num_nodes, q, p);
     for(size_t i = 0; i < num_threads; ++i) {
         trees[i] = new CacheTree(nsamples, nrules, c, rules, labels, meta, ablation, calculate_size, type);
         trees[i]->open_print_file(i + 1, num_threads);

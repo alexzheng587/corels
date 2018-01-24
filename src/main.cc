@@ -179,10 +179,6 @@ int main(int argc, char *argv[]) {
     else
         logger = new NullLogger();
 
-
-    size_t num_nodes = 0;
-    size_t num_evaluated = 0;
-
     double* min_objective = (double*) malloc(sizeof(double*));
     *min_objective = 1.0;
     std::thread* threads = new std::thread[num_threads];
@@ -225,7 +221,7 @@ int main(int argc, char *argv[]) {
         cmp = base_cmp;
     }
     Queue qs[num_threads];
-    for(int i = 0; i < num_threads; ++i) {
+    for(size_t i = 0; i < num_threads; ++i) {
         qs[i] = Queue(cmp, run_type);
     }
 
@@ -244,33 +240,42 @@ int main(int argc, char *argv[]) {
         p = (PermutationMap*) null_pmap;
     }
 
-    CacheTree** trees = new CacheTree*[num_threads];
-    //CacheTree* tree = new CacheTree(nsamples, nrules, c, rules, labels, meta, ablation, calculate_size, type);
+    //CacheTree** trees = new CacheTree*[num_threads];
+    CacheTree* tree = new CacheTree(nsamples, nrules, c, rules, labels, meta, ablation, calculate_size, type);
     printf("%s", run_type);
 
     for(size_t i = 0; i < num_threads; ++i) {
-        trees[i] = new CacheTree(nsamples, nrules, c, rules, labels, meta, ablation, calculate_size, type);
-        trees[i]->open_print_file(i + 1, num_threads);
-        threads[i] = std::thread(bbound_init, trees[i], &qs[i],
+        //trees[i] = new CacheTree(nsamples, nrules, c, rules, labels, meta, ablation, calculate_size, type);
+        //trees[i]->open_print_file(i + 1, num_threads);
+        threads[i] = std::thread(bbound_init, tree, &qs[i],
                               p, ranges[i], min_objective);
         threads[i].join();
-        threads[i] = std::thread(bbound, trees[i], max_num_nodes/num_threads,
-                              &qs[i], p, min_objective);
+        threads[i] = std::thread(bbound, tree, max_num_nodes/num_threads,
+                              &qs[i], p, ranges[i], min_objective);
     }
+
+    // Garbage collection thread
+    //std::thread(garbage_collect, tree);
+
     for(size_t i = 0; i < num_threads; ++i) {
         threads[i].join();
-        CacheTree* tree = trees[i];
-        num_nodes += tree->num_nodes();
-        num_evaluated += tree->num_evaluated();
-        printf("final num_nodes: %zu\n", tree->num_nodes());
-        printf("final num_evaluated: %zu\n", tree->num_evaluated());
-        printf("final min_objective: %1.5f\n", tree->min_objective());
-        const tracking_vector<unsigned short, DataStruct::Tree>& r_list = tree->opt_rulelist();
-        printf("final accuracy: %1.5f\n",
-               1 - tree->min_objective() + c*r_list.size());
-        print_final_rulelist(r_list, tree->opt_predictions(),
-                             latex_out, rules, labels, opt_fname);
+        //CacheTree* tree = trees[i];
     }
+    size_t tree_mem = logger->getTreeMemory(); 
+    size_t pmap_mem = logger->getPmapMemory(); 
+    size_t queue_mem = logger->getQueueMemory(); 
+    printf("TREE mem usage: %zu\n", tree_mem);
+    printf("PMAP mem usage: %zu\n", pmap_mem);
+    printf("QUEUE mem usage: %zu\n", queue_mem);
+
+    printf("final num_nodes: %zu\n", tree->num_nodes());
+    printf("final num_evaluated: %zu\n", tree->num_evaluated());
+    printf("final min_objective: %1.5f\n", tree->min_objective());
+    const tracking_vector<unsigned short, DataStruct::Tree>& r_list = tree->opt_rulelist();
+    printf("final accuracy: %1.5f\n",
+           1 - tree->min_objective() + c*r_list.size());
+    print_final_rulelist(r_list, tree->opt_predictions(),
+                         latex_out, rules, labels, opt_fname);
 
     printf("final total time: %f\n", time_diff(init));
     free(min_objective);

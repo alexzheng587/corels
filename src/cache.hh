@@ -124,7 +124,7 @@ class CacheTree {
     void insert_root();
     void insert(Node* node);
     void prune_up(Node* node);
-    void garbage_collect();
+    void garbage_collect(std::vector<unsigned short>& rules);
     void print_tree();
     void close_print_file();
     void open_print_file(size_t thread_num, size_t num_threads);
@@ -368,4 +368,5 @@ inline void CacheTree::decrement_num_nodes() {
     logger->setTreeNumNodes(num_nodes_);
 }
 
+void delete_interior(CacheTree* tree, Node* node, bool destructive, bool update_remaining_state_space);
 void delete_subtree(CacheTree* tree, Node* node, bool destructive, bool update_remaining_state_space);

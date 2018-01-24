@@ -130,7 +130,8 @@ void CacheTree::prune_up(Node* node) {
             parent = node->parent();
             parent->children_.erase(id);
             --num_nodes_;
-            delete node;
+            node->set_deleted();
+            //delete node;
             node = parent;
             --depth;
         } else {
@@ -186,12 +187,36 @@ void CacheTree::gc_helper(Node* node) {
 /*
  * Public wrapper function to garbage collect the entire tree beginning from the root.
  */
-void CacheTree::garbage_collect() {
+void CacheTree::garbage_collect(std::vector<unsigned short>& rules) {
     if (calculate_size_)
         logger->clearRemainingSpaceSize();
-    gc_helper(root_);
+    for (typename std::map<unsigned short, Node*>::iterator cit = root_->children_.begin(); 
+            cit != root_->children_.end(); ++cit) {
+        if (std::find(rules.begin(), rules.end(), cit->first) != rules.end())
+            gc_helper(cit->second);
+    }
 }
 
+void delete_interior(CacheTree* tree, Node* node, bool destructive, 
+        bool update_remaining_state_space) {
+    Node* child;
+    if (node->done()) {
+        for(std::map<unsigned short, Node*>::iterator iter = node->children_begin(); 
+                iter != node->children_end(); ++iter) {
+            child = iter->second;
+            delete_interior(tree, child, destructive, update_remaining_state_space);
+        }
+        // delete interior nodes
+        if (destructive) {
+            delete node;
+            tree->decrement_num_nodes(); 
+        } else {
+            node->set_deleted();
+        }
+    } else {
+        return;
+    }
+}
 /*
  * Deletes a subtree of tree by recursively calling itself on node's children.
  * node -- the node at the root of the subtree to be deleted.
@@ -209,9 +234,13 @@ void delete_subtree(CacheTree* tree, Node* node, bool destructive,
             child = iter->second;
             delete_subtree(tree, child, destructive, update_remaining_state_space);
         }
-        // always delete interior nodes
-        tree->decrement_num_nodes(); 
-        delete node;
+        // delete interior nodes
+        if (destructive) {
+            delete node;
+            tree->decrement_num_nodes(); 
+        } else {
+            node->set_deleted();
+        }
     } else {
         // only delete leaf nodes in destructive mode
         if (destructive) {  

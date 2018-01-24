@@ -163,7 +163,8 @@ void evaluate_children(CacheTree* tree, Node* parent, tracking_vector<unsigned s
 void bbound_init(CacheTree* tree, Queue* q, PermutationMap* p, 
         std::vector<unsigned short> rules, double* min_objective) {
     // Initialize tree and queue
-    tree->insert_root();
+    if(tree->root() == NULL)
+        tree->insert_root();
     logger->incPrefixLen(0);
     logger->incTreeInsertionNum();
     q->push(tree->root());
@@ -172,7 +173,6 @@ void bbound_init(CacheTree* tree, Queue* q, PermutationMap* p,
     logger->dumpState();
     logger->initRemainingSpaceSize();
     logger->setInitialTime(timestamp());
-    //Node* node = tree->root();
     // Initialize rules
     VECTOR not_captured, captured;
     rule_vinit(tree->nsamples(), &captured);
@@ -181,7 +181,6 @@ void bbound_init(CacheTree* tree, Queue* q, PermutationMap* p,
     rule_vandnot(not_captured,
              tree->rule(0).truthtable, captured,
              tree->nsamples(), &cnt);
-    //rule_copy(not_captured, tree->rule(0).truthtable, tree->nsamples());
     std::pair<Node*, tracking_vector<unsigned short, DataStruct::Tree> > node_ordered = q->select(tree, captured);
 
     evaluate_children(tree, node_ordered.first, node_ordered.second, not_captured, rules, q, p, min_objective);
@@ -192,7 +191,8 @@ void bbound_init(CacheTree* tree, Queue* q, PermutationMap* p,
  * Explores the search space by using a queue to order the search process.
  * The queue can be ordered by DFS, BFS, or an alternative priority metric (e.g. lower bound).
  */
-int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p, double* min_objective) {
+int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p, std::vector<unsigned short> range, 
+        double* min_objective) {
     bool print_queue = 0;
     size_t num_iter = 0;
     int cnt;
@@ -204,19 +204,8 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p, d
     size_t queue_min_length = logger->getQueueMinLen();
 
     double start = timestamp();
-    /*logger->setInitialTime(start);
-    logger->initializeState(tree->calculate_size());*/
     int verbosity = logger->getVerbosity();
-    // initial log record
-    //logger->dumpState();         
 
-    /*min_objective = 1.0;
-    tree->insert_root();
-    logger->incTreeInsertionNum();
-    q->push(tree->root());
-    logger->setQueueSize(q->size());
-    logger->incPrefixLen(0);
-    */
     // log record for empty rule list
     int nrules = tree->nrules();
     std::vector<unsigned short> rules(nrules - 1);
@@ -250,7 +239,7 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p, d
                     printf("before garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", 
                             tree->num_nodes(), logger->getLogRemainingSpaceSize());
                 logger->dumpState();
-                tree->garbage_collect();
+                tree->garbage_collect(range);
                 logger->dumpState();
                 if (verbosity >= 10)
                     printf("after garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", tree->num_nodes(), logger->getLogRemainingSpaceSize());
@@ -283,13 +272,6 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p, d
     else
         printf("Exited because max number of nodes in the tree was reached\n");
 
-    size_t tree_mem = logger->getTreeMemory(); 
-    size_t pmap_mem = logger->getPmapMemory(); 
-    size_t queue_mem = logger->getQueueMemory(); 
-    printf("TREE mem usage: %zu\n", tree_mem);
-    printf("PMAP mem usage: %zu\n", pmap_mem);
-    printf("QUEUE mem usage: %zu\n", queue_mem);
-
     // Print out queue
     ofstream f;
     if (print_queue) {
@@ -299,7 +281,7 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p, d
         f << "lower_bound objective length frac_captured rule_list\n";
     }
 
-    // Clean up data structures
+/*    // Clean up data structures
     printf("Deleting queue elements and corresponding nodes in the cache,"
             "since they may not be reachable by the tree's destructor\n");
     printf("\nminimum objective: %1.10f\n", tree->min_objective());
@@ -334,6 +316,7 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p, d
         }
     }
     printf("minimum lower bound in queue: %1.10f\n\n", min_lower_bound);
+    */
     if (print_queue)
         f.close();
     // last log record (before cache deleted)

@@ -60,6 +60,7 @@ class Queue {
         }
 
         std::pair<Node*, tracking_vector<unsigned short, DataStruct::Tree> > select(CacheTree* tree, VECTOR captured) {
+begin:
             int cnt;
             tracking_vector<unsigned short, DataStruct::Tree> prefix;
             Node *selected_node, *node;
@@ -91,6 +92,11 @@ class Queue {
 
             rule_vclear(tree->nsamples(), captured);
             while (node != tree->root()) {
+                // need to delete interior nodes lazily too when parallel
+                if(node->deleted()) {
+                    delete_interior(tree, node, true, false);
+                    goto begin;
+                }
                 rule_vor(captured,
                          captured, tree->rule(node->id()).truthtable,
                          tree->nsamples(), &cnt);
@@ -106,7 +112,8 @@ class Queue {
         char const *type_;
 };
 
-extern int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p, double* min_objective);
+extern int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p, std::vector<unsigned short> range, 
+        double* min_objective);
 
 extern void bbound_init(CacheTree* tree, Queue* q, PermutationMap* p, 
         std::vector<unsigned short> rules, double* min_objective);

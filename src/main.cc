@@ -12,7 +12,6 @@
 
 std::mutex log_lk;
 int lock_ac = 0;
-std::mutex lk_;
 //pthread_rwlock_t pmap_lk = PTHREAD_RWLOCK_INITIALIZER;
 
 /*

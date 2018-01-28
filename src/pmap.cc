@@ -1,7 +1,8 @@
 #include "pmap.hh"
 
 PrefixPermutationMap::PrefixPermutationMap()
-    : pmap(new PrefixMap) {}
+    : pmap(new PrefixMap) {
+}
 
 CapturedPermutationMap::CapturedPermutationMap()
     : pmap(new CapturedMap) {}
@@ -34,9 +35,17 @@ Node* PrefixPermutationMap::insert (unsigned short new_rule, size_t nrules, bool
     
     Node* child = NULL;
     ++lock_ac;
-    lk_.lock();
+    std::unique_lock<std::mutex> key_lk(key_lk_);
+    PrefixLocks::iterator key_iter = active_keys.find(key);
+    // Wait for other thread to finish with current entry
+    while(key_iter != active_keys.end()) {
+        key_cv.wait(key_lk);
+        key_iter = active_keys.find(key);
+    }
+    std::pair<prefix_key, bool> active_key = std::make_pair(key, true);
+    active_keys.insert(active_key);
+    key_lk.unlock();
     PrefixMap::iterator iter = pmap->find(key);
-    lk_.unlock();
     if (iter != pmap->end()) {
         double permuted_lower_bound = iter->second.first;
         if (lower_bound < permuted_lower_bound) {
@@ -65,11 +74,18 @@ Node* PrefixPermutationMap::insert (unsigned short new_rule, size_t nrules, bool
                                  parent, num_not_captured, nsamples, len_prefix,
                                  c, equivalent_minority);
         unsigned char* ordered_prefix = &ordered[0];
-        lk_.lock();
+        // Need to globally lock map when inserting otherwise iterators in other threads could be
+        // invalidated if the unordere_map is resized.
+        map_lk.lock();
         pmap->insert(std::make_pair(key, std::make_pair(lower_bound, ordered_prefix)));
-        lk_.unlock();
+        map_lk.unlock();
         logger->incPmapSize();
     }
+    // Wake up any other threads waiting on this entry
+    key_lk.lock();
+    active_keys.erase(key);
+    key_lk.unlock();
+    key_cv.notify_all();
     return child;
 }
 
@@ -86,9 +102,9 @@ Node* CapturedPermutationMap::insert(unsigned short new_rule, size_t nrules, boo
 #ifndef GMP
     key.len = (short) nsamples;
 #endif
-    lk_.lock();
+//    lk_.lock();
     CapturedMap::iterator iter = pmap->find(key);
-    lk_.unlock();
+//    lk_.unlock();
     if (iter != pmap->end()) {
         double permuted_lower_bound = iter->second.first;
         tracking_vector<unsigned short, DataStruct::Tree> permuted_prefix = iter->second.second;
@@ -111,9 +127,9 @@ Node* CapturedPermutationMap::insert(unsigned short new_rule, size_t nrules, boo
         child = tree->construct_node(new_rule, nrules, prediction, default_prediction,
                                     lower_bound, objective, parent,
                                     num_not_captured, nsamples, len_prefix, c, equivalent_minority);
-        lk_.lock();
+//        lk_.lock();
         pmap->insert(std::make_pair(key, std::make_pair(lower_bound, parent_prefix)));
-        lk_.unlock();
+//        lk_.unlock();
         logger->incPmapSize();
     }
     return child;

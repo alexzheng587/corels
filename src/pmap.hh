@@ -6,19 +6,16 @@
 #include <mutex>
 #include <set>
 #include <unordered_map>
-//#include <libcuckoo/cuckoohash_map.hh>
 #include <functional>
 #include <set>
 
 extern int lock_ac;
 //extern pthread_rwlock_t pmap_lk_;
-extern std::mutex lk_;
 
 /*
  * Represent prefix canonical order using an array of shorts.
  * The 0th index of the pointer contains the length of the prefix.
  */
-
 struct prefix_key {
     unsigned short *key;
     prefix_key(unsigned short* k) {
@@ -37,8 +34,6 @@ struct prefix_eq {
     }
 };
 
-typedef std::pair<double, unsigned char*> prefix_val;
-
 /*
  * Hash function from: http://www.cse.yorku.ca/~oz/hash.html
  */
@@ -51,6 +46,9 @@ struct prefix_hash {
     }
 };
 
+// Prefix Map typdefs
+typedef std::unordered_map<prefix_key, bool, prefix_hash, prefix_eq> PrefixLocks;
+typedef std::pair<double, unsigned char*> prefix_val;
 typedef std::unordered_map<prefix_key, prefix_val, prefix_hash, prefix_eq, track_alloc<std::pair<const prefix_key, prefix_val>, DataStruct::Pmap> > PrefixMap;
 
 /*
@@ -73,8 +71,6 @@ struct cap_eq {
     }
 };
 
-typedef std::pair<double, tracking_vector<unsigned short, DataStruct::Tree> > cap_val;
-
 /*
  * Hash function from: http://www.cse.yorku.ca/~oz/hash.html
  */
@@ -88,6 +84,9 @@ struct captured_hash {
     }
 };
 
+// Prefix Map typdefs
+//typedef std::unordered_map<prefix_key, bool> prefix_locks;
+typedef std::pair<double, tracking_vector<unsigned short, DataStruct::Tree> > cap_val;
 typedef std::unordered_map<captured_key, cap_val, captured_hash, cap_eq, track_alloc<std::pair<const captured_key, cap_val>, DataStruct::Pmap> > CapturedMap;
 
 class PermutationMap {
@@ -118,6 +117,10 @@ class PrefixPermutationMap : public PermutationMap {
             DataStruct::Tree> parent_prefix) override;
 	private:
 		PrefixMap* pmap;
+        std::mutex map_lk;
+        std::mutex key_lk_;
+        std::condition_variable key_cv;
+        PrefixLocks active_keys;
 };
 
 class CapturedPermutationMap : public PermutationMap {
@@ -132,6 +135,8 @@ class CapturedPermutationMap : public PermutationMap {
                  tracking_vector<unsigned short, DataStruct::Tree> parent_prefix) override;
 	private:
 		CapturedMap* pmap;
+        std::mutex key_lk;
+//        std::unordered_map<captured_key, bool> active_keys;
 };
 
 class NullPermutationMap : public PermutationMap  {

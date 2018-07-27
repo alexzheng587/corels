@@ -188,17 +188,21 @@ void CacheTree::gc_helper(Node* node) {
  * Public wrapper function to garbage collect the entire tree beginning from the root.
  */
 void CacheTree::garbage_collect(std::vector<unsigned short>& rules) {
+    return;
+    /*
     if (calculate_size_)
         logger->clearRemainingSpaceSize();
     for (typename std::map<unsigned short, Node*>::iterator cit = root_->children_.begin(); 
             cit != root_->children_.end(); ++cit) {
         if (std::find(rules.begin(), rules.end(), cit->first) != rules.end())
             gc_helper(cit->second);
-    }
+    }*/
 }
 
 void delete_interior(CacheTree* tree, Node* node, bool destructive, 
         bool update_remaining_state_space) {
+    return;
+    /*
     Node* child;
     if (node->done()) {
         for(std::map<unsigned short, Node*>::iterator iter = node->children_begin(); 
@@ -216,6 +220,7 @@ void delete_interior(CacheTree* tree, Node* node, bool destructive,
     } else {
         return;
     }
+    */
 }
 /*
  * Deletes a subtree of tree by recursively calling itself on node's children.
@@ -226,6 +231,8 @@ void delete_interior(CacheTree* tree, Node* node, bool destructive,
  */
 void delete_subtree(CacheTree* tree, Node* node, bool destructive, 
         bool update_remaining_state_space) {
+    return;
+    /*
     Node* child;
     // Interior (non-leaf) node
     if (node->done()) {
@@ -253,4 +260,5 @@ void delete_subtree(CacheTree* tree, Node* node, bool destructive,
             node->set_deleted();
         }
     }
+    */
 }

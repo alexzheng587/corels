@@ -186,7 +186,7 @@ int main(int argc, char *argv[]) {
     std::random_shuffle(indices.begin(), indices.end());
     std::vector<unsigned short>* ranges = new std::vector<unsigned short>[num_threads];
     for(size_t i = 0; i < num_threads; ++i) {
-        printf("RANGE: %u-%u\n", indices[(size_t)(i * ((nrules-1)/(float)num_threads))], indices[(size_t)((i + 1) * ((nrules-1)/(float)num_threads))]);
+        printf("RANGE: %zu-%zu\n", indices[(size_t)(i * ((nrules-1)/(float)num_threads))], indices[(size_t)((i + 1) * ((nrules-1)/(float)num_threads))]);
         printf("RANGE INDICES: %zu-%zu\n", (size_t)(i * ((nrules-1)/(float)num_threads)), (size_t)((i + 1) * ((nrules-1)/(float)num_threads)));
         std::vector<unsigned short> range(&indices[(size_t)(i * ((nrules-1)/(float)num_threads))], 
                                                       &indices[(size_t)((i + 1) * ((nrules-1)/(float)num_threads))]);

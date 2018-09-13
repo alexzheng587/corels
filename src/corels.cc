@@ -153,7 +153,7 @@ void evaluate_children(CacheTree* tree, Node* parent, tracking_vector<unsigned s
     if (tree->calculate_size())
         logger->removeQueueElement(len_prefix - 1, parent_lower_bound, false);
     if (parent->num_children() == 0) {
-        tree->prune_up(parent);
+        //tree->prune_up(parent);
     } else {
         parent->set_done();
         tree->increment_num_evaluated();
@@ -239,7 +239,7 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p, s
                     printf("before garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", 
                             tree->num_nodes(), logger->getLogRemainingSpaceSize());
                 logger->dumpState();
-                tree->garbage_collect(range);
+                //tree->garbage_collect(range);
                 logger->dumpState();
                 if (verbosity >= 10)
                     printf("after garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", tree->num_nodes(), logger->getLogRemainingSpaceSize());

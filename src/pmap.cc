@@ -45,7 +45,9 @@ Node* PrefixPermutationMap::insert (unsigned short new_rule, size_t nrules, bool
     std::pair<prefix_key, bool> active_key = std::make_pair(key, true);
     active_keys.insert(active_key);
     key_lk.unlock();
+    map_lk.lock();
     PrefixMap::iterator iter = pmap->find(key);
+    map_lk.unlock();
     if (iter != pmap->end()) {
         double permuted_lower_bound = iter->second.first;
         if (lower_bound < permuted_lower_bound) {

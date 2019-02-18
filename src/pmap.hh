@@ -7,6 +7,7 @@
 #include <set>
 #include <unordered_map>
 #include <functional>
+#include <condition_variable>
 #include <set>
 
 extern int lock_ac;
@@ -119,7 +120,7 @@ class PrefixPermutationMap : public PermutationMap {
 		PrefixMap* pmap;
         std::mutex map_lk;
         std::mutex key_lk_;
-        std::condition_variable key_cv;
+	std::condition_variable key_cv;
         PrefixLocks active_keys;
 };
 

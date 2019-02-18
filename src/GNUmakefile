@@ -10,7 +10,7 @@ else
     LIBS :=
 endif
 
-LIBS += -L/usr/local/lib -lgmpxx -lgmp
+LIBS += -L/usr/local/lib -lgmpxx -lgmp -lpthread
 
 ifneq ($(shell uname -n),beepboop)
     LDFLAGS :=

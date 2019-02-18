@@ -1,4 +1,4 @@
-FROM centos7.5.1804
+FROM centos:7.5.1804
 
 RUN yum install gmp-devel gcc
 

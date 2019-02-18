@@ -7,6 +7,4 @@ COPY data /data
 
 WORKDIR /src
 
-RUN make clean && make
-
 ENTRYPOINT ["/bin/sh"]

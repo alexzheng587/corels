@@ -1,2 +1,6 @@
-logs/**
-cache/**
+*
+!src/*
+!data/*
+data/CrossValidation/*
+data/cpw/*
+data/**/*.zip

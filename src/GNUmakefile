@@ -20,7 +20,7 @@ else
 endif
 
 ifneq ($(shell uname),Darwin)
-    LIBS += -lbsd
+    LIBS += -lbsd -lpthread
 endif
 
 CC = gcc

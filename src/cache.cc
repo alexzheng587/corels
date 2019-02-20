@@ -185,18 +185,22 @@ void CacheTree::gc_helper(Node* node) {
 }
 
 /*
- * Public wrapper function to garbage collect the entire tree beginning from the root.
+ * Public wrapper function to garbage collect the subset of the
+ * tree containing the rules in the given range in the index
+ * array.
  */
-void CacheTree::garbage_collect(std::vector<unsigned short>& rules) {
+void CacheTree::garbage_collect(std::vector<unsigned short>& range) {
     return;
-    /*
+
+    /* -- we'll need to stash the permutation of rules in the tree for this to work (_indices)
     if (calculate_size_)
         logger->clearRemainingSpaceSize();
-    for (typename std::map<unsigned short, Node*>::iterator cit = root_->children_.begin(); 
-            cit != root_->children_.end(); ++cit) {
-        if (std::find(rules.begin(), rules.end(), cit->first) != rules.end())
-            gc_helper(cit->second);
-    }*/
+
+    for (typename std::vector<unsigned short>::iterator rit =  _indices.begin() + range->first;
+        rit != _indices.begin() + range->second; rit++) {
+            gc_helper(*rit);
+    } 
+    */
 }
 
 void delete_interior(CacheTree* tree, Node* node, bool destructive, 

@@ -235,7 +235,8 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p, s
             logger->addToEvalChildrenTime(time_diff(t1));
             logger->incEvalChildrenNum();
             //min_obj_lk.lock();
-            /*if (*min_objective < cur_min_objective) {
+            /* NOTYET
+	    if (*min_objective < cur_min_objective) {
                 //min_objective = tree->min_objective();
                 //tree->update_min_objective(*min_objective);
                 if (verbosity >= 10)
@@ -246,7 +247,8 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p, s
                 logger->dumpState();
                 if (verbosity >= 10)
                     printf("after garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", tree->num_nodes(), logger->getLogRemainingSpaceSize());
-            }*/
+            }
+	    */
             //min_obj_lk.unlock();
         }
         logger->setQueueSize(q->size());

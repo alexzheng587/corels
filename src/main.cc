@@ -153,7 +153,7 @@ int main(int argc, char *argv[]) {
     char log_fname[BUFSZ];
     char opt_fname[BUFSZ];
     const char* pch = strrchr(argv[0], '/');
-    snprintf(froot, BUFSZ, "../logs/for-%s-%s%s-%s-%s-removed=%s-t=%d-max_num_nodes=%d-c=%.7f-v=%d-f=%d",
+    snprintf(froot, BUFSZ, "../logs/for-%s-%s%s-%s-%s-removed=%s-t=%lu-max_num_nodes=%d-c=%.7f-v=%d-f=%d",
             pch ? pch + 1 : "",
             run_bfs ? "bfs" : "",
             run_curiosity ? curiosity_map[curiosity_policy].c_str() : "",
@@ -185,12 +185,20 @@ int main(int argc, char *argv[]) {
     std::iota(indices.begin(), indices.end(), 1);
     std::random_shuffle(indices.begin(), indices.end());
     std::vector<unsigned short>* ranges = new std::vector<unsigned short>[num_threads];
+    unsigned short rules_per_thread = (nrules-1) / num_threads;
+    unsigned short inc = (nrules - 1) - (rules_per_thread * num_threads);
+    unsigned short start = 0;
+
     for(size_t i = 0; i < num_threads; ++i) {
-        printf("RANGE: %zu-%zu\n", indices[(size_t)(i * ((nrules-1)/(float)num_threads))], indices[(size_t)((i + 1) * ((nrules-1)/(float)num_threads))]);
-        printf("RANGE INDICES: %zu-%zu\n", (size_t)(i * ((nrules-1)/(float)num_threads)), (size_t)((i + 1) * ((nrules-1)/(float)num_threads)));
-        std::vector<unsigned short> range(&indices[(size_t)(i * ((nrules-1)/(float)num_threads))], 
-                                                      &indices[(size_t)((i + 1) * ((nrules-1)/(float)num_threads))]);
-        ranges[i] = range;
+	unsigned short end = start + rules_per_thread + (i < inc ? 1 : 0);
+        ranges[i] = std::vector<unsigned short>{start,end};
+	// DEBUGGING OUTPUT
+        printf("RANGE INDICES: %hu-%hu\nRANGE: ", start, end);
+	for (short j = start; j < end; j++)
+		printf("%hu ", indices[j]);
+	printf("\n");
+	// END DEBUGGING OUTPUT
+	start = end;
     }
     //pthread_rwlockattr_t attr;
     //pthread_rwlockattr_init(&attr);

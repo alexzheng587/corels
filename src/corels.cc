@@ -162,6 +162,7 @@ void evaluate_children(CacheTree* tree, Node* parent, tracking_vector<unsigned s
 
 void bbound_init(CacheTree* tree, Queue* q, PermutationMap* p, 
         std::vector<unsigned short> rules, double* min_objective) {
+
     // Initialize tree and queue
     if(tree->root() == NULL)
         tree->insert_root();
@@ -169,21 +170,11 @@ void bbound_init(CacheTree* tree, Queue* q, PermutationMap* p,
     logger->incTreeInsertionNum();
     q->push(tree->root());
     logger->setQueueSize(0);//q->size());
+
     // Initialize log
     logger->dumpState();
     logger->initRemainingSpaceSize();
     logger->setInitialTime(timestamp());
-    // Initialize rules
-//    VECTOR not_captured, captured;
- //   rule_vinit(tree->nsamples(), &captured);
-  //  rule_vinit(tree->nsamples(), &not_captured);
-//    int cnt;
-//    rule_vandnot(not_captured,
-   //          tree->rule(0).truthtable, captured,
-    //         tree->nsamples(), &cnt);
- ///   std::pair<Node*, tracking_vector<unsigned short, DataStruct::Tree> > node_ordered = q->select(tree, captured);
-
-//    evaluate_children(tree, node_ordered.first, node_ordered.second, not_captured, rules, q, p, min_objective);
 }
 
 
@@ -191,8 +182,9 @@ void bbound_init(CacheTree* tree, Queue* q, PermutationMap* p,
  * Explores the search space by using a queue to order the search process.
  * The queue can be ordered by DFS, BFS, or an alternative priority metric (e.g. lower bound).
  */
-int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p, std::vector<unsigned short> range, 
-        double* min_objective) {
+int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
+    std::vector<unsigned short> range, double* min_objective) {
+
     bool print_queue = 0;
     size_t num_iter = 0;
     int cnt;

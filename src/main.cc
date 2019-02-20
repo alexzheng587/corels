@@ -180,29 +180,6 @@ int main(int argc, char *argv[]) {
 
     double* min_objective = (double*) malloc(sizeof(double*));
     *min_objective = 1.0;
-    std::thread* threads = new std::thread[num_threads];
-    std::vector<unsigned short> indices(nrules - 1);
-    std::iota(indices.begin(), indices.end(), 1);
-    std::random_shuffle(indices.begin(), indices.end());
-    std::vector<unsigned short>* ranges = new std::vector<unsigned short>[num_threads];
-    unsigned short rules_per_thread = (nrules-1) / num_threads;
-    unsigned short inc = (nrules - 1) - (rules_per_thread * num_threads);
-    unsigned short start = 0;
-
-    for(size_t i = 0; i < num_threads; ++i) {
-	unsigned short end = start + rules_per_thread + (i < inc ? 1 : 0);
-        ranges[i] = std::vector<unsigned short>{start,end};
-	// DEBUGGING OUTPUT
-        printf("RANGE INDICES: %hu-%hu\nRANGE: ", start, end);
-	for (short j = start; j < end; j++)
-		printf("%hu ", indices[j]);
-	printf("\n");
-	// END DEBUGGING OUTPUT
-	start = end;
-    }
-    //pthread_rwlockattr_t attr;
-    //pthread_rwlockattr_init(&attr);
-    //pthread_rwlock_init(pmap_lk, &attr);
 
     double init = timestamp();
     char run_type[BUFSZ];
@@ -227,11 +204,8 @@ int main(int argc, char *argv[]) {
         strcat(run_type, "BFS");
         cmp = base_cmp;
     }
-    Queue qs[num_threads];
-    for(size_t i = 0; i < num_threads; ++i) {
-        qs[i] = Queue(cmp, run_type);
-    }
 
+    // Create permutation map and synchronization primitives for it.
     PermutationMap* p;
     if (use_prefix_perm_map) {
         strcat(run_type, " Prefix Map\n");
@@ -247,16 +221,25 @@ int main(int argc, char *argv[]) {
         p = (PermutationMap*) null_pmap;
     }
 
-    //CacheTree** trees = new CacheTree*[num_threads];
-    CacheTree* tree = new CacheTree(nsamples, nrules, c, rules, labels, meta, ablation, calculate_size, type);
+    //pthread_rwlockattr_t attr;
+    //pthread_rwlockattr_init(&attr);
+    //pthread_rwlock_init(pmap_lk, &attr);
+
+    CacheTree* tree = new CacheTree(nsamples, nrules, c, num_threads,
+        rules, labels, meta, ablation, calculate_size, type);
     printf("%s", run_type);
 
+    // Set up per-thread ranges and structures
+    std::thread* threads = new std::thread[num_threads];
+
+    Queue qs[num_threads];
     for(size_t i = 0; i < num_threads; ++i) {
-        //trees[i] = new CacheTree(nsamples, nrules, c, rules, labels, meta, ablation, calculate_size, type);
-        //trees[i]->open_print_file(i + 1, num_threads);
-        threads[i] = std::thread(bbound_init, tree, &qs[i],
-                              p, ranges[i], min_objective);
-        threads[i].join();
+        qs[i] = Queue(cmp, run_type);
+    }
+    bbound_init(tree, &qs[i], p, min_objective);
+
+    // Let the threads loose
+    for(size_t i = 0; i < num_threads; ++i) {
         threads[i] = std::thread(bbound, tree, max_num_nodes/num_threads,
                               &qs[i], p, ranges[i], min_objective);
     }
@@ -266,7 +249,6 @@ int main(int argc, char *argv[]) {
 
     for(size_t i = 0; i < num_threads; ++i) {
         threads[i].join();
-        //CacheTree* tree = trees[i];
     }
     size_t tree_mem = logger->getTreeMemory(); 
     size_t pmap_mem = logger->getPmapMemory(); 

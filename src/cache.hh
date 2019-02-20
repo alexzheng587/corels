@@ -102,6 +102,7 @@ class CacheTree {
 
     inline size_t num_nodes() const;
     inline size_t num_evaluated() const;
+    inline size_t num_threads() const;
     inline rule_t rule(unsigned short idx) const;
     inline char* rule_features(unsigned short idx) const;
     inline rule_t label(unsigned short idx) const;
@@ -137,6 +138,7 @@ class CacheTree {
     Node* root_;
     size_t nsamples_;
     size_t nrules_;
+    size_t nthreads_;
     double c_;
 
     size_t num_nodes_;
@@ -147,6 +149,8 @@ class CacheTree {
     std::atomic<double> min_objective_;
     tracking_vector<unsigned short, DataStruct::Tree> opt_rulelist_;
     std::vector<bool, track_alloc<bool, DataStruct::Tree> > opt_predictions_;
+    std::vector<unsigned short> *rule_perm_;
+    std::vector<unsigned short> *ranges_;
 
     rule_t *rules_;
     rule_t *labels_;
@@ -266,6 +270,10 @@ inline tracking_vector<bool, DataStruct::Tree> CacheTree::opt_predictions() cons
 
 inline size_t CacheTree::num_nodes() const {
     return num_nodes_;
+}
+
+inline size_t CacheTree::num_threads() const {
+    return nthreads_;
 }
 
 inline size_t CacheTree::num_evaluated() const {

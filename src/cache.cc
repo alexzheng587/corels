@@ -1,6 +1,7 @@
 #include "cache.hh"
 #include "utils.hh"
 #include <memory>
+#include <numeric>
 #include <vector>
 #include <stdlib.h>
 
@@ -21,9 +22,9 @@ Node::Node(unsigned short id, size_t nrules, bool prediction,
           (void) nrules;
 }
 
-CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules, size_t nthreads,
-                        rule_t *labels, rule_t *minority, int ablation,
-                        bool calculate_size, char const *type)
+CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, size_t nthreads,
+    rule_t *rules, rule_t *labels, rule_t *minority, int ablation,
+    bool calculate_size, char const *type)
     : root_(0), nsamples_(nsamples), nrules_(nrules), c_(c),
       num_nodes_(0), num_evaluated_(0), ablation_(ablation), calculate_size_(calculate_size), min_objective_(0.5),
       opt_rulelist_({}), opt_predictions_({}), type_(type) {
@@ -35,25 +36,27 @@ CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules, si
 
     // Create a permutation of the rules that we'll use both to randomize the
     // search order as well as to partition the tree among multiple threads.
-    rule_perm_ = new std::vector<unsigned short>[nrules - 1];
+    std::vector<unsigned short> rule_perm_(nrules - 1);
     std::iota(rule_perm_.begin(), rule_perm_.end(), 1);
     std::random_shuffle(rule_perm_.begin(), rule_perm_.end());
 
-    ranges_ = new std::vector<unsigned short>[nthreads];
+    std::vector<std::pair<unsigned short,unsigned short>>ranges_(nthreads);
     unsigned short rules_per_thread = (nrules-1) / nthreads;
     unsigned short inc = (nrules - 1) - (rules_per_thread * nthreads);
-    unsigned short start = 0;
+    unsigned short sIdx = 0;
 
     for(size_t i = 0; i < nthreads; ++i) {
-	unsigned short end = start + rules_per_thread + (i < inc ? 1 : 0);
-        ranges_[i] = std::vector<unsigned short>{start,end};
+	unsigned short eIdx = sIdx + rules_per_thread + (i < inc ? 1 : 0);
+        ranges_[i] = std::make_pair(sIdx, eIdx);
 	// DEBUGGING OUTPUT
-        printf("RANGE INDICES: %hu-%hu\nRANGE: ", start, end);
-	for (short j = start; j < end; j++)
-		printf("%hu ", indices[j]);
-	printf("\n");
+        printf("RANGE INDICES: %hu-%hu\nRANGE: ", sIdx, eIdx);
+	for (std::vector<unsigned short>::iterator it =  rule_perm_.begin() + sIdx;
+	    it != rule_perm_.begin() + eIdx; it++) {
+		printf("%hu ", *it);
+		printf("\n");
+	}
 	// END DEBUGGING OUTPUT
-	start = end;
+	sIdx = eIdx;
     }
 
     if (minority) {
@@ -221,8 +224,8 @@ void CacheTree::garbage_collect(size_t thread_id) {
     if (calculate_size_)
         logger->clearRemainingSpaceSize();
 
-    for (typename std::vector<unsigned short>::iterator rit =  rule_perm_.begin() + ranges_[thread_id]->first;
-        rit != rule_perm_.begin() + ranges_[thread_id]->second; rit++) {
+    for (typename std::vector<unsigned short>::iterator rit =  rule_perm_.begin() + ranges_[thread_id].first;
+        rit != rule_perm_.begin() + ranges_[thread_id].second; rit++) {
             gc_helper(*rit);
     } 
     */

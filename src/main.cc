@@ -1,6 +1,5 @@
 #include "queue.hh"
 #include <iostream>
-#include <numeric>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -229,19 +228,22 @@ int main(int argc, char *argv[]) {
         rules, labels, meta, ablation, calculate_size, type);
     printf("%s", run_type);
 
-    // Set up per-thread ranges and structures
+    // Initialize logger
+    bbound_init(tree);
+
+    // Set up per-thread ranges and queues
     std::thread* threads = new std::thread[num_threads];
 
     Queue qs[num_threads];
     for(size_t i = 0; i < num_threads; ++i) {
         qs[i] = Queue(cmp, run_type);
+    	qs[i].push(tree->root());
     }
-    bbound_init(tree, &qs[i], p, min_objective);
 
     // Let the threads loose
     for(size_t i = 0; i < num_threads; ++i) {
         threads[i] = std::thread(bbound, tree, max_num_nodes/num_threads,
-                              &qs[i], p, ranges[i], min_objective);
+	    &qs[i], p, i, min_objective);
     }
 
     // Garbage collection thread

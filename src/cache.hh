@@ -85,9 +85,9 @@ class CuriousNode: public Node {
 class CacheTree {
   public:
     CacheTree() {};
-    CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules,
-              rule_t *labels, rule_t *minority, int ablation,
-              bool calculate_size, char const *type);
+    CacheTree(size_t nsamples, size_t nrules, double c, size_t nthreads,
+        rule_t *rules, rule_t *labels, rule_t *minority, int ablation,
+	bool calculate_size, char const *type);
     ~CacheTree();
 
     Node* construct_node(unsigned short new_rule, size_t nrules,
@@ -122,11 +122,13 @@ class CacheTree {
     inline void decrement_num_nodes();
     inline int ablation() const;
     inline bool calculate_size() const;
+	inline std::vector<unsigned short> *get_subrange(size_t i);
 
+    inline std::vector<unsigned short> rule_perm();
     void insert_root();
     void insert(Node* node);
     void prune_up(Node* node);
-    void garbage_collect(std::vector<unsigned short>& rules);
+    void garbage_collect(size_t thread_id);
     void print_tree();
     void close_print_file();
     void open_print_file(size_t thread_num, size_t num_threads);
@@ -149,7 +151,7 @@ class CacheTree {
     std::atomic<double> min_objective_;
     tracking_vector<unsigned short, DataStruct::Tree> opt_rulelist_;
     std::vector<bool, track_alloc<bool, DataStruct::Tree> > opt_predictions_;
-    std::vector<unsigned short> *rule_perm_;
+    std::vector<unsigned short> rule_perm_;
     std::vector<unsigned short> *ranges_;
 
     rule_t *rules_;
@@ -386,6 +388,20 @@ CacheTree::update_opt_predictions(Node* parent, bool new_pred, bool new_default_
 inline void CacheTree::increment_num_evaluated() {
     ++num_evaluated_;
     logger->setTreeNumEvaluated(num_evaluated_);
+}
+
+inline std::vector<unsigned short> *CacheTree::get_subrange(size_t i) {
+	size_t start, end;
+	start = ranges_[i][0];
+	end = ranges_[i][1];
+	std::vector<unsigned short> *sub =
+	    new std::vector<unsigned short>(rule_perm_.begin() + start,
+	        rule_perm_.begin() + end);
+	return sub;
+}
+
+inline std::vector<unsigned short> CacheTree::rule_perm() {
+    return rule_perm_;
 }
 
 /*

@@ -19,9 +19,11 @@ Queue::Queue(std::function<bool(Node*, Node*)> cmp, char const *type)
  * parent -- the node that is going to have all of its children evaluated.
  * parent_not_captured -- the vector representing data points NOT captured by the parent.
  */
-void evaluate_children(CacheTree* tree, Node* parent, tracking_vector<unsigned short, DataStruct::Tree> parent_prefix,
-        VECTOR parent_not_captured, std::vector<unsigned short> *rules, Queue* q, PermutationMap* p,
-        double* min_objective) {
+void evaluate_children(CacheTree* tree, Node* parent,
+    tracking_vector<unsigned short, DataStruct::Tree> parent_prefix,
+    VECTOR parent_not_captured, std::vector<unsigned short> rules,
+    Queue* q, PermutationMap* p, double* min_objective) {
+
     VECTOR captured, captured_zeros, not_captured, not_captured_zeros, not_captured_equivalent;
     int num_captured, c0, c1, captured_correct;
     int num_not_captured, d0, d1, default_correct, num_not_captured_equivalent;
@@ -44,8 +46,8 @@ void evaluate_children(CacheTree* tree, Node* parent, tracking_vector<unsigned s
     parent_equivalent_minority = parent->equivalent_minority();
     double t0 = timestamp();
 
-    for(std::vector<unsigned short>::iterator it = rules->begin();
-        it != rules->end(); ++it) {
+    for(std::vector<unsigned short>::iterator it = rules.begin();
+        it != rules.end(); ++it) {
 
         i = *it;
         double t1 = timestamp();

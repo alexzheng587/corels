@@ -122,7 +122,7 @@ class CacheTree {
     inline void decrement_num_nodes();
     inline int ablation() const;
     inline bool calculate_size() const;
-	inline std::vector<unsigned short> *get_subrange(size_t i);
+	inline std::vector<unsigned short> get_subrange(size_t i);
 
     inline std::vector<unsigned short> rule_perm();
     void insert_root();
@@ -390,14 +390,14 @@ inline void CacheTree::increment_num_evaluated() {
     logger->setTreeNumEvaluated(num_evaluated_);
 }
 
-inline std::vector<unsigned short> *CacheTree::get_subrange(size_t i) {
+inline std::vector<unsigned short> CacheTree::get_subrange(size_t i) {
 	size_t start, end;
 	start = ranges_[i][0];
 	end = ranges_[i][1];
 	std::vector<unsigned short> *sub =
 	    new std::vector<unsigned short>(rule_perm_.begin() + start,
 	        rule_perm_.begin() + end);
-	return sub;
+	return *sub;
 }
 
 inline std::vector<unsigned short> CacheTree::rule_perm() {

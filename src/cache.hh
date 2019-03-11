@@ -122,7 +122,7 @@ class CacheTree {
     inline void decrement_num_nodes();
     inline int ablation() const;
     inline bool calculate_size() const;
-	inline std::vector<unsigned short> get_subrange(size_t i);
+    inline std::vector<unsigned short> get_subrange(size_t i);
 
     inline std::vector<unsigned short> rule_perm();
     void insert_root();
@@ -152,7 +152,7 @@ class CacheTree {
     tracking_vector<unsigned short, DataStruct::Tree> opt_rulelist_;
     std::vector<bool, track_alloc<bool, DataStruct::Tree> > opt_predictions_;
     std::vector<unsigned short> rule_perm_;
-    std::vector<unsigned short> *ranges_;
+    std::vector<pair<unsigned short,unsigned short>> ranges_;
 
     rule_t *rules_;
     rule_t *labels_;
@@ -392,12 +392,10 @@ inline void CacheTree::increment_num_evaluated() {
 
 inline std::vector<unsigned short> CacheTree::get_subrange(size_t i) {
 	size_t start, end;
-	start = ranges_[i][0];
-	end = ranges_[i][1];
-	std::vector<unsigned short> *sub =
-	    new std::vector<unsigned short>(rule_perm_.begin() + start,
+	start = ranges_[i].first;
+	end = ranges_[i].second;
+	return std::vector<unsigned short>(rule_perm_.begin() + start,
 	        rule_perm_.begin() + end);
-	return *sub;
 }
 
 inline std::vector<unsigned short> CacheTree::rule_perm() {

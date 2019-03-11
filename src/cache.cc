@@ -26,21 +26,19 @@ CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, size_t nthreads,
     rule_t *rules, rule_t *labels, rule_t *minority, int ablation,
     bool calculate_size, char const *type)
     : root_(0), nsamples_(nsamples), nrules_(nrules), c_(c),
-      num_nodes_(0), num_evaluated_(0), ablation_(ablation), calculate_size_(calculate_size), min_objective_(0.5),
-      opt_rulelist_({}), opt_predictions_({}), type_(type) {
+      num_nodes_(0), num_evaluated_(0), ablation_(ablation),
+      calculate_size_(calculate_size), min_objective_(0.5),
+      opt_rulelist_({}), opt_predictions_({}), rule_perm_(nrules - 1),
+      ranges_(nthreads), type_(type) {
     opt_rulelist_.resize(0);
     opt_predictions_.resize(0);
     rules_ = rules;
     labels_ = labels;
     nthreads_ = nthreads;
 
-    // Create a permutation of the rules that we'll use both to randomize the
-    // search order as well as to partition the tree among multiple threads.
-    std::vector<unsigned short> rule_perm_(nrules - 1);
     std::iota(rule_perm_.begin(), rule_perm_.end(), 1);
     std::random_shuffle(rule_perm_.begin(), rule_perm_.end());
 
-    std::vector<std::pair<unsigned short,unsigned short>>ranges_(nthreads);
     unsigned short rules_per_thread = (nrules-1) / nthreads;
     unsigned short inc = (nrules - 1) - (rules_per_thread * nthreads);
     unsigned short sIdx = 0;
@@ -48,14 +46,15 @@ CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, size_t nthreads,
     for(size_t i = 0; i < nthreads; ++i) {
 	unsigned short eIdx = sIdx + rules_per_thread + (i < inc ? 1 : 0);
         ranges_[i] = std::make_pair(sIdx, eIdx);
-	// DEBUGGING OUTPUT
-        printf("RANGE INDICES: %hu-%hu\nRANGE: ", sIdx, eIdx);
-	for (std::vector<unsigned short>::iterator it =  rule_perm_.begin() + sIdx;
-	    it != rule_perm_.begin() + eIdx; it++) {
-		printf("%hu ", *it);
-		printf("\n");
+	if (logger->getVerbosity() > 10) {
+		printf("RANGE INDICES: %hu-%hu\nRANGE: ", sIdx, eIdx);
+		for (std::vector<unsigned short>::iterator it = 
+		    rule_perm_.begin() + sIdx;
+		    it != rule_perm_.begin() + eIdx; it++) {
+			printf("%hu ", *it);
+			printf("\n");
+		}
 	}
-	// END DEBUGGING OUTPUT
 	sIdx = eIdx;
     }
 
@@ -224,7 +223,8 @@ void CacheTree::garbage_collect(size_t thread_id) {
     if (calculate_size_)
         logger->clearRemainingSpaceSize();
 
-    for (typename std::vector<unsigned short>::iterator rit =  rule_perm_.begin() + ranges_[thread_id].first;
+    for (typename std::vector<unsigned short>::iterator rit = 
+        rule_perm_.begin() + ranges_[thread_id].first;
         rit != rule_perm_.begin() + ranges_[thread_id].second; rit++) {
             gc_helper(*rit);
     } 

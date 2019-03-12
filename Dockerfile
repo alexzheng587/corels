@@ -12,11 +12,9 @@ RUN yum-config-manager --enable rhel-server-rhscl-7-rpms
 
 RUN yum -y install devtoolset-7 gmp-devel
 
-#COPY src/ /src
-#COPY data /data
+COPY src/ /src
+COPY data /data
 
 WORKDIR /src
 
 CMD scl enable devtoolset-7 /bin/bash
-
-ENTRYPOINT ["/bin/bash"]

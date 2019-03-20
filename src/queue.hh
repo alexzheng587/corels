@@ -112,11 +112,12 @@ begin:
         char const *type_;
 };
 
-extern int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p, std::vector<unsigned short> range, 
-        double* min_objective);
+extern int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
+    size_t thread_id, double* min_objective);
 
-extern void bbound_init(CacheTree* tree, Queue* q, PermutationMap* p, 
-        std::vector<unsigned short> rules, double* min_objective);
+extern void bbound_init(CacheTree* tree);
 
-extern void evaluate_children(CacheTree* tree, Node* parent, tracking_vector<unsigned short, DataStruct::Tree> parent_prefix,
-        VECTOR parent_not_captured, std::vector<unsigned short>& rules, Queue* q, PermutationMap* p, double* min_objective);
+extern void evaluate_children(CacheTree* tree, Node* parent,
+    tracking_vector<unsigned short, DataStruct::Tree> parent_prefix,
+    VECTOR parent_not_captured, std::vector<unsigned short> rules, Queue* q,
+    PermutationMap* p, double* min_objective);

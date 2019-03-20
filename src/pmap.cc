@@ -57,7 +57,7 @@ Node* PrefixPermutationMap::insert (unsigned short new_rule, size_t nrules, bool
             for (unsigned char i = 0; i < indices[0]; ++i)
                 permuted_prefix[i] = parent_prefix[indices[i + 1]];
             if ((permuted_node = tree->check_prefix(permuted_prefix)) != NULL) {
-                Node* permuted_parent = permuted_node->parent();
+                //Node* permuted_parent = permuted_node->parent();
                 //permuted_parent->delete_child(permuted_node->id());
                 delete_subtree(tree, permuted_node, false, tree->calculate_size());
                 logger->incPmapDiscardNum();

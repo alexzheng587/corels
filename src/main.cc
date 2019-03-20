@@ -1,6 +1,5 @@
 #include "queue.hh"
 #include <iostream>
-#include <numeric>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -153,7 +152,7 @@ int main(int argc, char *argv[]) {
     char log_fname[BUFSZ];
     char opt_fname[BUFSZ];
     const char* pch = strrchr(argv[0], '/');
-    snprintf(froot, BUFSZ, "../logs/for-%s-%s%s-%s-%s-removed=%s-t=%d-max_num_nodes=%d-c=%.7f-v=%d-f=%d",
+    snprintf(froot, BUFSZ, "../logs/for-%s-%s%s-%s-%s-removed=%s-t=%lu-max_num_nodes=%d-c=%.7f-v=%d-f=%d",
             pch ? pch + 1 : "",
             run_bfs ? "bfs" : "",
             run_curiosity ? curiosity_map[curiosity_policy].c_str() : "",
@@ -180,21 +179,6 @@ int main(int argc, char *argv[]) {
 
     double* min_objective = (double*) malloc(sizeof(double*));
     *min_objective = 1.0;
-    std::thread* threads = new std::thread[num_threads];
-    std::vector<unsigned short> indices(nrules - 1);
-    std::iota(indices.begin(), indices.end(), 1);
-    std::random_shuffle(indices.begin(), indices.end());
-    std::vector<unsigned short>* ranges = new std::vector<unsigned short>[num_threads];
-    for(size_t i = 0; i < num_threads; ++i) {
-        printf("RANGE: %zu-%zu\n", indices[(size_t)(i * ((nrules-1)/(float)num_threads))], indices[(size_t)((i + 1) * ((nrules-1)/(float)num_threads))]);
-        printf("RANGE INDICES: %zu-%zu\n", (size_t)(i * ((nrules-1)/(float)num_threads)), (size_t)((i + 1) * ((nrules-1)/(float)num_threads)));
-        std::vector<unsigned short> range(&indices[(size_t)(i * ((nrules-1)/(float)num_threads))], 
-                                                      &indices[(size_t)((i + 1) * ((nrules-1)/(float)num_threads))]);
-        ranges[i] = range;
-    }
-    //pthread_rwlockattr_t attr;
-    //pthread_rwlockattr_init(&attr);
-    //pthread_rwlock_init(pmap_lk, &attr);
 
     double init = timestamp();
     char run_type[BUFSZ];
@@ -219,11 +203,8 @@ int main(int argc, char *argv[]) {
         strcat(run_type, "BFS");
         cmp = base_cmp;
     }
-    Queue qs[num_threads];
-    for(size_t i = 0; i < num_threads; ++i) {
-        qs[i] = Queue(cmp, run_type);
-    }
 
+    // Create permutation map and synchronization primitives for it.
     PermutationMap* p;
     if (use_prefix_perm_map) {
         strcat(run_type, " Prefix Map\n");
@@ -239,27 +220,44 @@ int main(int argc, char *argv[]) {
         p = (PermutationMap*) null_pmap;
     }
 
-    //CacheTree** trees = new CacheTree*[num_threads];
-    CacheTree* tree = new CacheTree(nsamples, nrules, c, rules, labels, meta, ablation, calculate_size, type);
+    //pthread_rwlockattr_t attr;
+    //pthread_rwlockattr_init(&attr);
+    //pthread_rwlock_init(pmap_lk, &attr);
+
+    CacheTree* tree = new CacheTree(nsamples, nrules, c, num_threads,
+        rules, labels, meta, ablation, calculate_size, type);
     printf("%s", run_type);
 
+    // Initialize logger
+    bbound_init(tree);
+
+    // Set up per-thread queues
+    std::thread* threads = new std::thread[num_threads];
+
+    Queue qs[num_threads];
     for(size_t i = 0; i < num_threads; ++i) {
-        //trees[i] = new CacheTree(nsamples, nrules, c, rules, labels, meta, ablation, calculate_size, type);
-        //trees[i]->open_print_file(i + 1, num_threads);
-        threads[i] = std::thread(bbound_init, tree, &qs[i],
-                              p, ranges[i], min_objective);
-        threads[i].join();
-        threads[i] = std::thread(bbound, tree, max_num_nodes/num_threads,
-                              &qs[i], p, ranges[i], min_objective);
+        qs[i] = Queue(cmp, run_type);
+    	qs[i].push(tree->root());
     }
 
-    // Garbage collection thread
-    //std::thread(garbage_collect, tree);
+    if (num_threads == 1) {
+	bbound(tree, max_num_nodes/num_threads, &qs[0], p, 0, min_objective);
+    } else {
 
-    for(size_t i = 0; i < num_threads; ++i) {
-        threads[i].join();
-        //CacheTree* tree = trees[i];
+	// Let the threads loose
+	for(size_t i = 0; i < num_threads; ++i) {
+	    threads[i] = std::thread(bbound, tree, max_num_nodes/num_threads,
+		&qs[i], p, i, min_objective);
+	}
+
+	// Garbage collection thread
+	//std::thread(garbage_collect, tree);
+
+	for(size_t i = 0; i < num_threads; ++i) {
+	    threads[i].join();
+	}
     }
+
     size_t tree_mem = logger->getTreeMemory(); 
     size_t pmap_mem = logger->getPmapMemory(); 
     size_t queue_mem = logger->getQueueMemory(); 

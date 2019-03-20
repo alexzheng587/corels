@@ -1,6 +1,7 @@
 #include "cache.hh"
 #include "utils.hh"
 #include <memory>
+#include <numeric>
 #include <vector>
 #include <stdlib.h>
 
@@ -21,16 +22,42 @@ Node::Node(unsigned short id, size_t nrules, bool prediction,
           (void) nrules;
 }
 
-CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, rule_t *rules,
-                        rule_t *labels, rule_t *minority, int ablation,
-                        bool calculate_size, char const *type)
+CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, size_t nthreads,
+    rule_t *rules, rule_t *labels, rule_t *minority, int ablation,
+    bool calculate_size, char const *type)
     : root_(0), nsamples_(nsamples), nrules_(nrules), c_(c),
-      num_nodes_(0), num_evaluated_(0), ablation_(ablation), calculate_size_(calculate_size), min_objective_(0.5),
-      opt_rulelist_({}), opt_predictions_({}), type_(type) {
+      num_nodes_(0), num_evaluated_(0), ablation_(ablation),
+      calculate_size_(calculate_size), min_objective_(0.5),
+      opt_rulelist_({}), opt_predictions_({}), rule_perm_(nrules - 1),
+      ranges_(nthreads), type_(type) {
     opt_rulelist_.resize(0);
     opt_predictions_.resize(0);
     rules_ = rules;
     labels_ = labels;
+    nthreads_ = nthreads;
+
+    std::iota(rule_perm_.begin(), rule_perm_.end(), 1);
+    std::random_shuffle(rule_perm_.begin(), rule_perm_.end());
+
+    unsigned short rules_per_thread = (nrules-1) / nthreads;
+    unsigned short inc = (nrules - 1) - (rules_per_thread * nthreads);
+    unsigned short sIdx = 0;
+
+    for(size_t i = 0; i < nthreads; ++i) {
+	unsigned short eIdx = sIdx + rules_per_thread + (i < inc ? 1 : 0);
+        ranges_[i] = std::make_pair(sIdx, eIdx);
+	if (logger->getVerbosity() > 10) {
+		printf("RANGE INDICES: %hu-%hu\nRANGE: ", sIdx, eIdx);
+		for (std::vector<unsigned short>::iterator it = 
+		    rule_perm_.begin() + sIdx;
+		    it != rule_perm_.begin() + eIdx; it++) {
+			printf("%hu ", *it);
+			printf("\n");
+		}
+	}
+	sIdx = eIdx;
+    }
+
     if (minority) {
         minority_ = minority;
     } else {
@@ -185,18 +212,23 @@ void CacheTree::gc_helper(Node* node) {
 }
 
 /*
- * Public wrapper function to garbage collect the entire tree beginning from the root.
+ * Public wrapper function to garbage collect the subset of the
+ * tree containing the rules in the given range in the index
+ * array.
  */
-void CacheTree::garbage_collect(std::vector<unsigned short>& rules) {
+void CacheTree::garbage_collect(size_t thread_id) {
     return;
+
     /*
     if (calculate_size_)
         logger->clearRemainingSpaceSize();
-    for (typename std::map<unsigned short, Node*>::iterator cit = root_->children_.begin(); 
-            cit != root_->children_.end(); ++cit) {
-        if (std::find(rules.begin(), rules.end(), cit->first) != rules.end())
-            gc_helper(cit->second);
-    }*/
+
+    for (typename std::vector<unsigned short>::iterator rit = 
+        rule_perm_.begin() + ranges_[thread_id].first;
+        rit != rule_perm_.begin() + ranges_[thread_id].second; rit++) {
+            gc_helper(*rit);
+    } 
+    */
 }
 
 void delete_interior(CacheTree* tree, Node* node, bool destructive, 

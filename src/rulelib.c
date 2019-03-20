@@ -98,23 +98,23 @@ rules_init(const char *infile, int *nrules,
 			rsize += RULE_INC;
                 	rules = realloc(rules, rsize * sizeof(rule_t));
 			if (rules == NULL) {
-                printf("HI1\n");
+			printf("HI1\n");
 				goto err;
-            }
+            		}
 		}
 
 		/* Get the rule string; line will contain the bits. */
 		if ((rulestr = strsep(&line_cpy, " ")) == NULL) {
 			goto err;
-        }
+		}
 
 		rulelen = strlen(rulestr) + 1;
 		len -= rulelen;
 
 		if ((rules[rule_cnt].features = strdup(rulestr)) == NULL) {
-            printf("HI3\n");
+			printf("HI3\n");
 			goto err;
-        }
+		}
 
 		/*
 		 * At this point "len" is a line terminated by a newline
@@ -125,7 +125,7 @@ rules_init(const char *infile, int *nrules,
 		if (ascii_to_vector(line_cpy, len, &sample_cnt, &ones,
 		    &rules[rule_cnt].truthtable) != 0) {
 		    	goto err;
-        }
+		}
 		rules[rule_cnt].support = ones;
 
 		/* Now compute the number of clauses in the rule. */
@@ -134,9 +134,11 @@ rules_init(const char *infile, int *nrules,
 			if (*cp == ',')
 				rules[rule_cnt].cardinality++;
 		rule_cnt++;
-        free(line);
-        line = NULL;
+
+		free(line);
+		line = NULL;
 	}
+
 	/* All done! */
 	fclose(fi);
 
@@ -146,9 +148,9 @@ rules_init(const char *infile, int *nrules,
 		rules[0].features = "default";
 		rules[0].cardinality = 0;
 		if (make_default(&rules[0].truthtable, sample_cnt) != 0) {
-            printf("HI5\n");
+		    printf("HI5\n");
 		    goto err;
-        }
+        	}
 	}
 
 	*nsamples = sample_cnt;

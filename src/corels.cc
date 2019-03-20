@@ -95,7 +95,7 @@ void evaluate_children(CacheTree* tree, Node* parent,
         objective = lower_bound + (double)(num_not_captured - default_correct) / nsamples;
         logger->addToObjTime(time_diff(t2));
         logger->incObjNum();
-        //min_obj_lk.lock();
+        min_obj_lk.lock();
         if (objective < tree->min_objective()) {
             printf("min(objective): %1.5f -> %1.5f, length: %d, cache size: %zu\n",
                    tree->min_objective(), objective, len_prefix, tree->num_nodes());
@@ -108,7 +108,7 @@ void evaluate_children(CacheTree* tree, Node* parent,
             // dump state when min objective is updated
             logger->dumpState();
         }
-        //min_obj_lk.unlock();
+        min_obj_lk.unlock();
         // calculate equivalent points bound to capture the fact that the minority points can never be captured correctly
         if (tree->has_minority()) {
             rule_vand(not_captured_equivalent, not_captured, tree->minority(0).truthtable, nsamples, &num_not_captured_equivalent);

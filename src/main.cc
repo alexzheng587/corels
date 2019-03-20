@@ -10,6 +10,7 @@
 #define BUFSZ 512
 
 std::mutex log_lk;
+std::mutex min_obj_lk;
 int lock_ac = 0;
 //pthread_rwlock_t pmap_lk = PTHREAD_RWLOCK_INITIALIZER;
 

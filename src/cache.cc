@@ -3,6 +3,7 @@
 #include <memory>
 #include <numeric>
 #include <vector>
+#include <iostream>
 #include <stdlib.h>
 
 Node::Node(size_t nrules, bool default_prediction, double objective, double equivalent_minority)
@@ -139,7 +140,12 @@ void CacheTree::insert_root() {
  * Insert a node into the tree.
  */
 void CacheTree::insert(Node* node) {
+    if (node == NULL) {
+        std::cout << "NULL NODE" << std::endl;
+    }
+    tree_lk_.lock();
     node->parent()->children_.insert(std::make_pair(node->id(), node));
+    tree_lk_.unlock();
     ++num_nodes_;
     logger->setTreeNumNodes(num_nodes_);
 }
@@ -217,18 +223,16 @@ void CacheTree::gc_helper(Node* node) {
  * array.
  */
 void CacheTree::garbage_collect(size_t thread_id) {
-    return;
-
-    /*
     if (calculate_size_)
         logger->clearRemainingSpaceSize();
 
-    for (typename std::vector<unsigned short>::iterator rit = 
-        rule_perm_.begin() + ranges_[thread_id].first;
-        rit != rule_perm_.begin() + ranges_[thread_id].second; rit++) {
-            gc_helper(*rit);
-    } 
-    */
+    std::vector<unsigned short> subrange = get_subrange(thread_id);
+    for (typename std::vector<unsigned short>::iterator rit = subrange.begin();
+        rit != subrange.end(); rit++) {
+            Node* cur_child = root_->child(*rit);
+            if (cur_child != NULL)
+                gc_helper(root_->child(*rit));
+    }
 }
 
 void delete_interior(CacheTree* tree, Node* node, bool destructive, 
@@ -263,8 +267,6 @@ void delete_interior(CacheTree* tree, Node* node, bool destructive,
  */
 void delete_subtree(CacheTree* tree, Node* node, bool destructive, 
         bool update_remaining_state_space) {
-    return;
-    /*
     Node* child;
     // Interior (non-leaf) node
     if (node->done()) {
@@ -273,18 +275,20 @@ void delete_subtree(CacheTree* tree, Node* node, bool destructive,
             child = iter->second;
             delete_subtree(tree, child, destructive, update_remaining_state_space);
         }
+        std::cout << "DELETE SUBTREE" << std::endl;
         // delete interior nodes
-        if (destructive) {
+            tree->lock();
             delete node;
+            tree->unlock();
             tree->decrement_num_nodes(); 
-        } else {
-            node->set_deleted();
-        }
+            //node->set_deleted();
     } else {
         // only delete leaf nodes in destructive mode
         if (destructive) {  
             tree->decrement_num_nodes();
+            tree->lock();
             delete node;
+            tree->unlock();
         } else {
             logger->decPrefixLen(node->depth());
             if (update_remaining_state_space)
@@ -292,5 +296,4 @@ void delete_subtree(CacheTree* tree, Node* node, bool destructive,
             node->set_deleted();
         }
     }
-    */
 }

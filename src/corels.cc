@@ -194,7 +194,7 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
     bool print_queue = 0;
     size_t num_iter = 0;
     int cnt;
-    double cur_min_objective;
+    double cur_min_objective = 1;
     VECTOR captured, not_captured;
     rule_vinit(tree->nsamples(), &captured);
     rule_vinit(tree->nsamples(), &not_captured);
@@ -228,7 +228,7 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
                          tree->rule(0).truthtable, captured,
                          tree->nsamples(), &cnt);
             //min_obj_lk.lock();
-            cur_min_objective = *min_objective;
+            //cur_min_objective = *min_objective;
             //min_obj_lk.unlock();
 	    if (special_call) {
 	        // GET MY RANGE OF RULES
@@ -242,22 +242,24 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
 
             logger->addToEvalChildrenTime(time_diff(t1));
             logger->incEvalChildrenNum();
-            //min_obj_lk.lock();
-            /* NOTYET
-	    if (*min_objective < cur_min_objective) {
+            min_obj_lk.lock();
+            // SET CUR MIN OBJECTIVE 
+	    if (tree->min_objective() < cur_min_objective) {
+                cur_min_objective = tree->min_objective();
+                min_obj_lk.unlock();
                 //min_objective = tree->min_objective();
                 //tree->update_min_objective(*min_objective);
-                if (verbosity >= 10)
+                //if (verbosity >= 10)
                     printf("before garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", 
                             tree->num_nodes(), logger->getLogRemainingSpaceSize());
                 logger->dumpState();
-                //tree->garbage_collect(range);
+                tree->garbage_collect(thread_id);
                 logger->dumpState();
-                if (verbosity >= 10)
+                //if (verbosity >= 10)
                     printf("after garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", tree->num_nodes(), logger->getLogRemainingSpaceSize());
+            } else {
+                min_obj_lk.unlock();
             }
-	    */
-            //min_obj_lk.unlock();
         }
         logger->setQueueSize(q->size());
         if (queue_min_length < logger->getQueueMinLen()) {

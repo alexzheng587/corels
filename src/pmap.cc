@@ -39,6 +39,7 @@ Node* PrefixPermutationMap::insert (unsigned short new_rule, size_t nrules, bool
     PrefixLocks::iterator key_iter = active_keys.find(key);
     // Wait for other thread to finish with current entry
     while(key_iter != active_keys.end()) {
+        // TODO add counter to measure how many collisions there are
         key_cv.wait(key_lk);
         key_iter = active_keys.find(key);
     }
@@ -59,7 +60,7 @@ Node* PrefixPermutationMap::insert (unsigned short new_rule, size_t nrules, bool
             if ((permuted_node = tree->check_prefix(permuted_prefix)) != NULL) {
                 //Node* permuted_parent = permuted_node->parent();
                 //permuted_parent->delete_child(permuted_node->id());
-                delete_subtree(tree, permuted_node, false, tree->calculate_size());
+                //delete_subtree(tree, permuted_node, false, tree->calculate_size());
                 logger->incPmapDiscardNum();
             } else {
                 logger->incPmapNullNum();

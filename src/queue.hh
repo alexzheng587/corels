@@ -80,7 +80,9 @@ begin:
                 if (node->deleted() || (lb >= tree->min_objective())) {
                     tree->decrement_num_nodes();
                     logger->removeFromMemory(sizeof(*node), DataStruct::Tree);
-                    //delete node;
+                    tree->lock();
+                    delete node;
+                    tree->unlock();
                     valid = false;
                 } else {
                     valid = true;
@@ -94,7 +96,7 @@ begin:
             while (node != tree->root()) {
                 // need to delete interior nodes lazily too when parallel
                 if(node->deleted()) {
-                    delete_interior(tree, node, true, false);
+                    delete_subtree(tree, node, true, false);
                     goto begin;
                 }
                 rule_vor(captured,

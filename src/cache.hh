@@ -11,6 +11,7 @@
 #include <memory>
 #include <thread>
 #include <atomic>
+#include <mutex>
 
 class Node {
   public:
@@ -135,6 +136,9 @@ class CacheTree {
     void play_with_rules();
     Node* check_prefix(tracking_vector<unsigned short, DataStruct::Tree>& prefix);
 
+    inline void lock();
+    inline void unlock();
+
   protected:
     std::ofstream t_;
     Node* root_;
@@ -160,6 +164,7 @@ class CacheTree {
 
     char const *type_;
     void gc_helper(Node* node);
+    std::mutex tree_lk_;
 };
 
 inline unsigned short Node::id() const {
@@ -408,6 +413,14 @@ inline std::vector<unsigned short> CacheTree::rule_perm() {
 inline void CacheTree::decrement_num_nodes() {
     --num_nodes_;
     logger->setTreeNumNodes(num_nodes_);
+}
+
+inline void CacheTree::lock() {
+  tree_lk_.lock();
+}
+
+inline void CacheTree::unlock() {
+  tree_lk_.unlock();
 }
 
 void delete_interior(CacheTree* tree, Node* node, bool destructive, bool update_remaining_state_space);

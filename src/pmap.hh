@@ -49,7 +49,7 @@ struct prefix_hash {
 
 // Prefix Map typdefs
 typedef std::unordered_map<prefix_key, bool, prefix_hash, prefix_eq> PrefixLocks;
-typedef std::pair<double, unsigned char*> prefix_val;
+typedef std::tuple<double, unsigned char*, size_t> prefix_val;
 typedef std::unordered_map<prefix_key, prefix_val, prefix_hash, prefix_eq, track_alloc<std::pair<const prefix_key, prefix_val>, DataStruct::Pmap> > PrefixMap;
 
 /*

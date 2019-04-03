@@ -50,11 +50,11 @@ Node* PrefixPermutationMap::insert (unsigned short new_rule, size_t nrules, bool
     PrefixMap::iterator iter = pmap->find(key);
     map_lk.unlock();
     if (iter != pmap->end()) {
-        double permuted_lower_bound = iter->second.first;
+        double permuted_lower_bound = std::get<0>(iter->second);
         if (lower_bound < permuted_lower_bound) {
             Node* permuted_node;
             tracking_vector<unsigned short, DataStruct::Tree> permuted_prefix(parent_prefix.size());
-            unsigned char* indices = iter->second.second;
+            unsigned char* indices = std::get<1>(iter->second);
             for (unsigned char i = 0; i < indices[0]; ++i)
                 permuted_prefix[i] = parent_prefix[indices[i + 1]];
             if ((permuted_node = tree->check_prefix(permuted_prefix)) != NULL) {
@@ -69,7 +69,7 @@ Node* PrefixPermutationMap::insert (unsigned short new_rule, size_t nrules, bool
                                      default_prediction, lower_bound, objective,
                                      parent, num_not_captured, nsamples,
                                      len_prefix, c, equivalent_minority);
-            iter->second = std::make_pair(lower_bound, ordered);
+            iter->second = std::make_tuple(lower_bound, ordered, thread_id);
         }
     } else {
         child = tree->construct_node(new_rule, nrules, prediction,
@@ -80,7 +80,7 @@ Node* PrefixPermutationMap::insert (unsigned short new_rule, size_t nrules, bool
         // Need to globally lock map when inserting otherwise iterators in other threads could be
         // invalidated if the unordere_map is resized.
         map_lk.lock();
-        pmap->insert(std::make_pair(key, std::make_pair(lower_bound, ordered_prefix)));
+        pmap->insert(std::make_pair(key, std::make_tuple(lower_bound, ordered_prefix, thread_id)));
         map_lk.unlock();
         logger->incPmapSize();
     }

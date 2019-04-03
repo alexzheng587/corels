@@ -49,7 +49,7 @@ struct prefix_hash {
 
 // Prefix Map typdefs
 typedef std::unordered_map<prefix_key, bool, prefix_hash, prefix_eq> PrefixLocks;
-typedef std::pair<double, unsigned char*> prefix_val;
+typedef std::tuple<double, unsigned char*> prefix_val;
 typedef std::unordered_map<prefix_key, prefix_val, prefix_hash, prefix_eq, track_alloc<std::pair<const prefix_key, prefix_val>, DataStruct::Pmap> > PrefixMap;
 
 /*
@@ -97,7 +97,7 @@ class PermutationMap {
                              size_t nrules, bool prediction, bool default_prediction, double lower_bound,
                              double objective, Node* parent, int num_not_captured, int nsamples, int len_prefix,
                              double c, double equivalent_minority, CacheTree* tree, VECTOR not_captured,
-                             tracking_vector<unsigned short, DataStruct::Tree> parent_prefix) { return NULL; }
+                             tracking_vector<unsigned short, DataStruct::Tree> parent_prefix, size_t thread_id) { return NULL; }
         Node* check_permutation_bound (unsigned short new_rule,
                              size_t nrules, bool prediction, bool default_prediction, double lower_bound,
                              double objective, Node* parent, int num_not_captured, int nsamples, int len_prefix,
@@ -115,7 +115,7 @@ class PrefixPermutationMap : public PermutationMap {
             bool default_prediction, double lower_bound, double objective, Node* parent, 
             int num_not_captured, int nsamples, int len_prefix, double c, double equivalent_minority,
             CacheTree* tree, VECTOR not_captured, tracking_vector<unsigned short, 
-            DataStruct::Tree> parent_prefix) override;
+            DataStruct::Tree> parent_prefix, size_t thread_id) override;
 	private:
 		PrefixMap* pmap;
         std::mutex map_lk;

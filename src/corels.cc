@@ -22,7 +22,7 @@ Queue::Queue(std::function<bool(Node*, Node*)> cmp, char const *type)
 void evaluate_children(CacheTree* tree, Node* parent,
     tracking_vector<unsigned short, DataStruct::Tree> parent_prefix,
     VECTOR parent_not_captured, std::vector<unsigned short> rules,
-    Queue* q, PermutationMap* p, double* min_objective) {
+    Queue* q, PermutationMap* p, double* min_objective, size_t thread_id) {
 
     VECTOR captured, captured_zeros, not_captured, not_captured_zeros, not_captured_equivalent;
     int num_captured, c0, c1, captured_correct;
@@ -129,12 +129,12 @@ void evaluate_children(CacheTree* tree, Node* parent,
             // check permutation bound
             Node* n = p->insert(i, nrules, prediction, default_prediction,
                                    lower_bound, objective, parent, num_not_captured, nsamples,
-                                   len_prefix, c, equivalent_minority, tree, not_captured, parent_prefix);
+                                   len_prefix, c, equivalent_minority, tree, not_captured, parent_prefix, thread_id);
             logger->addToPermMapInsertionTime(time_diff(t3));
             // n is NULL if this rule fails the permutaiton bound
             if (n) {
                 double t4 = timestamp();
-                tree->insert(n);
+                tree->insert(n, thread_id);
                 logger->incTreeInsertionNum();
                 logger->incPrefixLen(len_prefix);
                 logger->addToTreeInsertionTime(time_diff(t4));
@@ -217,7 +217,7 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
 
     while ((tree->num_nodes() < max_num_nodes) && !q->empty()) {
         double t0 = timestamp();
-        std::pair<Node*, tracking_vector<unsigned short, DataStruct::Tree> > node_ordered = q->select(tree, captured);
+        std::pair<Node*, tracking_vector<unsigned short, DataStruct::Tree> > node_ordered = q->select(tree, captured, thread_id);
         logger->addToNodeSelectTime(time_diff(t0));
         logger->incNodeSelectNum();
         if (node_ordered.first) {
@@ -233,11 +233,11 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
 	    if (special_call) {
 	        // GET MY RANGE OF RULES
 		evaluate_children(tree, node_ordered.first, node_ordered.second,
-		    not_captured, tree->get_subrange(thread_id), q, p, min_objective);
+		    not_captured, tree->get_subrange(thread_id), q, p, min_objective, thread_id);
 		special_call = false;
 	    } else {
 		evaluate_children(tree, node_ordered.first, node_ordered.second,
-		    not_captured, tree->rule_perm(), q, p, min_objective);
+		    not_captured, tree->rule_perm(), q, p, min_objective, thread_id);
 	    }
 
             logger->addToEvalChildrenTime(time_diff(t1));

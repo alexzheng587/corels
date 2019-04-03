@@ -11,7 +11,7 @@ Node* PrefixPermutationMap::insert (unsigned short new_rule, size_t nrules, bool
         bool default_prediction, double lower_bound, double objective, Node* parent, 
         int num_not_captured, int nsamples, int len_prefix, double c, double equivalent_minority,
         CacheTree* tree, VECTOR not_captured, tracking_vector<unsigned short, 
-        DataStruct::Tree> parent_prefix) {
+        DataStruct::Tree> parent_prefix, size_t thread_id) {
     (void) not_captured;
     logger->incPermMapInsertionNum();
     parent_prefix.push_back(new_rule);
@@ -116,7 +116,7 @@ Node* CapturedPermutationMap::insert(unsigned short new_rule, size_t nrules, boo
             if ((permuted_node = tree->check_prefix(permuted_prefix)) != NULL) {
                 Node* permuted_parent = permuted_node->parent();
                 permuted_parent->delete_child(permuted_node->id());
-                delete_subtree(tree, permuted_node, false, tree->calculate_size());
+                //delete_subtree(tree, permuted_node, false, tree->calculate_size());
                 logger->incPmapDiscardNum();
             } else {
                 logger->incPmapNullNum();

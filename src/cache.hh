@@ -127,7 +127,7 @@ class CacheTree {
 
     inline std::vector<unsigned short> rule_perm();
     void insert_root();
-    void insert(Node* node);
+    void insert(Node* node, size_t thread_id);
     void prune_up(Node* node);
     void garbage_collect(size_t thread_id);
     void print_tree();
@@ -136,8 +136,8 @@ class CacheTree {
     void play_with_rules();
     Node* check_prefix(tracking_vector<unsigned short, DataStruct::Tree>& prefix);
 
-    inline void lock();
-    inline void unlock();
+    inline void lock(size_t thread_id);
+    inline void unlock(size_t thread_id);
 
   protected:
     std::ofstream t_;
@@ -163,8 +163,8 @@ class CacheTree {
     rule_t *minority_;
 
     char const *type_;
-    void gc_helper(Node* node);
-    std::mutex tree_lk_;
+    void gc_helper(Node* node, size_t thread_id);
+    std::vector<std::mutex> tree_lks_;
 };
 
 inline unsigned short Node::id() const {
@@ -415,13 +415,13 @@ inline void CacheTree::decrement_num_nodes() {
     logger->setTreeNumNodes(num_nodes_);
 }
 
-inline void CacheTree::lock() {
-  tree_lk_.lock();
+inline void CacheTree::lock(size_t thread_id) {
+  tree_lks_[thread_id].lock();
 }
 
-inline void CacheTree::unlock() {
-  tree_lk_.unlock();
+inline void CacheTree::unlock(size_t thread_id) {
+  tree_lks_[thread_id].unlock();
 }
 
 void delete_interior(CacheTree* tree, Node* node, bool destructive, bool update_remaining_state_space);
-void delete_subtree(CacheTree* tree, Node* node, bool destructive, bool update_remaining_state_space);
+void delete_subtree(CacheTree* tree, Node* node, bool destructive, bool update_remaining_state_space, size_t thread_id);

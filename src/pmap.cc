@@ -53,18 +53,22 @@ Node* PrefixPermutationMap::insert (unsigned short new_rule, size_t nrules, bool
         double permuted_lower_bound = std::get<0>(iter->second);
         if (lower_bound < permuted_lower_bound) {
             Node* permuted_node;
+            tree->lock(thread_id);
             tracking_vector<unsigned short, DataStruct::Tree> permuted_prefix(parent_prefix.size());
             unsigned char* indices = std::get<1>(iter->second);
             for (unsigned char i = 0; i < indices[0]; ++i)
                 permuted_prefix[i] = parent_prefix[indices[i + 1]];
             if ((permuted_node = tree->check_prefix(permuted_prefix)) != NULL) {
-                //Node* permuted_parent = permuted_node->parent();
-                //permuted_parent->delete_child(permuted_node->id());
+                Node* permuted_parent = permuted_node->parent();
+                permuted_parent->delete_child(permuted_node->id());
                 //delete_subtree(tree, permuted_node, false, tree->calculate_size());
+                permuted_node->set_done();
+                permuted_node->set_deleted();
                 logger->incPmapDiscardNum();
             } else {
                 logger->incPmapNullNum();
             }
+            tree->unlock(thread_id);
             child = tree->construct_node(new_rule, nrules, prediction,
                                      default_prediction, lower_bound, objective,
                                      parent, num_not_captured, nsamples,

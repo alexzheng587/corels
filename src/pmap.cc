@@ -95,7 +95,7 @@ Node* PrefixPermutationMap::insert (unsigned short new_rule, size_t nrules, bool
 Node* CapturedPermutationMap::insert(unsigned short new_rule, size_t nrules, bool prediction, 
         bool default_prediction, double lower_bound, double objective, Node* parent, int num_not_captured, 
         int nsamples, int len_prefix, double c, double equivalent_minority, CacheTree* tree, 
-        VECTOR not_captured, tracking_vector<unsigned short, DataStruct::Tree> parent_prefix) {
+        VECTOR not_captured, tracking_vector<unsigned short, DataStruct::Tree> parent_prefix, size_t thread_id) {
     logger->incPermMapInsertionNum();
     parent_prefix.push_back(new_rule);
     Node* child = NULL;

@@ -98,8 +98,8 @@ void evaluate_children(CacheTree* tree, Node* parent,
         if (objective < tree->min_objective()) {
             min_obj_lk.lock();
             if (objective < tree->min_objective()) { 
-                printf("min(objective): %1.5f -> %1.5f, length: %d, cache size: %zu\n",
-                       tree->min_objective(), objective, len_prefix, tree->num_nodes());
+                printf("THREAD %zu: min(objective): %1.5f -> %1.5f, length: %d, cache size: %zu\n",
+                       thread_id, tree->min_objective(), objective, len_prefix, tree->num_nodes());
 
                 logger->setTreeMinObj(objective);
                 tree->update_min_objective(objective);
@@ -250,13 +250,13 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
                 //min_objective = tree->min_objective();
                 //tree->update_min_objective(*min_objective);
                 //if (verbosity >= 10)
-                    printf("before garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", 
-                            tree->num_nodes(), logger->getLogRemainingSpaceSize());
+                    printf("THREAD %zu: before garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", 
+                            thread_id, tree->num_nodes(thread_id), logger->getLogRemainingSpaceSize());
                 logger->dumpState();
                 tree->garbage_collect(thread_id);
                 logger->dumpState();
                 //if (verbosity >= 10)
-                    printf("after garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", tree->num_nodes(), logger->getLogRemainingSpaceSize());
+                    printf("THREAD %zu: after garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", thread_id, tree->num_nodes(thread_id), logger->getLogRemainingSpaceSize());
             } else {
                 min_obj_lk.unlock();
             }
@@ -270,8 +270,8 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
         ++num_iter;
         if ((num_iter % 10000) == 0) {
             if (verbosity >= 10)
-                printf("iter: %zu, tree: %zu, queue: %zu, pmap: %zu, log10(remaining): %zu, time elapsed: %f\n",
-                       num_iter, tree->num_nodes(), q->size(), p->size(), logger->getLogRemainingSpaceSize(), time_diff(start));
+                printf("THREAD %zu: iter: %zu, tree: %zu, queue: %zu, pmap: %zu, log10(remaining): %zu, time elapsed: %f\n",
+                       thread_id, num_iter, tree->num_nodes(thread_id), q->size(), p->size(), logger->getLogRemainingSpaceSize(), time_diff(start));
         }
         if ((num_iter % logger->getFrequency()) == 0) {
             // want ~1000 records for detailed figures
@@ -280,8 +280,8 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
     }
     logger->dumpState(); // second last log record (before queue elements deleted)
     if (verbosity >= 1)
-        printf("iter: %zu, tree: %zu, queue: %zu, pmap: %zu, log10(remaining): %zu, time elapsed: %f\n",
-               num_iter, tree->num_nodes(), q->size(), p->size(), logger->getLogRemainingSpaceSize(), time_diff(start));
+        printf("THREAD %zu: iter: %zu, tree: %zu, queue: %zu, pmap: %zu, log10(remaining): %zu, time elapsed: %f\n",
+               thread_id, num_iter, tree->num_nodes(thread_id), q->size(), p->size(), logger->getLogRemainingSpaceSize(), time_diff(start));
     if (q->empty())
         printf("Exited because queue empty\n");
     else

@@ -13,6 +13,7 @@
 #include <atomic>
 #include <mutex>
 
+
 class Node {
   public:
     Node(size_t nrules, bool default_prediction, double objective, double equivalent_minority);
@@ -83,6 +84,8 @@ class CuriousNode: public Node {
         double curiosity_;
 };
 
+size_t nn_helper(Node* node);
+
 class CacheTree {
   public:
     CacheTree() {};
@@ -102,6 +105,7 @@ class CacheTree {
     inline tracking_vector<bool, DataStruct::Tree> opt_predictions() const;
 
     inline size_t num_nodes() const;
+    inline size_t num_nodes(size_t thread_id);
     inline size_t num_evaluated() const;
     inline size_t num_threads() const;
     inline rule_t rule(unsigned short idx) const;
@@ -277,6 +281,15 @@ inline tracking_vector<bool, DataStruct::Tree> CacheTree::opt_predictions() cons
 
 inline size_t CacheTree::num_nodes() const {
     return num_nodes_;
+}
+
+inline size_t CacheTree::num_nodes(size_t thread_id) {
+    std::vector<unsigned short> range = get_subrange(thread_id);
+    size_t ret = 1;
+    for (std::vector<unsigned short>::iterator it = range.begin(); it != range.end(); ++it) {
+        ret += nn_helper(root_->child(*it));
+    }
+    return ret;
 }
 
 inline size_t CacheTree::num_threads() const {

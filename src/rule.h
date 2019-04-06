@@ -168,13 +168,10 @@ int count_ones(v_entry);
 int count_ones_vector(VECTOR, int);
 int rule_vector_equal(const VECTOR, const VECTOR, short, short);
 size_t rule_vector_hash(const VECTOR, short);
-<<<<<<< HEAD
 
 /* Helper functions */
 int ascii_to_vector(char *, size_t, int *, int *, VECTOR *);
 int make_default(VECTOR *, int);
-=======
->>>>>>> origin/parallel_test
 
 /* Functions for the Scalable Baysian Rule Lists */
 double *predict(data_t *, pred_model_t *, params_t *);

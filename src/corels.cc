@@ -22,7 +22,7 @@ Queue::Queue(std::function<bool(Node*, Node*)> cmp, char const *type)
 void evaluate_children(CacheTree* tree, Node* parent,
     tracking_vector<unsigned short, DataStruct::Tree> parent_prefix,
     VECTOR parent_not_captured, std::vector<unsigned short> rules,
-    Queue* q, PermutationMap* p, double* min_objective, size_t thread_id) {
+    Queue* q, PermutationMap* p, double* min_objective, unsigned short thread_id) {
 
     VECTOR captured, captured_zeros, not_captured, not_captured_zeros, not_captured_equivalent;
     int num_captured, c0, c1, captured_correct;
@@ -189,7 +189,7 @@ void bbound_init(CacheTree* tree) {
  * The queue can be ordered by DFS, BFS, or an alternative priority metric (e.g. lower bound).
  */
 int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
-    size_t thread_id, double* min_objective) {
+    unsigned short thread_id, double* min_objective) {
 
     bool print_queue = 0;
     size_t num_iter = 0;

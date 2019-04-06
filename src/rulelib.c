@@ -75,27 +75,19 @@ rules_init(const char *infile, int *nrules,
 	int rule_cnt, sample_cnt, rsize;
 	int ones, ret;
 	rule_t *rules=NULL;
-<<<<<<< HEAD
 	ssize_t len;
     	size_t linelen, rulelen;
-=======
-	size_t len = 0;
-    size_t rulelen;
->>>>>>> origin/parallel_test
 
 	sample_cnt = rsize = 0;
 
-	if ((fi = fopen(infile, "r")) == NULL) {
-        printf("HI\n");
+	if ((fi = fopen(infile, "r")) == NULL)
         return (errno);
-    }
 
 	/*
 	 * Leave a space for the 0th (default) rule, which we'll add at
 	 * the end.
 	 */
 	rule_cnt = add_default_rule != 0 ? 1 : 0;
-<<<<<<< HEAD
 
 	/*
 	 * line and linelen are managed by getline. If getline needs to
@@ -107,34 +99,21 @@ rules_init(const char *infile, int *nrules,
 	line = NULL;
 	linelen = 0;
 	while ((len = getline(&line, &linelen, fi)) > 0) {
-=======
-	while (getline(&line, &len, fi) != -1) {
-        char* line_cpy = line;
->>>>>>> origin/parallel_test
 		if (rule_cnt >= rsize) {
 			rsize += RULE_INC;
                 	rules = realloc(rules, rsize * sizeof(rule_t));
-			if (rules == NULL) {
-			printf("HI1\n");
+			if (rules == NULL)
 				goto err;
-            		}
 		}
 
-<<<<<<< HEAD
 		/* Get the rule string in line; features will contain the bits. */
 		features = line;
 		if ((rulestr = strsep(&features, " ")) == NULL)
-=======
-		/* Get the rule string; line will contain the bits. */
-		if ((rulestr = strsep(&line_cpy, " ")) == NULL) {
->>>>>>> origin/parallel_test
 			goto err;
-		}
 
 		rulelen = strlen(line) + 1;
 		len -= rulelen;
 
-<<<<<<< HEAD
 
 		//if ((rules[rule_cnt].features = strdup(line)) == NULL)
 		//	goto err;
@@ -143,12 +122,6 @@ rules_init(const char *infile, int *nrules,
 		char* err = strcpy(rules[rule_cnt].features, line);
 		//if (err != 0)
 		//	goto err;
-=======
-		if ((rules[rule_cnt].features = strdup(rulestr)) == NULL) {
-			printf("HI3\n");
-			goto err;
-		}
->>>>>>> origin/parallel_test
 
 		/*
 		 * At this point features is (probably) a line terminated by a
@@ -156,7 +129,6 @@ rules_init(const char *infile, int *nrules,
 		 * then let's make it NUL-terminated and shorten the line
 		 * length by one.
 		 */
-<<<<<<< HEAD
 		if (features[len-1] == '\n') {
 			features[len-1] = '\0';
 			len--;
@@ -164,13 +136,7 @@ rules_init(const char *infile, int *nrules,
 
 		if (ascii_to_vector(features, len, &sample_cnt, &ones,
 		    &rules[rule_cnt].truthtable) != 0)
-=======
-		line_cpy[len-1] = '\0';
-		if (ascii_to_vector(line_cpy, len, &sample_cnt, &ones,
-		    &rules[rule_cnt].truthtable) != 0) {
->>>>>>> origin/parallel_test
 		    	goto err;
-		}
 		rules[rule_cnt].support = ones;
 
 		/* Now compute the number of clauses in the rule. */
@@ -179,19 +145,11 @@ rules_init(const char *infile, int *nrules,
 			if (*cp == ',')
 				rules[rule_cnt].cardinality++;
 		rule_cnt++;
-<<<<<<< HEAD
 	}
 
         free(line);
         line = NULL;
-
-=======
-
-		free(line);
-		line = NULL;
-	}
-
->>>>>>> origin/parallel_test
+	
 	/* All done! */
 	fclose(fi);
 
@@ -200,10 +158,8 @@ rules_init(const char *infile, int *nrules,
 		rules[0].support = sample_cnt;
 		rules[0].features = "default";
 		rules[0].cardinality = 0;
-		if (make_default(&rules[0].truthtable, sample_cnt) != 0) {
-		    printf("HI5\n");
+		if (make_default(&rules[0].truthtable, sample_cnt) != 0)
 		    goto err;
-        	}
 	}
 
 	*nsamples = sample_cnt;
@@ -216,23 +172,9 @@ err:
 	ret = errno;
 
 	/* Reclaim space. */
-<<<<<<< HEAD
 	rules_free(rules, rule_cnt, add_default_rule);
 	if (line != NULL)
 		free(line);
-=======
-	if (rules != NULL) {
-		for (i = 1; i < rule_cnt; i++) {
-			free(rules[i].features);
-#ifdef GMP
-			mpz_clear(rules[i].truthtable);
-#else
-			free(rules[i].truthtable);
-#endif
-		}
-		free(rules);
-	}
->>>>>>> origin/parallel_test
 	(void)fclose(fi);
 	return (ret);
 }
@@ -320,17 +262,10 @@ ascii_to_vector(char *line, size_t len, int *nsamples, int *nones, VECTOR *ret)
 	int retval;
 
 	if (mpz_init_set_str(*ret, line, 2) != 0) {
-        printf("LINE: %s\n", line);
 		retval = errno;
 		mpz_clear(*ret);
 		return (retval);
 	}
-<<<<<<< HEAD
-=======
-	if ((s = mpz_sizeinbase (*ret, 2)) > (size_t) *nsamples)
-		*nsamples = (int) s;
-
->>>>>>> origin/parallel_test
 	*nones = mpz_popcount(*ret);
 	assert(*nones != -1);
 	return (0);
@@ -933,10 +868,7 @@ rule_not(VECTOR dest, VECTOR src, int nsamples, int *ret_cnt)
     mpz_com(dest, src);
     *ret_cnt = 0;
     *ret_cnt = mpz_popcount(dest);
-<<<<<<< HEAD
     assert(*ret_cnt != -1);
-=======
->>>>>>> origin/parallel_test
 #else
 	int i, count, nentries;
 
@@ -952,10 +884,9 @@ rule_not(VECTOR dest, VECTOR src, int nsamples, int *ret_cnt)
 #endif
 }
 
-<<<<<<< HEAD
 /*
  * Compare two vectors for equality.
- * Return 0 for equal; -1 for less than (mpz only); 1 for greater
+ * Return 0 for equal; -1 for less than (mpz only); 1 for greater 
  * than (mpz) or not equal (default)
  */
 int
@@ -986,8 +917,6 @@ rule_veq(VECTOR src1, VECTOR src2, int nsamples)
 }
 
 
-=======
->>>>>>> origin/parallel_test
 int
 count_ones_vector(VECTOR v, int len) {
 #ifdef GMP

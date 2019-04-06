@@ -141,7 +141,7 @@ void CacheTree::insert_root() {
 /*
  * Insert a node into the tree.
  */
-void CacheTree::insert(Node* node, size_t thread_id) {
+void CacheTree::insert(Node* node, unsigned short thread_id) {
     if (node == NULL) {
         std::cout << "NULL NODE" << std::endl;
     }
@@ -196,7 +196,7 @@ Node* CacheTree::check_prefix(tracking_vector<unsigned short, DataStruct::Tree>&
  * Recursive helper function to traverse down the tree, deleting nodes with a lower bound greater 
  * than the minimum objective.
  */
-void CacheTree::gc_helper(Node* node, size_t thread_id) {
+void CacheTree::gc_helper(Node* node, unsigned short thread_id) {
     if (calculate_size_ & (!node->done()))
         logger->addQueueElement(node->depth(), node->lower_bound(), false);
     Node* child;
@@ -224,7 +224,7 @@ void CacheTree::gc_helper(Node* node, size_t thread_id) {
  * tree containing the rules in the given range in the index
  * array.
  */
-void CacheTree::garbage_collect(size_t thread_id) {
+void CacheTree::garbage_collect(unsigned short thread_id) {
     if (calculate_size_)
         logger->clearRemainingSpaceSize();
 
@@ -268,7 +268,7 @@ void delete_interior(CacheTree* tree, Node* node, bool destructive,
  * the remaining search space (optional calculation in logger state)
  */
 void delete_subtree(CacheTree* tree, Node* node, bool destructive, 
-        bool update_remaining_state_space, size_t thread_id) {
+        bool update_remaining_state_space, unsigned short thread_id) {
     Node* child;
     // Interior (non-leaf) node
     if (node->done()) {

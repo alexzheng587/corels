@@ -167,10 +167,10 @@ int main(int argc, char *argv[]) {
 
     if (verbosity >= 1000) {
         printf("\n%d rules %d samples\n\n", nrules, nsamples);
-        rule_print_all(rules, nrules, nsamples);
+        rule_print_all(rules, nrules, nsamples, 1);
 
         printf("\nLabels (%d) for %d samples\n\n", nlabels, nsamples);
-        rule_print_all(labels, nlabels, nsamples);
+        rule_print_all(labels, nlabels, nsamples, 1);
     }
 
     if (verbosity > 1)

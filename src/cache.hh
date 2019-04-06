@@ -13,6 +13,7 @@
 #include <atomic>
 #include <mutex>
 
+extern std::mutex min_obj_lk;
 
 class Node {
   public:
@@ -118,7 +119,9 @@ class CacheTree {
     inline double c() const;
     inline Node* root() const;
 
-    bool update_min_objective(double objective);
+    bool update_obj_and_list(double objective, tracking_vector<unsigned short, DataStruct::Tree>& parent_prefix,
+                                unsigned short new_rule_id,
+                                Node* parent, bool new_pred, bool new_default_pred);
     void update_opt_rulelist(tracking_vector<unsigned short, DataStruct::Tree>& parent_prefix,
                              unsigned short new_rule_id);
     void update_opt_predictions(Node* parent, bool new_pred, bool new_default_pred);
@@ -156,7 +159,7 @@ class CacheTree {
     int ablation_; // Used to remove support (1) or lookahead (2) bounds
     bool calculate_size_;
 
-    std::atomic<double> min_objective_;
+    double min_objective_;
     tracking_vector<unsigned short, DataStruct::Tree> opt_rulelist_;
     std::vector<bool, track_alloc<bool, DataStruct::Tree> > opt_predictions_;
     std::vector<unsigned short> rule_perm_;
@@ -268,7 +271,7 @@ inline double CuriousNode::get_curiosity() {
 }
 
 inline double CacheTree::min_objective() const {
-    return min_objective_.load(std::memory_order_seq_cst);
+    return min_objective_;
 }
 
 inline tracking_vector<unsigned short, DataStruct::Tree> CacheTree::opt_rulelist() const {
@@ -344,6 +347,24 @@ inline bool CacheTree::calculate_size() const {
     return calculate_size_;
 }
 
+inline bool
+CacheTree::update_obj_and_list(double objective, tracking_vector<unsigned short, DataStruct::Tree>& parent_prefix,
+                                unsigned short new_rule_id,
+                                Node* parent, bool new_pred, bool new_default_pred) {
+  min_obj_lk.lock();
+  if (objective >= min_objective_) {
+    min_obj_lk.unlock();
+    return false;
+  } else {
+    min_objective_ = objective;
+    logger->setTreeMinObj(objective);
+    this->update_opt_rulelist(parent_prefix, new_rule_id);
+    this->update_opt_predictions(parent, new_pred, new_default_pred);
+  }
+  min_obj_lk.unlock();
+  return true;
+}
+
 /*
  * Update the minimum objective of the tree.
  */
@@ -351,25 +372,6 @@ inline bool CacheTree::calculate_size() const {
     min_objective_ = objective;
     logger->setTreeMinObj(objective);
 }*/
-
-/*
- * Update the minimum objective of the tree.
- * Return true if the operation succeeded (i.e., min_objective doesn't get updated to a lower value than objective by another thread during operation)
- * Return false otherwise
- */
-inline bool CacheTree::update_min_objective(double objective) {
-    bool succeeded = false;
-    double min_objective_load = min_objective_.load(std::memory_order_seq_cst);
-    while (min_objective_load > objective) {
-        min_objective_load = min_objective_.load(std::memory_order_seq_cst);
-        succeeded = min_objective_.compare_exchange_strong(min_objective_load, objective, std::memory_order_seq_cst);
-        if (succeeded) {
-            logger->setTreeMinObj(objective);
-            break;
-        }
-    }
-    return succeeded;
-}
 
 /*
  * Update the optimal rulelist of the tree.

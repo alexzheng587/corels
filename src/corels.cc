@@ -96,20 +96,13 @@ void evaluate_children(CacheTree* tree, Node* parent,
         logger->addToObjTime(time_diff(t2));
         logger->incObjNum();
         if (objective < tree->min_objective()) {
-            min_obj_lk.lock();
-            if (objective < tree->min_objective()) { 
+            if (tree->update_obj_and_list(objective, parent_prefix, i, parent, prediction, default_prediction)) {
                 printf("THREAD %zu: min(objective): %1.5f -> %1.5f, length: %d, cache size: %zu\n",
                        thread_id, tree->min_objective(), objective, len_prefix, tree->num_nodes());
-
                 logger->setTreeMinObj(objective);
-                tree->update_min_objective(objective);
-                //*min_objective = objective;
-                tree->update_opt_rulelist(parent_prefix, i);
-                tree->update_opt_predictions(parent, prediction, default_prediction);
                 // dump state when min objective is updated
                 logger->dumpState();
             }
-            min_obj_lk.unlock();
         }
         // calculate equivalent points bound to capture the fact that the minority points can never be captured correctly
         if (tree->has_minority()) {

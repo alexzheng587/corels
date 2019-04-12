@@ -277,20 +277,29 @@ void delete_subtree(CacheTree* tree, Node* node, bool destructive,
             child = iter->second;
             delete_subtree(tree, child, destructive, update_remaining_state_space, thread_id);
         }
-        std::cout << "DELETE SUBTREE" << std::endl;
+        //std::cout << "DELETE SUBTREE" << std::endl;
         // delete interior nodes
+        // physically delete only if the node is not in the queue
+        if (node->in_queue()) {
+            node->set_deleted();
+        } else {
             tree->lock(thread_id);
             delete node;
             tree->unlock(thread_id);
-            tree->decrement_num_nodes(); 
+            tree->decrement_num_nodes();
+        }
             //node->set_deleted();
     } else {
         // only delete leaf nodes in destructive mode
-        if (destructive) {  
-            tree->decrement_num_nodes();
-            tree->lock(thread_id);
-            delete node;
-            tree->unlock(thread_id);
+        if (destructive) {
+            if (node->in_queue()) {
+                node->set_deleted();
+            } else {
+                tree->decrement_num_nodes();
+                tree->lock(thread_id);
+                delete node;
+                tree->unlock(thread_id);    
+            }
         } else {
             logger->decPrefixLen(node->depth());
             if (update_remaining_state_space)

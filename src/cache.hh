@@ -34,6 +34,8 @@ class Node {
     inline void set_done();
     inline bool deleted() const;
     inline void set_deleted();
+    inline bool in_queue() const;
+    inline void set_in_queue(bool new_val);
 
     // Returns pair of prefixes and predictions for the path from this node to the root
     inline std::pair<tracking_vector<unsigned short, DataStruct::Tree>, tracking_vector<bool, DataStruct::Tree> >
@@ -67,6 +69,7 @@ class Node {
     bool default_prediction_;
     bool done_;
     bool deleted_;
+    bool in_queue_;
 
     friend class CacheTree;
 };
@@ -208,6 +211,14 @@ inline bool Node::deleted() const{
 
 inline void Node::set_deleted() {
     deleted_ = 1;
+}
+
+inline bool Node::in_queue() const {
+    return in_queue_;
+}
+
+inline void Node::set_in_queue(bool new_val) {
+    in_queue_ = new_val;
 }
 
 inline std::pair<tracking_vector<unsigned short, DataStruct::Tree>, tracking_vector<bool, DataStruct::Tree> >

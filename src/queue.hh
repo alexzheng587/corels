@@ -76,6 +76,7 @@ begin:
                 logger->setCurrentLowerBound(lb);
 
                 node = selected_node;
+                node->set_in_queue(false);
                 // delete leaf nodes that were lazily marked
                 if (node->deleted() || (lb >= tree->min_objective())) {
                     tree->decrement_num_nodes();

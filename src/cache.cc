@@ -40,6 +40,8 @@ CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, size_t nthreads,
     std::iota(rule_perm_.begin(), rule_perm_.end(), 1);
     std::random_shuffle(rule_perm_.begin(), rule_perm_.end());
 
+    tree_lks_ = std::vector<std::mutex> (nthreads);
+
     unsigned short rules_per_thread = (nrules-1) / nthreads;
     unsigned short inc = (nrules - 1) - (rules_per_thread * nthreads);
     unsigned short sIdx = 0;
@@ -74,7 +76,7 @@ CacheTree::~CacheTree() {
 	if (t_)
         close_print_file();
 	if (root_)
-        delete_subtree(this, root_, true, false);
+        delete_subtree(this, root_, true, false, 0);
 }
 
 
@@ -139,13 +141,13 @@ void CacheTree::insert_root() {
 /*
  * Insert a node into the tree.
  */
-void CacheTree::insert(Node* node) {
+void CacheTree::insert(Node* node, unsigned short thread_id) {
     if (node == NULL) {
         std::cout << "NULL NODE" << std::endl;
     }
-    tree_lk_.lock();
+    tree_lks_[thread_id].lock();
     node->parent()->children_.insert(std::make_pair(node->id(), node));
-    tree_lk_.unlock();
+    tree_lks_[thread_id].unlock();
     ++num_nodes_;
     logger->setTreeNumNodes(num_nodes_);
 }
@@ -194,7 +196,7 @@ Node* CacheTree::check_prefix(tracking_vector<unsigned short, DataStruct::Tree>&
  * Recursive helper function to traverse down the tree, deleting nodes with a lower bound greater 
  * than the minimum objective.
  */
-void CacheTree::gc_helper(Node* node) {
+void CacheTree::gc_helper(Node* node, unsigned short thread_id) {
     if (calculate_size_ & (!node->done()))
         logger->addQueueElement(node->depth(), node->lower_bound(), false);
     Node* child;
@@ -211,9 +213,9 @@ void CacheTree::gc_helper(Node* node) {
             lb = child->lower_bound();
         if (lb >= min_objective_) {
             node->delete_child(child->id());
-            delete_subtree(this, child, false, false);
+            delete_subtree(this, child, false, false, thread_id);
         } else
-            gc_helper(child);
+            gc_helper(child, thread_id);
     }
 }
 
@@ -222,7 +224,7 @@ void CacheTree::gc_helper(Node* node) {
  * tree containing the rules in the given range in the index
  * array.
  */
-void CacheTree::garbage_collect(size_t thread_id) {
+void CacheTree::garbage_collect(unsigned short thread_id) {
     if (calculate_size_)
         logger->clearRemainingSpaceSize();
 
@@ -231,7 +233,7 @@ void CacheTree::garbage_collect(size_t thread_id) {
         rit != subrange.end(); rit++) {
             Node* cur_child = root_->child(*rit);
             if (cur_child != NULL)
-                gc_helper(root_->child(*rit));
+                gc_helper(root_->child(*rit), thread_id);
     }
 }
 
@@ -266,29 +268,29 @@ void delete_interior(CacheTree* tree, Node* node, bool destructive,
  * the remaining search space (optional calculation in logger state)
  */
 void delete_subtree(CacheTree* tree, Node* node, bool destructive, 
-        bool update_remaining_state_space) {
+        bool update_remaining_state_space, unsigned short thread_id) {
     Node* child;
     // Interior (non-leaf) node
     if (node->done()) {
         for(std::map<unsigned short, Node*>::iterator iter = node->children_begin(); 
                 iter != node->children_end(); ++iter) {
             child = iter->second;
-            delete_subtree(tree, child, destructive, update_remaining_state_space);
+            delete_subtree(tree, child, destructive, update_remaining_state_space, thread_id);
         }
         std::cout << "DELETE SUBTREE" << std::endl;
         // delete interior nodes
-            tree->lock();
+            tree->lock(thread_id);
             delete node;
-            tree->unlock();
+            tree->unlock(thread_id);
             tree->decrement_num_nodes(); 
             //node->set_deleted();
     } else {
         // only delete leaf nodes in destructive mode
         if (destructive) {  
             tree->decrement_num_nodes();
-            tree->lock();
+            tree->lock(thread_id);
             delete node;
-            tree->unlock();
+            tree->unlock(thread_id);
         } else {
             logger->decPrefixLen(node->depth());
             if (update_remaining_state_space)
@@ -296,4 +298,15 @@ void delete_subtree(CacheTree* tree, Node* node, bool destructive,
             node->set_deleted();
         }
     }
+}
+
+size_t nn_helper (Node* node) {
+    if (node == NULL)
+        return 0;
+
+    size_t ret = 1;
+    for (std::map<unsigned short, Node*>::iterator it = node->children_begin(); it != node->children_end(); it++) {
+        ret += nn_helper(it->second);
+    }
+    return ret;
 }

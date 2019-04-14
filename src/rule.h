@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2016 Hongyu Yang, Cynthia Rudin, Margo Seltzer, and
  * The President and Fellows of Harvard College
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
  * "Software"), to deal in the Software without restriction, including
@@ -9,10 +9,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject
  * to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -77,7 +77,7 @@ typedef v_entry *VECTOR;
     (unsigned)(lo + (unsigned)((random() / (float)RAND_MAX) * (hi - lo + 1)))
 
 /*
- * We have slightly different structures to represent the original rules 
+ * We have slightly different structures to represent the original rules
  * and rulesets. The original structure contains the ascii representation
  * of the rule; the ruleset structure refers to rules by ID and contains
  * captures which is something computed off of the rule's truth table.
@@ -150,12 +150,13 @@ int rules_init(const char *, int *, int *, rule_t **, int);
 void rules_free(rule_t *, const int, int);
 
 void rule_print(rule_t *, int, int, int);
-void rule_print_all(rule_t *, int, int);
+void rule_print_all(rule_t *, int, int, int);
 void rule_vector_print(VECTOR, int);
 void rule_copy(VECTOR, VECTOR, int);
 
 int rule_isset(VECTOR, int);
 int rule_vinit(int, VECTOR *);
+int rule_veq(VECTOR src1, VECTOR src2, int nsamples);
 int rule_vfree(VECTOR *);
 int make_default(VECTOR *, int);
 void rule_vclear(int, VECTOR);
@@ -168,6 +169,10 @@ int count_ones_vector(VECTOR, int);
 int rule_vector_equal(const VECTOR, const VECTOR, short, short);
 size_t rule_vector_hash(const VECTOR, short);
 
+/* Helper functions */
+int ascii_to_vector(char *, size_t, int *, int *, VECTOR *);
+int make_default(VECTOR *, int);
+
 /* Functions for the Scalable Baysian Rule Lists */
 double *predict(data_t *, pred_model_t *, params_t *);
 void ruleset_proposal(ruleset_t *, int, int *, int *, char *, double *);
@@ -178,4 +183,3 @@ pred_model_t *train(data_t *, int, int, params_t *);
 #if defined(__cplusplus)
 }
 #endif
-

@@ -22,6 +22,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <assert.h>
+#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,9 +31,6 @@
 #include "rule.h"
 
 
-/* Function declarations. */
-int ascii_to_vector(char *, size_t, int *, int *, VECTOR *);
-int make_default(VECTOR *, int);
 #define RULE_INC 100
 
 /* One-counting tools */
@@ -72,73 +70,86 @@ rules_init(const char *infile, int *nrules,
     int *nsamples, rule_t **rules_ret, int add_default_rule)
 {
 	FILE *fi;
-	char *line = NULL;
-    char *rulestr;
+	char *features, *line;
+	char *rulestr;
 	int rule_cnt, sample_cnt, rsize;
-	int i, ones, ret;
+	int ones, ret;
 	rule_t *rules=NULL;
-	size_t len = 0;
-    size_t rulelen;
+	ssize_t len;
+    	size_t linelen, rulelen;
 
 	sample_cnt = rsize = 0;
 
-	if ((fi = fopen(infile, "r")) == NULL) {
-        printf("HI\n");
+	if ((fi = fopen(infile, "r")) == NULL)
         return (errno);
-    }
 
 	/*
 	 * Leave a space for the 0th (default) rule, which we'll add at
 	 * the end.
 	 */
 	rule_cnt = add_default_rule != 0 ? 1 : 0;
-	while (getline(&line, &len, fi) != -1) {
-        char* line_cpy = line;
+
+	/*
+	 * line and linelen are managed by getline. If getline needs to
+	 * reallocate the buffer, it will do so using realloc (line) and
+	 * then updating linelen to reflect the size of the buffer allocated.
+	 * Since we do not perform these allocations, we shoul never change
+	 * them, but should simpy free them when we are done with them.
+	 */
+	line = NULL;
+	linelen = 0;
+	while ((len = getline(&line, &linelen, fi)) > 0) {
 		if (rule_cnt >= rsize) {
 			rsize += RULE_INC;
                 	rules = realloc(rules, rsize * sizeof(rule_t));
-			if (rules == NULL) {
-			printf("HI1\n");
+			if (rules == NULL)
 				goto err;
-            		}
 		}
 
-		/* Get the rule string; line will contain the bits. */
-		if ((rulestr = strsep(&line_cpy, " ")) == NULL) {
+		/* Get the rule string in line; features will contain the bits. */
+		features = line;
+		if ((rulestr = strsep(&features, " ")) == NULL)
 			goto err;
-		}
 
-		rulelen = strlen(rulestr) + 1;
+		rulelen = strlen(line) + 1;
 		len -= rulelen;
 
-		if ((rules[rule_cnt].features = strdup(rulestr)) == NULL) {
-			printf("HI3\n");
-			goto err;
-		}
+
+		//if ((rules[rule_cnt].features = strdup(line)) == NULL)
+		//	goto err;
+
+		rules[rule_cnt].features = malloc(rulelen);
+		char* err = strcpy(rules[rule_cnt].features, line);
+		//if (err != 0)
+		//	goto err;
 
 		/*
-		 * At this point "len" is a line terminated by a newline
-		 * at line[len-1]; let's make it a NUL and shorten the line
+		 * At this point features is (probably) a line terminated by a
+		 * newline at features[len-1]; if it is newline-terminated,
+		 * then let's make it NUL-terminated and shorten the line
 		 * length by one.
 		 */
-		line_cpy[len-1] = '\0';
-		if (ascii_to_vector(line_cpy, len, &sample_cnt, &ones,
-		    &rules[rule_cnt].truthtable) != 0) {
-		    	goto err;
+		if (features[len-1] == '\n') {
+			features[len-1] = '\0';
+			len--;
 		}
+
+		if (ascii_to_vector(features, len, &sample_cnt, &ones,
+		    &rules[rule_cnt].truthtable) != 0)
+		    	goto err;
 		rules[rule_cnt].support = ones;
 
 		/* Now compute the number of clauses in the rule. */
 		rules[rule_cnt].cardinality = 1;
-		for (char *cp = rulestr; *cp != '\0'; cp++)
+		for (char *cp = line; *cp != '\0'; cp++)
 			if (*cp == ',')
 				rules[rule_cnt].cardinality++;
 		rule_cnt++;
-
-		free(line);
-		line = NULL;
 	}
 
+        free(line);
+        line = NULL;
+	
 	/* All done! */
 	fclose(fi);
 
@@ -147,10 +158,8 @@ rules_init(const char *infile, int *nrules,
 		rules[0].support = sample_cnt;
 		rules[0].features = "default";
 		rules[0].cardinality = 0;
-		if (make_default(&rules[0].truthtable, sample_cnt) != 0) {
-		    printf("HI5\n");
+		if (make_default(&rules[0].truthtable, sample_cnt) != 0)
 		    goto err;
-        	}
 	}
 
 	*nsamples = sample_cnt;
@@ -163,17 +172,9 @@ err:
 	ret = errno;
 
 	/* Reclaim space. */
-	if (rules != NULL) {
-		for (i = 1; i < rule_cnt; i++) {
-			free(rules[i].features);
-#ifdef GMP
-			mpz_clear(rules[i].truthtable);
-#else
-			free(rules[i].truthtable);
-#endif
-		}
-		free(rules);
-	}
+	rules_free(rules, rule_cnt, add_default_rule);
+	if (line != NULL)
+		free(line);
 	(void)fclose(fi);
 	return (ret);
 }
@@ -249,28 +250,26 @@ rule_vfree(VECTOR *v)
 int
 ascii_to_vector(char *line, size_t len, int *nsamples, int *nones, VECTOR *ret)
 {
+	char *cp;
+	int bitcount = 0;
+
+	for (cp = line; *cp != '\0'; cp++)
+		if (!isspace(*cp))
+			bitcount++;
+	*nsamples = bitcount;
+
 #ifdef GMP
 	int retval;
-	size_t s;
 
 	if (mpz_init_set_str(*ret, line, 2) != 0) {
-        printf("LINE: %s\n", line);
 		retval = errno;
 		mpz_clear(*ret);
 		return (retval);
 	}
-	if ((s = mpz_sizeinbase (*ret, 2)) > (size_t) *nsamples)
-		*nsamples = (int) s;
-
 	*nones = mpz_popcount(*ret);
+	assert(*nones != -1);
 	return (0);
 #else
-	/*
-	 * If *nsamples is 0, then we will set it to the number of
-	 * 0's and 1's. If it is non-zero, then we'll ensure that
-	 * the line is the right length.
-	 */
-
 	char *p;
 	int i, bufsize, last_i, ones;
 	v_entry val;
@@ -280,10 +279,8 @@ ascii_to_vector(char *line, size_t len, int *nsamples, int *nones, VECTOR *ret)
 	assert(line != NULL);
 
 	/* Compute bufsize in number of unsigned elements. */
-	if (*nsamples == 0)
-		bufsize = (len + BITS_PER_ENTRY - 1) / BITS_PER_ENTRY;
-	else
-		bufsize = (*nsamples + BITS_PER_ENTRY - 1) / BITS_PER_ENTRY;
+	assert(*nsamples != 0);
+	bufsize = (*nsamples + BITS_PER_ENTRY - 1) / BITS_PER_ENTRY;
 	if ((buf = malloc(bufsize * sizeof(v_entry))) == NULL)
 		return(errno);
 
@@ -322,9 +319,7 @@ ascii_to_vector(char *line, size_t len, int *nsamples, int *nones, VECTOR *ret)
 	if ((i % BITS_PER_ENTRY) != 0)
 		*bufp = val;
 
-	if (*nsamples == 0)
-		*nsamples = i;
-	else if (*nsamples != i) {
+	if (*nsamples != i) {
 		fprintf(stderr, "Wrong number of samples. Expected %d got %d\n",
 		    *nsamples, i);
 		/* free(buf); */
@@ -785,6 +780,7 @@ rule_vand(VECTOR dest, VECTOR src1, VECTOR src2, int nsamples, int *cnt)
 	mpz_and(dest, src1, src2);
 	*cnt = 0;
 	*cnt = mpz_popcount(dest);
+	assert(*cnt != -1);
 #else
 	int i, count, nentries;
 
@@ -807,6 +803,7 @@ rule_vor(VECTOR dest, VECTOR src1, VECTOR src2, int nsamples, int *cnt)
 #ifdef GMP
 	mpz_ior(dest, src1, src2);
 	*cnt = mpz_popcount(dest);
+	assert(*cnt != -1);
 #else
 	int i, count, nentries;
 
@@ -843,6 +840,7 @@ rule_vandnot(VECTOR dest,
 	mpz_and(dest, src1, tmp);
 	*ret_cnt = 0;
 	*ret_cnt = mpz_popcount(dest);
+	assert(*ret_cnt != -1);
 	rule_vfree(&tmp);
 #else
 	int i, count, nentries;
@@ -870,6 +868,7 @@ rule_not(VECTOR dest, VECTOR src, int nsamples, int *ret_cnt)
     mpz_com(dest, src);
     *ret_cnt = 0;
     *ret_cnt = mpz_popcount(dest);
+    assert(*ret_cnt != -1);
 #else
 	int i, count, nentries;
 
@@ -885,13 +884,51 @@ rule_not(VECTOR dest, VECTOR src, int nsamples, int *ret_cnt)
 #endif
 }
 
+/*
+ * Compare two vectors for equality.
+ * Return 0 for equal; -1 for less than (mpz only); 1 for greater 
+ * than (mpz) or not equal (default)
+ */
+int
+rule_veq(VECTOR src1, VECTOR src2, int nsamples)
+{
+#ifdef GMP
+	return (mpz_cmp(src1, src2));
+#else
+	int i, leftover, nentries;
+
+	nentries = nsamples / BITS_PER_ENTRY;
+
+	for (i = 0; i < nentries; i++) {
+		if (src1[i] != src2[i])
+			return (1);
+	}
+
+	/* Handle a partial v_entry. */
+	leftover = nsamples - (nentries * BITS_PER_ENTRY);
+	if (leftover != 0) {
+		v_entry mask = (1 << leftover) - 1;
+		if ((src1[i] & mask) != (src2[i] & mask))
+			return (1);
+	}
+
+	return (0);
+#endif
+}
+
+
 int
 count_ones_vector(VECTOR v, int len) {
 #ifdef GMP
-	return mpz_popcount(v);
+	int ret;
+	ret = mpz_popcount(v);
+	assert(ret != -1);
+	return (ret);
 #else
-    int cnt = 0;
-    for (int i=0; i < (len+BITS_PER_ENTRY-1)/BITS_PER_ENTRY; i++) {
+    int i, nentries, cnt = 0;
+    nentries = (len + BITS_PER_ENTRY - 1)/BITS_PER_ENTRY;
+
+    for (i=0; i < nentries; i++) {
         cnt += count_ones(v[i]);
     }
     return cnt;
@@ -947,6 +984,8 @@ rule_print(rule_t *rules, int ndx, int n, int detail)
 	    ndx, r->features, r->support, r->cardinality);
 	if (detail)
 		rule_vector_print(r->truthtable, n);
+    else
+        printf("\n");
 }
 
 void
@@ -964,13 +1003,13 @@ rule_vector_print(VECTOR v, int n)
 }
 
 void
-rule_print_all(rule_t *rules, int nrules, int nsamples)
+rule_print_all(rule_t *rules, int nrules, int nsamples, int print_samples)
 {
 	int i, n;
 
 	n = (nsamples + BITS_PER_ENTRY - 1) / BITS_PER_ENTRY;
 	for (i = 0; i < nrules; i++)
-		rule_print(rules, i, n, 1);
+		rule_print(rules, i, n, print_samples);
 }
 
 /*

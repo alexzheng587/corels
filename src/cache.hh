@@ -13,6 +13,8 @@
 #include <atomic>
 #include <mutex>
 
+extern std::mutex min_obj_lk;
+
 class Node {
   public:
     Node(size_t nrules, bool default_prediction, double objective, double equivalent_minority);
@@ -83,6 +85,8 @@ class CuriousNode: public Node {
         double curiosity_;
 };
 
+size_t nn_helper(Node* node);
+
 class CacheTree {
   public:
     CacheTree() {};
@@ -102,6 +106,7 @@ class CacheTree {
     inline tracking_vector<bool, DataStruct::Tree> opt_predictions() const;
 
     inline size_t num_nodes() const;
+    inline size_t num_nodes(unsigned short thread_id);
     inline size_t num_evaluated() const;
     inline size_t num_threads() const;
     inline rule_t rule(unsigned short idx) const;
@@ -114,7 +119,9 @@ class CacheTree {
     inline double c() const;
     inline Node* root() const;
 
-    bool update_min_objective(double objective);
+    bool update_obj_and_list(double objective, tracking_vector<unsigned short, DataStruct::Tree>& parent_prefix,
+                                unsigned short new_rule_id,
+                                Node* parent, bool new_pred, bool new_default_pred);
     void update_opt_rulelist(tracking_vector<unsigned short, DataStruct::Tree>& parent_prefix,
                              unsigned short new_rule_id);
     void update_opt_predictions(Node* parent, bool new_pred, bool new_default_pred);
@@ -127,17 +134,17 @@ class CacheTree {
 
     inline std::vector<unsigned short> rule_perm();
     void insert_root();
-    void insert(Node* node);
+    void insert(Node* node, unsigned short thread_id);
     void prune_up(Node* node);
-    void garbage_collect(size_t thread_id);
+    void garbage_collect(unsigned short thread_id);
     void print_tree();
     void close_print_file();
     void open_print_file(size_t thread_num, size_t num_threads);
     void play_with_rules();
     Node* check_prefix(tracking_vector<unsigned short, DataStruct::Tree>& prefix);
 
-    inline void lock();
-    inline void unlock();
+    inline void lock(unsigned short thread_id);
+    inline void unlock(unsigned short thread_id);
 
   protected:
     std::ofstream t_;
@@ -152,7 +159,7 @@ class CacheTree {
     int ablation_; // Used to remove support (1) or lookahead (2) bounds
     bool calculate_size_;
 
-    std::atomic<double> min_objective_;
+    double min_objective_;
     tracking_vector<unsigned short, DataStruct::Tree> opt_rulelist_;
     std::vector<bool, track_alloc<bool, DataStruct::Tree> > opt_predictions_;
     std::vector<unsigned short> rule_perm_;
@@ -163,8 +170,8 @@ class CacheTree {
     rule_t *minority_;
 
     char const *type_;
-    void gc_helper(Node* node);
-    std::mutex tree_lk_;
+    void gc_helper(Node* node, unsigned short thread_id);
+    std::vector<std::mutex> tree_lks_;
 };
 
 inline unsigned short Node::id() const {
@@ -264,7 +271,7 @@ inline double CuriousNode::get_curiosity() {
 }
 
 inline double CacheTree::min_objective() const {
-    return min_objective_.load(std::memory_order_seq_cst);
+    return min_objective_;
 }
 
 inline tracking_vector<unsigned short, DataStruct::Tree> CacheTree::opt_rulelist() const {
@@ -277,6 +284,15 @@ inline tracking_vector<bool, DataStruct::Tree> CacheTree::opt_predictions() cons
 
 inline size_t CacheTree::num_nodes() const {
     return num_nodes_;
+}
+
+inline size_t CacheTree::num_nodes(unsigned short thread_id) {
+    std::vector<unsigned short> range = get_subrange(thread_id);
+    size_t ret = 1;
+    for (std::vector<unsigned short>::iterator it = range.begin(); it != range.end(); ++it) {
+        ret += nn_helper(root_->child(*it));
+    }
+    return ret;
 }
 
 inline size_t CacheTree::num_threads() const {
@@ -331,6 +347,24 @@ inline bool CacheTree::calculate_size() const {
     return calculate_size_;
 }
 
+inline bool
+CacheTree::update_obj_and_list(double objective, tracking_vector<unsigned short, DataStruct::Tree>& parent_prefix,
+                                unsigned short new_rule_id,
+                                Node* parent, bool new_pred, bool new_default_pred) {
+  min_obj_lk.lock();
+  if (objective >= min_objective_) {
+    min_obj_lk.unlock();
+    return false;
+  } else {
+    min_objective_ = objective;
+    logger->setTreeMinObj(objective);
+    this->update_opt_rulelist(parent_prefix, new_rule_id);
+    this->update_opt_predictions(parent, new_pred, new_default_pred);
+  }
+  min_obj_lk.unlock();
+  return true;
+}
+
 /*
  * Update the minimum objective of the tree.
  */
@@ -338,25 +372,6 @@ inline bool CacheTree::calculate_size() const {
     min_objective_ = objective;
     logger->setTreeMinObj(objective);
 }*/
-
-/*
- * Update the minimum objective of the tree.
- * Return true if the operation succeeded (i.e., min_objective doesn't get updated to a lower value than objective by another thread during operation)
- * Return false otherwise
- */
-inline bool CacheTree::update_min_objective(double objective) {
-    bool succeeded = false;
-    double min_objective_load = min_objective_.load(std::memory_order_seq_cst);
-    while (min_objective_load > objective) {
-        min_objective_load = min_objective_.load(std::memory_order_seq_cst);
-        succeeded = min_objective_.compare_exchange_strong(min_objective_load, objective, std::memory_order_seq_cst);
-        if (succeeded) {
-            logger->setTreeMinObj(objective);
-            break;
-        }
-    }
-    return succeeded;
-}
 
 /*
  * Update the optimal rulelist of the tree.
@@ -415,13 +430,13 @@ inline void CacheTree::decrement_num_nodes() {
     logger->setTreeNumNodes(num_nodes_);
 }
 
-inline void CacheTree::lock() {
-  tree_lk_.lock();
+inline void CacheTree::lock(unsigned short thread_id) {
+  tree_lks_[thread_id].lock();
 }
 
-inline void CacheTree::unlock() {
-  tree_lk_.unlock();
+inline void CacheTree::unlock(unsigned short thread_id) {
+  tree_lks_[thread_id].unlock();
 }
 
 void delete_interior(CacheTree* tree, Node* node, bool destructive, bool update_remaining_state_space);
-void delete_subtree(CacheTree* tree, Node* node, bool destructive, bool update_remaining_state_space);
+void delete_subtree(CacheTree* tree, Node* node, bool destructive, bool update_remaining_state_space, unsigned short thread_id);

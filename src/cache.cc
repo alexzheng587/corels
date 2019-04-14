@@ -37,6 +37,7 @@ CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, size_t nthreads,
     labels_ = labels;
     nthreads_ = nthreads;
 
+    srand(time(0));
     std::iota(rule_perm_.begin(), rule_perm_.end(), 1);
     std::random_shuffle(rule_perm_.begin(), rule_perm_.end());
 
@@ -277,7 +278,7 @@ void delete_subtree(CacheTree* tree, Node* node, bool destructive,
             child = iter->second;
             delete_subtree(tree, child, destructive, update_remaining_state_space, thread_id);
         }
-        std::cout << "DELETE SUBTREE" << std::endl;
+        //std::cout << "DELETE SUBTREE" << std::endl;
         // delete interior nodes
             tree->lock(thread_id);
             delete node;

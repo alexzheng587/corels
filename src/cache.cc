@@ -229,8 +229,8 @@ void CacheTree::garbage_collect(unsigned short thread_id) {
     if (calculate_size_)
         logger->clearRemainingSpaceSize();
 
-    std::vector<unsigned short> subrange = get_subrange(thread_id);
-    for (typename std::vector<unsigned short>::iterator rit = subrange.begin();
+    tracking_vector<unsigned short, DataStruct::Tree> subrange = get_subrange(thread_id);
+    for (typename tracking_vector<unsigned short, DataStruct::Tree>::iterator rit = subrange.begin();
         rit != subrange.end(); rit++) {
             Node* cur_child = root_->child(*rit);
             if (cur_child != NULL)
@@ -280,14 +280,16 @@ void delete_subtree(CacheTree* tree, Node* node, bool destructive,
         }
         //std::cout << "DELETE SUBTREE" << std::endl;
         // delete interior nodes
-            tree->lock(thread_id);
-            delete node;
-            tree->unlock(thread_id);
-            tree->decrement_num_nodes(); 
-            //node->set_deleted();
+        logger->removeFromMemory(sizeof(*node), DataStruct::Tree);
+        tree->lock(thread_id);
+        delete node;
+        tree->unlock(thread_id);
+        tree->decrement_num_nodes(); 
+        //node->set_deleted();
     } else {
         // only delete leaf nodes in destructive mode
         if (destructive) {  
+            logger->removeFromMemory(sizeof(*node), DataStruct::Tree);
             tree->decrement_num_nodes();
             tree->lock(thread_id);
             delete node;

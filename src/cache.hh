@@ -130,9 +130,9 @@ class CacheTree {
     inline void decrement_num_nodes();
     inline int ablation() const;
     inline bool calculate_size() const;
-    inline std::vector<unsigned short> get_subrange(size_t i);
+    inline tracking_vector<unsigned short, DataStruct::Tree> get_subrange(size_t i);
 
-    inline std::vector<unsigned short> rule_perm();
+    inline tracking_vector<unsigned short, DataStruct::Tree> rule_perm();
     void insert_root();
     void insert(Node* node, unsigned short thread_id);
     void prune_up(Node* node);
@@ -161,9 +161,9 @@ class CacheTree {
 
     double min_objective_;
     tracking_vector<unsigned short, DataStruct::Tree> opt_rulelist_;
-    std::vector<bool, track_alloc<bool, DataStruct::Tree> > opt_predictions_;
-    std::vector<unsigned short> rule_perm_;
-    std::vector<pair<unsigned short,unsigned short>> ranges_;
+    tracking_vector<bool, DataStruct::Tree> opt_predictions_;
+    tracking_vector<unsigned short, DataStruct::Tree> rule_perm_;
+    tracking_vector<pair<unsigned short, unsigned short>, DataStruct::Tree> ranges_;
 
     rule_t *rules_;
     rule_t *labels_;
@@ -287,7 +287,7 @@ inline size_t CacheTree::num_nodes() const {
 }
 
 inline size_t CacheTree::num_nodes(unsigned short thread_id) {
-    std::vector<unsigned short> range = get_subrange(thread_id);
+    tracking_vector<unsigned short, DataStruct::Tree> range = get_subrange(thread_id);
     size_t ret = 1;
     for (std::vector<unsigned short>::iterator it = range.begin(); it != range.end(); ++it) {
         ret += nn_helper(root_->child(*it));
@@ -410,15 +410,15 @@ inline void CacheTree::increment_num_evaluated() {
     logger->setTreeNumEvaluated(num_evaluated_);
 }
 
-inline std::vector<unsigned short> CacheTree::get_subrange(size_t i) {
+inline tracking_vector<unsigned short, DataStruct::Tree> CacheTree::get_subrange(size_t i) {
 	size_t start, end;
 	start = ranges_[i].first;
 	end = ranges_[i].second;
-	return std::vector<unsigned short>(rule_perm_.begin() + start,
+	return tracking_vector<unsigned short, DataStruct::Tree>(rule_perm_.begin() + start,
 	        rule_perm_.begin() + end);
 }
 
-inline std::vector<unsigned short> CacheTree::rule_perm() {
+inline tracking_vector<unsigned short, DataStruct::Tree> CacheTree::rule_perm() {
     return rule_perm_;
 }
 

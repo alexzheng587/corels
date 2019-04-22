@@ -96,7 +96,9 @@ begin:
             while (node != tree->root()) {
                 // need to delete interior nodes lazily too when parallel
                 if(node->deleted()) {
-                    delete_subtree(tree, node, true, false, thread_id);
+                    // if the node is a leaf node, we can physically delete it (destructive mode)
+                    // otherwise, call delete_subtree non-destructively
+                    delete_subtree(tree, node, (node->num_children() == 0), false, thread_id);
                     goto begin;
                 }
                 rule_vor(captured,

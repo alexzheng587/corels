@@ -46,7 +46,7 @@ void evaluate_children(CacheTree* tree, Node* parent,
     parent_equivalent_minority = parent->equivalent_minority();
     double t0 = timestamp();
 
-    for(std::vector<unsigned short>::iterator it = rules.begin();
+    for(tracking_vector<unsigned short, DataStruct::Tree>::iterator it = rules.begin();
         it != rules.end(); ++it) {
 
         i = *it;

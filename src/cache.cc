@@ -52,7 +52,7 @@ CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, size_t nthreads,
         ranges_[i] = std::make_pair(sIdx, eIdx);
 	if (logger->getVerbosity() > 10) {
 		printf("RANGE INDICES: %hu-%hu\nRANGE: ", sIdx, eIdx);
-		for (std::vector<unsigned short>::iterator it = 
+		for (tracking_vector<unsigned short, DataStruct::Tree>::iterator it = 
 		    rule_perm_.begin() + sIdx;
 		    it != rule_perm_.begin() + eIdx; it++) {
 			printf("%hu ", *it);

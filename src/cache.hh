@@ -314,7 +314,7 @@ inline size_t CacheTree::num_nodes() const {
 inline size_t CacheTree::num_nodes(unsigned short thread_id) {
     tracking_vector<unsigned short, DataStruct::Tree> range = get_subrange(thread_id);
     size_t ret = 1;
-    for (std::vector<unsigned short>::iterator it = range.begin(); it != range.end(); ++it) {
+    for (tracking_vector<unsigned short, DataStruct::Tree>::iterator it = range.begin(); it != range.end(); ++it) {
         ret += nn_helper(root_->child(*it));
     }
     return ret;

@@ -44,6 +44,7 @@ class Node {
     inline Node* parent() const;
     inline void delete_child(unsigned short idx);
     inline size_t num_children() const;
+    inline size_t live_children();
 
     inline size_t num_captured() const;
     inline double equivalent_minority() const;
@@ -230,8 +231,7 @@ inline size_t Node::depth() const {
 }
 
 inline Node* Node::child(unsigned short idx) {
-    typename std::map<unsigned short, Node*>::iterator iter;
-    iter = children_.find(idx);
+    typename std::map<unsigned short, Node*>::iterator iter = children_.find(idx);
     if (iter == children_.end())
         return NULL;
     else
@@ -244,6 +244,20 @@ inline void Node::delete_child(unsigned short idx) {
 
 inline size_t Node::num_children() const {
     return children_.size();
+}
+
+inline size_t Node::live_children() {
+    if (children_.size() == 0) {
+        return 0;
+    }
+    size_t nchildren = 0;
+    for(auto child_it = children_begin(); child_it != children_end(); ++child_it) {
+        Node* child = child_it->second;
+        if (!child->deleted_ && !child->done_) {
+            nchildren += 1;
+        }
+    }
+    return nchildren;
 }
 
 inline typename std::map<unsigned short, Node*>::iterator Node::children_begin() {

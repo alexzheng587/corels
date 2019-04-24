@@ -2,6 +2,7 @@
 
 #include "pmap.hh"
 #include "alloc.hh"
+#include <assert.h>
 #include <functional>
 #include <queue>
 #include <set>
@@ -69,6 +70,7 @@ begin:
             do {
                 selected_node = q_->top();
                 q_->pop();
+                assert (selected_node->num_children() == 0);
                 if (tree->ablation() != 2)
                     lb = selected_node->lower_bound() + tree->c();
                 else
@@ -82,6 +84,8 @@ begin:
                     tree->decrement_num_nodes();
                     logger->removeFromMemory(sizeof(*node), DataStruct::Tree);
                     tree->lock(thread_id);
+                    Node* parent = node->parent();
+                    parent->delete_child(node->id());
                     delete node;
                     tree->unlock(thread_id);
                     valid = false;
@@ -97,7 +101,9 @@ begin:
             while (node != tree->root()) {
                 // need to delete interior nodes lazily too when parallel
                 if(node->deleted()) {
-                    delete_subtree(tree, node, true, false, thread_id);
+                    // if the node is a leaf node, we can physically delete it (destructive mode)
+                    // otherwise, call delete_subtree non-destructively
+                    delete_subtree(tree, node, (node->live_children() == 0), false, thread_id);
                     goto begin;
                 }
                 rule_vor(captured,

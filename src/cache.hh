@@ -46,6 +46,7 @@ class Node {
     inline Node* parent() const;
     inline void delete_child(unsigned short idx);
     inline size_t num_children() const;
+    inline size_t live_children();
 
     inline size_t num_captured() const;
     inline double equivalent_minority() const;
@@ -133,9 +134,9 @@ class CacheTree {
     inline void decrement_num_nodes();
     inline int ablation() const;
     inline bool calculate_size() const;
-    inline std::vector<unsigned short> get_subrange(size_t i);
+    inline tracking_vector<unsigned short, DataStruct::Tree> get_subrange(size_t i);
 
-    inline std::vector<unsigned short> rule_perm();
+    inline tracking_vector<unsigned short, DataStruct::Tree> rule_perm();
     void insert_root();
     void insert(Node* node, unsigned short thread_id);
     void prune_up(Node* node);
@@ -164,9 +165,9 @@ class CacheTree {
 
     double min_objective_;
     tracking_vector<unsigned short, DataStruct::Tree> opt_rulelist_;
-    std::vector<bool, track_alloc<bool, DataStruct::Tree> > opt_predictions_;
-    std::vector<unsigned short> rule_perm_;
-    std::vector<pair<unsigned short,unsigned short>> ranges_;
+    tracking_vector<bool, DataStruct::Tree> opt_predictions_;
+    tracking_vector<unsigned short, DataStruct::Tree> rule_perm_;
+    tracking_vector<pair<unsigned short, unsigned short>, DataStruct::Tree> ranges_;
 
     rule_t *rules_;
     rule_t *labels_;
@@ -241,8 +242,7 @@ inline size_t Node::depth() const {
 }
 
 inline Node* Node::child(unsigned short idx) {
-    typename std::map<unsigned short, Node*>::iterator iter;
-    iter = children_.find(idx);
+    typename std::map<unsigned short, Node*>::iterator iter = children_.find(idx);
     if (iter == children_.end())
         return NULL;
     else
@@ -255,6 +255,20 @@ inline void Node::delete_child(unsigned short idx) {
 
 inline size_t Node::num_children() const {
     return children_.size();
+}
+
+inline size_t Node::live_children() {
+    if (children_.size() == 0) {
+        return 0;
+    }
+    size_t nchildren = 0;
+    for(auto child_it = children_begin(); child_it != children_end(); ++child_it) {
+        Node* child = child_it->second;
+        if (!child->deleted_ && !child->done_) {
+            nchildren += 1;
+        }
+    }
+    return nchildren;
 }
 
 inline typename std::map<unsigned short, Node*>::iterator Node::children_begin() {
@@ -298,7 +312,7 @@ inline size_t CacheTree::num_nodes() const {
 }
 
 inline size_t CacheTree::num_nodes(unsigned short thread_id) {
-    std::vector<unsigned short> range = get_subrange(thread_id);
+    tracking_vector<unsigned short, DataStruct::Tree> range = get_subrange(thread_id);
     size_t ret = 1;
     for (std::vector<unsigned short>::iterator it = range.begin(); it != range.end(); ++it) {
         ret += nn_helper(root_->child(*it));
@@ -421,15 +435,15 @@ inline void CacheTree::increment_num_evaluated() {
     logger->setTreeNumEvaluated(num_evaluated_);
 }
 
-inline std::vector<unsigned short> CacheTree::get_subrange(size_t i) {
+inline tracking_vector<unsigned short, DataStruct::Tree> CacheTree::get_subrange(size_t i) {
 	size_t start, end;
 	start = ranges_[i].first;
 	end = ranges_[i].second;
-	return std::vector<unsigned short>(rule_perm_.begin() + start,
+	return tracking_vector<unsigned short, DataStruct::Tree>(rule_perm_.begin() + start,
 	        rule_perm_.begin() + end);
 }
 
-inline std::vector<unsigned short> CacheTree::rule_perm() {
+inline tracking_vector<unsigned short, DataStruct::Tree> CacheTree::rule_perm() {
     return rule_perm_;
 }
 

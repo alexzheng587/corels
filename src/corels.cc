@@ -21,7 +21,7 @@ Queue::Queue(std::function<bool(Node*, Node*)> cmp, char const *type)
  */
 void evaluate_children(CacheTree* tree, Node* parent,
     tracking_vector<unsigned short, DataStruct::Tree> parent_prefix,
-    VECTOR parent_not_captured, std::vector<unsigned short> rules,
+    VECTOR parent_not_captured, tracking_vector<unsigned short, DataStruct::Tree> rules,
     Queue* q, PermutationMap* p, double* min_objective, unsigned short thread_id) {
 
     VECTOR captured, captured_zeros, not_captured, not_captured_zeros, not_captured_equivalent;
@@ -156,8 +156,9 @@ void evaluate_children(CacheTree* tree, Node* parent,
         logger->removeQueueElement(len_prefix - 1, parent_lower_bound, false);
     if (parent->num_children() == 0) {
         //tree->prune_up(parent);
+        //parent->set_done();
     } else {
-        parent->set_done();
+        //parent->set_done();
         tree->increment_num_evaluated();
     }
 }

@@ -48,7 +48,7 @@ struct prefix_hash {
 };
 
 // Prefix Map typdefs
-typedef std::unordered_map<prefix_key, bool, prefix_hash, prefix_eq> PrefixLocks;
+typedef std::unordered_map<prefix_key, bool, prefix_hash, prefix_eq, track_alloc<std::pair<const prefix_key, bool>, DataStruct::Pmap> > PrefixLocks;
 typedef std::tuple<double, unsigned char*, size_t> prefix_val;
 typedef std::unordered_map<prefix_key, prefix_val, prefix_hash, prefix_eq, track_alloc<std::pair<const prefix_key, prefix_val>, DataStruct::Pmap> > PrefixMap;
 
@@ -120,7 +120,7 @@ class PrefixPermutationMap : public PermutationMap {
 		PrefixMap* pmap;
         std::mutex map_lk;
         std::mutex key_lk_;
-	std::condition_variable key_cv;
+        std::condition_variable key_cv;
         PrefixLocks active_keys;
 };
 

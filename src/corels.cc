@@ -155,8 +155,9 @@ void evaluate_children(CacheTree* tree, Node* parent,
         logger->removeQueueElement(len_prefix - 1, parent_lower_bound, false);
     if (parent->num_children() == 0) {
         //tree->prune_up(parent);
+        //parent->set_done();
     } else {
-        parent->set_done();
+        //parent->set_done();
         tree->increment_num_evaluated();
     }
 }

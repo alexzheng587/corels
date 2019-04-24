@@ -162,9 +162,9 @@ void CacheTree::prune_up(Node* node) {
     Node* parent;
     while (node->children_.size() == 0) {
         if (depth > 0) {
-            id = node->id();
-            parent = node->parent();
-            parent->children_.erase(id);
+            //id = node->id();
+            //parent = node->parent();
+            //parent->children_.erase(id);
             --num_nodes_;
             node->set_deleted();
             //delete node;
@@ -213,7 +213,7 @@ void CacheTree::gc_helper(Node* node, unsigned short thread_id) {
         else
             lb = child->lower_bound();
         if (lb >= min_objective_) {
-            node->delete_child(child->id());
+            //node->delete_child(child->id());
             delete_subtree(this, child, false, false, thread_id);
         } else
             gc_helper(child, thread_id);
@@ -272,24 +272,28 @@ void delete_subtree(CacheTree* tree, Node* node, bool destructive,
         bool update_remaining_state_space, unsigned short thread_id) {
     Node* child;
     // Interior (non-leaf) node
-    if (node->done()) {
+    if (node->num_children() != 0) {
         for(std::map<unsigned short, Node*>::iterator iter = node->children_begin(); 
                 iter != node->children_end(); ++iter) {
             child = iter->second;
             delete_subtree(tree, child, destructive, update_remaining_state_space, thread_id);
         }
-        //std::cout << "DELETE SUBTREE" << std::endl;
+        std::cout << "DELETE SUBTREE" << std::endl;
         // delete interior nodes
-            tree->lock(thread_id);
-            delete node;
-            tree->unlock(thread_id);
-            tree->decrement_num_nodes(); 
-            //node->set_deleted();
+        tree->lock(thread_id);
+        Node* parent = node->parent();
+        parent->delete_child(node->id());
+        delete node;
+        tree->unlock(thread_id);
+        tree->decrement_num_nodes(); 
+        //node->set_deleted();
     } else {
         // only delete leaf nodes in destructive mode
-        if (destructive) {  
+        if (node->deleted() && destructive) {  
             tree->decrement_num_nodes();
             tree->lock(thread_id);
+            Node* parent = node->parent();
+            parent->delete_child(node->id());
             delete node;
             tree->unlock(thread_id);
         } else {

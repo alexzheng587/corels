@@ -81,11 +81,15 @@ begin:
                 node->set_in_queue(false);
                 // delete leaf nodes that were lazily marked
                 if (node->deleted() || (lb >= tree->min_objective())) {
+                    //std::cout << "DELETE QUEUE " << node->id() << std::endl;
                     tree->decrement_num_nodes();
                     logger->removeFromMemory(sizeof(*node), DataStruct::Tree);
                     tree->lock(thread_id);
-                    Node* parent = node->parent();
-                    parent->delete_child(node->id());
+                    if (!node->deleted()) {
+                        Node* parent = node->parent();
+                        parent->delete_child(node->id());
+                    }
+                    node->clear_children();
                     delete node;
                     tree->unlock(thread_id);
                     valid = false;
@@ -103,6 +107,8 @@ begin:
                 if(node->deleted()) {
                     // if the node is a leaf node, we can physically delete it (destructive mode)
                     // otherwise, call delete_subtree non-destructively
+                    Node* parent = node->parent();
+                    parent->delete_child(node->id());
                     delete_subtree(tree, node, (node->live_children() == 0), false, thread_id);
                     goto begin;
                 }

@@ -3,6 +3,7 @@
 #include "utils.hh"
 #include "alloc.hh"
 #include "rule.h"
+#include <iostream>
 #include <iterator>
 #include <map>
 #include <vector>
@@ -45,6 +46,7 @@ class Node {
     inline Node* child(unsigned short idx);
     inline Node* parent() const;
     inline void delete_child(unsigned short idx);
+    inline void clear_children();
     inline size_t num_children() const;
     inline size_t live_children();
 
@@ -253,6 +255,10 @@ inline void Node::delete_child(unsigned short idx) {
     children_.erase(idx);
 }
 
+inline void Node::clear_children() {
+    children_.clear();
+}
+
 inline size_t Node::num_children() const {
     return children_.size();
 }
@@ -315,6 +321,7 @@ inline size_t CacheTree::num_nodes(unsigned short thread_id) {
     tracking_vector<unsigned short, DataStruct::Tree> range = get_subrange(thread_id);
     size_t ret = 1;
     for (tracking_vector<unsigned short, DataStruct::Tree>::iterator it = range.begin(); it != range.end(); ++it) {
+        //std::cout << *it << std::endl;
         ret += nn_helper(root_->child(*it));
     }
     return ret;

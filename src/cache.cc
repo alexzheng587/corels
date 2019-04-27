@@ -248,6 +248,8 @@ void CacheTree::garbage_collect(unsigned short thread_id) {
 void delete_subtree(CacheTree* tree, Node* node, bool destructive, 
         bool update_remaining_state_space, unsigned short thread_id) {
     Node* child;
+    Node* parent = node->parent();
+    parent->delete_child(node->id());
     // Interior (non-leaf) node
     if (node->num_children() != 0) {
         for(std::map<unsigned short, Node*>::iterator iter = node->children_begin(); 
@@ -255,15 +257,15 @@ void delete_subtree(CacheTree* tree, Node* node, bool destructive,
             child = iter->second;
             delete_subtree(tree, child, destructive, update_remaining_state_space, thread_id);
         }
-        //std::cout << "DELETE SUBTREE" << std::endl;
+        //std::cout << "DELETE INTERIOR" << node->id() << std::endl;
         // delete interior nodes
         if (node->in_queue()) {
+            // Must have deleted/cleared child map here
             node->set_deleted();
         } else {
             logger->removeFromMemory(sizeof(*node), DataStruct::Tree);
             tree->lock(thread_id);
-            Node* parent = node->parent();
-            parent->delete_child(node->id());
+            node->clear_children();
             delete node;
             tree->unlock(thread_id);
             tree->decrement_num_nodes(); 
@@ -272,16 +274,18 @@ void delete_subtree(CacheTree* tree, Node* node, bool destructive,
     } else {
         // only delete leaf nodes in destructive mode
         if (node->in_queue()) {
+            // Must have deleted/cleared child map here
             node->set_deleted();
         } else if (destructive) {  
+            //std::cout << "DELETE LEAF " << node->id() << std::endl;
             logger->removeFromMemory(sizeof(*node), DataStruct::Tree);
             tree->decrement_num_nodes();
             tree->lock(thread_id);
-            Node* parent = node->parent();
-            parent->delete_child(node->id());
+            node->clear_children();
             delete node;
             tree->unlock(thread_id);
         } else {
+            //std::cout << "DELETE ELSE " << node->id() << std::endl;
             logger->decPrefixLen(node->depth());
             if (update_remaining_state_space)
                 logger->removeQueueElement(node->depth(), node->lower_bound(), false);

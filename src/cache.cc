@@ -252,8 +252,11 @@ void delete_subtree(CacheTree* tree, Node* node, bool destructive,
     parent->delete_child(node->id());
     // Interior (non-leaf) node
     if (node->num_children() != 0) {
-        for(std::map<unsigned short, Node*>::iterator iter = node->children_begin(); 
-                iter != node->children_end(); ++iter) {
+        // copy the children map so we iterate over something that is not being modified by future delete_subtree calls
+        std::map<unsigned short, Node*> children_copy;
+        children_copy.insert(node->children_begin(), node->children_end());
+        for(std::map<unsigned short, Node*>::iterator iter = children_copy.begin(); 
+                iter != children_copy.end(); ++iter) {
             child = iter->second;
             delete_subtree(tree, child, destructive, update_remaining_state_space, thread_id);
         }

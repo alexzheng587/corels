@@ -168,6 +168,7 @@ void bbound_init(CacheTree* tree) {
     // Initialize tree and queue
     if(tree->root() == NULL)
         tree->insert_root();
+    logger->initializeState(tree->calculate_size());
     logger->incPrefixLen(0);
     logger->incTreeInsertionNum();
     logger->setQueueSize(0);

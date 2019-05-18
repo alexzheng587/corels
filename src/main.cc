@@ -46,8 +46,9 @@ int main(int argc, char *argv[]) {
     size_t num_threads = 1;
     int ablation = 0;
     bool calculate_size = false;
+    int iterno = 0;
     /* only parsing happens here */
-    while ((ch = getopt(argc, argv, "bsLc:p:v:n:r:f:a:t:")) != -1) {
+    while ((ch = getopt(argc, argv, "bsLc:p:v:n:r:f:a:t:i:")) != -1) {
         switch (ch) {
         case 'b':
             run_bfs = true;
@@ -84,6 +85,9 @@ int main(int argc, char *argv[]) {
             break;
         case 't':
             num_threads = atoi(optarg);
+            break;
+        case 'i':
+            iterno = atoi(optarg);
             break;
         default:
             error = true;
@@ -153,7 +157,7 @@ int main(int argc, char *argv[]) {
     char log_fname[BUFSZ];
     char opt_fname[BUFSZ];
     const char* pch = strrchr(argv[0], '/');
-    snprintf(froot, BUFSZ, "../logs/for-%s-%s%s-%s-%s-removed=%s-t=%lu-max_num_nodes=%d-c=%.7f-v=%d-f=%d",
+    snprintf(froot, BUFSZ, "../logs/for-%s-%s%s-%s-%s-removed=%s-t=%lu-max_num_nodes=%d-c=%.7f-v=%d-f=%d-i=%d",
             pch ? pch + 1 : "",
             run_bfs ? "bfs" : "",
             run_curiosity ? curiosity_map[curiosity_policy].c_str() : "",
@@ -161,7 +165,7 @@ int main(int argc, char *argv[]) {
                 (use_captured_sym_map ? "with_captured_symmetry_map" : "no_pmap"),
             meta ? "minor" : "no_minor",
             ablation ? ((ablation == 1) ? "support" : "lookahead") : "none",
-            num_threads, max_num_nodes, c, verbosity, freq);
+            num_threads, max_num_nodes, c, verbosity, freq, iterno);
     snprintf(log_fname, BUFSZ, "%s.txt", froot);
     snprintf(opt_fname, BUFSZ, "%s-opt.txt", froot);
 

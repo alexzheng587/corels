@@ -70,7 +70,11 @@ begin:
             do {
                 selected_node = q_->top();
                 q_->pop();
-                assert (selected_node->num_children() == 0);
+                // We can arrive at a situation where a thread is slow to start
+                // and therefore the root hasn't been popped off for the last thread
+                // and it already has children -- this is not an error and we shouldn't fail the assert
+                if (selected_node != tree->root())
+                    assert (selected_node->num_children() == 0);
                 if (tree->ablation() != 2)
                     lb = selected_node->lower_bound() + tree->c();
                 else

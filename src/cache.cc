@@ -37,7 +37,9 @@ CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, size_t nthreads,
     labels_ = labels;
     nthreads_ = nthreads;
 
-    srand(time(0));
+    time_t seed = time(0);
+    srand(seed);
+    std::cout << "SEED: " << seed << std::endl;
     std::iota(rule_perm_.begin(), rule_perm_.end(), 1);
     std::random_shuffle(rule_perm_.begin(), rule_perm_.end());
 

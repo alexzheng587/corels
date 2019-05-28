@@ -225,10 +225,6 @@ int main(int argc, char *argv[]) {
         p = (PermutationMap*) null_pmap;
     }
 
-    //pthread_rwlockattr_t attr;
-    //pthread_rwlockattr_init(&attr);
-    //pthread_rwlock_init(pmap_lk, &attr);
-
     CacheTree* tree = new CacheTree(nsamples, nrules, c, num_threads,
         rules, labels, meta, ablation, calculate_size, type);
     printf("%s", run_type);
@@ -245,9 +241,9 @@ int main(int argc, char *argv[]) {
     	qs[i].push(tree->root());
     }
 
-    if (num_threads == 1) {
-	bbound(tree, max_num_nodes/num_threads, &qs[0], p, 0, min_objective);
-    } else {
+    //if (num_threads == 1) {
+	//bbound(tree, max_num_nodes/num_threads, &qs[0], p, 0, min_objective);
+    //} else {
 
 	// Let the threads loose
 	for(size_t i = 0; i < num_threads; ++i) {
@@ -261,7 +257,7 @@ int main(int argc, char *argv[]) {
 	for(size_t i = 0; i < num_threads; ++i) {
 	    threads[i].join();
 	}
-    }
+    //}
 
     size_t tree_mem = logger->getTreeMemory(); 
     size_t pmap_mem = logger->getPmapMemory(); 

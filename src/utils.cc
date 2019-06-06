@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <sys/utsname.h>
+#include <thread>
 #include <mutex>
 
 extern std::mutex log_lk;
@@ -24,7 +25,7 @@ void Logger::setLogFileName(char *fname) {
     printf("writing logs to: %s\n\n", fname);
     _f.open(fname, ios::out | ios::trunc);
 
-    _f << "total_time,evaluate_children_time,node_select_time,"
+    _f << "thread_id,total_time,evaluate_children_time,node_select_time,"
        << "rule_evaluation_time,lower_bound_time,lower_bound_num,"
        << "objective_time,objective_num,"
        << "tree_insertion_time,tree_insertion_num,queue_insertion_time,evaluate_children_num,"
@@ -46,7 +47,8 @@ void Logger::dumpState() {
     // update timestamp here
     setTotalTime(time_diff(_state.initial_time));
 
-    _f << _state.total_time << ","
+    _f << std::this_thread::get_id() << ","
+       << _state.total_time << ","
        << _state.evaluate_children_time << ","
        << _state.node_select_time << ","
        << _state.rule_evaluation_time << ","

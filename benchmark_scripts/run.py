@@ -3,7 +3,7 @@ import os.path, os, subprocess, sys
 
 def run_corels (fname, thread_count, iterno):
 	fargs = fname + ".out " + fname + ".label " + fname + ".minor"
-	command = "../src/corels -c 2 -p 1 -r 0.01 -v 10 -n 2000000000 -i " + str(iterno) + " -t " + thread_count + " " + fargs
+	command = "../src/corels -c 2 -p 1 -r 0.01 -v 10 -n 2000000000 -i " + str(iterno) + " -t " + str(thread_count) + " " + fargs
 	print(command)
 	o = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None, shell=True).communicate()
 	return o[0].decode()

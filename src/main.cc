@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
     const char usage[] = "USAGE: %s [-b] [-t num_threads]"
         "[-n max_num_nodes] [-r regularization] [-v verbosity] "
         "-c (1|2|3|4) -p (0|1|2) [-f logging_frequency]"
-        "-a (0|1|2) [-s] [-L latex_out]"
+        "-a (0|1|2) [-s] [-L latex_out] [-k random_seed]"
         "data.out data.label\n\n"
         "%s\n";
 
@@ -47,8 +47,9 @@ int main(int argc, char *argv[]) {
     int ablation = 0;
     bool calculate_size = false;
     int iterno = 0;
+    size_t random_seed = 89;
     /* only parsing happens here */
-    while ((ch = getopt(argc, argv, "bsLc:p:v:n:r:f:a:t:i:")) != -1) {
+    while ((ch = getopt(argc, argv, "bsLc:p:v:n:r:f:a:t:i:k:")) != -1) {
         switch (ch) {
         case 'b':
             run_bfs = true;
@@ -88,6 +89,9 @@ int main(int argc, char *argv[]) {
             break;
         case 'i':
             iterno = atoi(optarg);
+            break;
+        case 'k':
+            random_seed = atoi(optarg);
             break;
         default:
             error = true;
@@ -226,7 +230,7 @@ int main(int argc, char *argv[]) {
     }
 
     CacheTree* tree = new CacheTree(nsamples, nrules, c, num_threads,
-        rules, labels, meta, ablation, calculate_size, type);
+        rules, labels, meta, ablation, calculate_size, type, random_seed);
     printf("%s", run_type);
 
     // Initialize logger

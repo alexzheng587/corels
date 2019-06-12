@@ -25,7 +25,7 @@ Node::Node(unsigned short id, size_t nrules, bool prediction,
 
 CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, size_t nthreads,
     rule_t *rules, rule_t *labels, rule_t *minority, int ablation,
-    bool calculate_size, char const *type)
+    bool calculate_size, char const *type, size_t random_seed)
     : root_(0), nsamples_(nsamples), nrules_(nrules), c_(c),
       num_nodes_(0), num_evaluated_(0), ablation_(ablation),
       calculate_size_(calculate_size), min_objective_(0.5),
@@ -37,9 +37,8 @@ CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, size_t nthreads,
     labels_ = labels;
     nthreads_ = nthreads;
 
-    time_t seed = time(0);
-    srand(seed);
-    std::cout << "SEED: " << seed << std::endl;
+    srand(random_seed);
+    std::cout << "RANDOM SEED: " << random_seed << std::endl;
     std::iota(rule_perm_.begin(), rule_perm_.end(), 1);
     std::random_shuffle(rule_perm_.begin(), rule_perm_.end());
 

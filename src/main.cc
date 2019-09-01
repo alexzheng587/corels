@@ -1,3 +1,4 @@
+#include "features.hh"
 #include "queue.hh"
 #include <iostream>
 #include <mutex>
@@ -6,7 +7,6 @@
 #include <getopt.h>
 #include <pthread.h>
 #include <stdio.h>
-#include "features.hh"
 
 #define BUFSZ 512
 
@@ -192,9 +192,6 @@ int main(int argc, char *argv[]) {
     // TOOD: use cmd line params to initialize features
     featureDecisions = new FeatureToggle(false);
 
-    double* min_objective = (double*) malloc(sizeof(double*));
-    *min_objective = 1.0;
-
     double init = timestamp();
     char run_type[BUFSZ];
 
@@ -251,10 +248,11 @@ int main(int argc, char *argv[]) {
     	qs[i].push(tree->root());
     }
 
+    SharedQueue* shared_q = new SharedQueue();
+
 	// Let the threads loose
 	for(size_t i = 0; i < num_threads; ++i) {
-	    threads[i] = std::thread(bbound, tree, max_num_nodes/num_threads,
-		&qs[i], p, i, min_objective);
+	    threads[i] = std::thread(bbound, tree, max_num_nodes, &qs[i], p, i, shared_q);
 	}
 
 	for(size_t i = 0; i < num_threads; ++i) {
@@ -278,7 +276,6 @@ int main(int argc, char *argv[]) {
                          latex_out, rules, labels, opt_fname);
 
     printf("final total time: %f\n", time_diff(init));
-    free(min_objective);
     printf("Number of lock acquistions: %d\n", lock_ac);
 
     logger->dumpState();

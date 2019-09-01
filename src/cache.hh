@@ -3,16 +3,17 @@
 #include "utils.hh"
 #include "alloc.hh"
 #include "rule.h"
+#include <atomic>
+#include <condition_variable>
+#include <fstream>
 #include <iostream>
 #include <iterator>
 #include <map>
-#include <vector>
-#include <stdlib.h>
-#include <fstream>
 #include <memory>
-#include <thread>
-#include <atomic>
 #include <mutex>
+#include <thread>
+#include <stdlib.h>
+#include <vector>
 
 extern std::mutex min_obj_lk;
 
@@ -156,6 +157,13 @@ class CacheTree {
     inline void increment_num_inactive_threads();
     inline void decrement_num_inactive_threads();
 
+    inline bool done() const;
+    inline void set_done(bool is_done);
+
+    inline void thread_wait();
+    inline void wake_all_inactive();
+    inline void wake_one_inactive();
+
   protected:
     std::ofstream t_;
     Node* root_;
@@ -180,6 +188,10 @@ class CacheTree {
     rule_t *minority_;
 
     unsigned short inactive_threads_;
+    bool done_;
+
+    std::mutex inactive_thread_lk_;
+    std::condition_variable inactive_thread_cv_;
 
     char const *type_;
     void gc_helper(Node* node, unsigned short thread_id);
@@ -487,6 +499,28 @@ inline void CacheTree::increment_num_inactive_threads() {
 inline void CacheTree::decrement_num_inactive_threads() {
     inactive_threads_--;
 }
+
+inline bool CacheTree::done() const {
+    return done_;
+}
+
+inline void CacheTree::set_done(bool is_done) {
+    done_ = is_done;
+}
+
+inline void CacheTree::thread_wait() {
+    std::unique_lock<std::mutex> inactive_thread_lk(inactive_thread_lk_);
+    inactive_thread_cv_.wait(inactive_thread_lk);
+}
+
+inline void CacheTree::wake_all_inactive() {
+    inactive_thread_cv_.notify_all();
+}
+
+inline void CacheTree::wake_one_inactive() {
+    inactive_thread_cv_.notify_one();
+}
+
 
 void delete_interior(CacheTree* tree, Node* node, bool destructive, bool update_remaining_state_space);
 void delete_subtree(CacheTree* tree, Node* node, bool destructive, bool update_remaining_state_space, unsigned short thread_id);

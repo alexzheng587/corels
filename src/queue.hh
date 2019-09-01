@@ -2,6 +2,7 @@
 
 #include "pmap.hh"
 #include "alloc.hh"
+#include "shared_queue.hh"
 #include <assert.h>
 #include <functional>
 #include <queue>
@@ -129,13 +130,14 @@ begin:
             return std::make_pair(selected_node, prefix);
         }
 
-    private:
+    protected:
         q* q_;
         char const *type_;
 };
 
+
 extern int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
-    unsigned short thread_id, double* min_objective);
+    unsigned short thread_id, SharedQueue* shared_q);
 
 extern void bbound_init(CacheTree* tree);
 

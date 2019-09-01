@@ -1,14 +1,6 @@
 CFLAGS := -g -W -Wall -Wno-unused-parameter -I. -DGMP -O3 -fno-omit-frame-pointer
 CXXFLAGS := $(CFLAGS) -std=c++11
 CFLAGS += -std=c99
-
-#ifneq (,$(filter $(shell uname -n),elaines-MacBook-Pro.local Nicholass-Air-5.local))
-#    LIBS := -L/usr/local/lib
-#    CFLAGS += -I/usr/local/include
-#else
-#    LIBS :=
-#endif
-
 LIBS += -L/usr/local/lib -lgmpxx -lgmp -lpthread
 
 ifneq ($(shell uname -n),beepboop)

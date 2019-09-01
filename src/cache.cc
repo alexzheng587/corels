@@ -49,18 +49,18 @@ CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, size_t nthreads,
     unsigned short sIdx = 0;
 
     for(size_t i = 0; i < nthreads; ++i) {
-	unsigned short eIdx = sIdx + rules_per_thread + (i < inc ? 1 : 0);
+        unsigned short eIdx = sIdx + rules_per_thread + (i < inc ? 1 : 0);
         ranges_[i] = std::make_pair(sIdx, eIdx);
-	if (logger->getVerbosity() > 10) {
-		printf("RANGE INDICES: %hu-%hu\nRANGE: ", sIdx, eIdx);
-		for (tracking_vector<unsigned short, DataStruct::Tree>::iterator it = 
-		    rule_perm_.begin() + sIdx;
-		    it != rule_perm_.begin() + eIdx; it++) {
-			printf("%hu ", *it);
-			printf("\n");
-		}
-	}
-	sIdx = eIdx;
+        if (logger->getVerbosity() > 10) {
+            printf("RANGE INDICES: %hu-%hu\nRANGE: ", sIdx, eIdx);
+            for (tracking_vector<unsigned short, DataStruct::Tree>::iterator it = 
+                rule_perm_.begin() + sIdx;
+                it != rule_perm_.begin() + eIdx; it++) {
+                printf("%hu ", *it);
+                printf("\n");
+            }
+        }
+        sIdx = eIdx;
     }
 
     if (minority) {

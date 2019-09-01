@@ -138,8 +138,9 @@ class CacheTree {
     inline int ablation() const;
     inline bool calculate_size() const;
     inline tracking_vector<unsigned short, DataStruct::Tree> get_subrange(size_t i);
-
     inline tracking_vector<unsigned short, DataStruct::Tree> rule_perm();
+    inline std::vector<tracking_vector<unsigned short, DataStruct::Tree> > split_rules(size_t n);
+
     void insert_root();
     void insert(Node* node, unsigned short thread_id);
     void prune_up(Node* node);
@@ -162,7 +163,7 @@ class CacheTree {
 
     inline void thread_wait();
     inline void wake_all_inactive();
-    inline void wake_one_inactive();
+    inline void wake_n_inactive(size_t n);
 
   protected:
     std::ofstream t_;
@@ -472,6 +473,20 @@ inline tracking_vector<unsigned short, DataStruct::Tree> CacheTree::rule_perm() 
     return rule_perm_;
 }
 
+
+inline std::vector<tracking_vector<unsigned short, DataStruct::Tree> > CacheTree::split_rules(size_t n) {
+    size_t nrules = rule_perm_.size();
+    size_t split_size = (nrules + n - 1) / n;
+    std::vector<tracking_vector<unsigned short, DataStruct::Tree> > splits;
+    for(size_t i = 0; i < n; ++i){
+        tracking_vector<unsigned short, DataStruct::Tree> split(rule_perm_.begin() + split_size * i, rule_perm_.begin() + split_size * (i + 1));
+        splits.push_back(split);
+    }
+    return splits;
+}
+
+
+
 /*
  * Called whenever a node is deleted from the tree.
  */
@@ -517,8 +532,9 @@ inline void CacheTree::wake_all_inactive() {
     inactive_thread_cv_.notify_all();
 }
 
-inline void CacheTree::wake_one_inactive() {
-    inactive_thread_cv_.notify_one();
+inline void CacheTree::wake_n_inactive(size_t n) {
+    for(size_t i = 0; i < n; ++i)
+        inactive_thread_cv_.notify_one();
 }
 
 

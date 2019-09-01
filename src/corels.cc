@@ -197,7 +197,8 @@ bool bbound_loop(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap
         std::pair<Node*, tracking_vector<unsigned short, DataStruct::Tree> > node_ordered = q->select(tree, captured, thread_id);
         logger->addToNodeSelectTime(time_diff(t0));
         logger->incNodeSelectNum();
-        if (node_ordered.first) {
+        Node* current_node = node_ordered.first;
+        if (current_node) {
             double t1 = timestamp();
             // not_captured = default rule truthtable & ~ captured
             rule_vandnot(not_captured,
@@ -206,11 +207,19 @@ bool bbound_loop(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap
 
             if(tree->num_inactive_threads() > 0) {
                 // printf("NUM INACTIVE THREADS: %zu\n", tree->num_inactive_threads());
-                // TODO: divvy up work onto shared queue
-                // TODO: wake up sleeping threads
+                std::vector<tracking_vector<unsigned short, DataStruct::Tree> > rule_splits = tree->split_rules(tree->num_inactive_threads());
+                shared_q->lock();
+                for(std::vector<tracking_vector<unsigned short, DataStruct::Tree> >::iterator it = rule_splits.begin();
+                    it != rule_splits.end(); ++it) {
+                    internal_root entry = std::make_pair(current_node, *it);
+                    shared_q->push(entry);
+                }
+                shared_q->unlock();
+                tree->wake_n_inactive(tree->num_inactive_threads());
+            } else {
+                evaluate_children(tree, current_node, node_ordered.second,
+                    not_captured, initialization_rules, q, p, thread_id);
             }
-            evaluate_children(tree, node_ordered.first, node_ordered.second,
-                not_captured, initialization_rules, q, p, thread_id);
 
             logger->addToEvalChildrenTime(time_diff(t1));
             logger->incEvalChildrenNum();
@@ -285,14 +294,18 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
         if(queue_empty) {
             tree->increment_num_inactive_threads();
             if(tree->num_inactive_threads() == tree->num_threads()) {
+                printf("All threads done\n");
                 shared_q->lock();
                 assert(shared_q->empty());
                 shared_q->unlock();
                 tree->set_done(true);
                 tree->wake_all_inactive();
             } else {
+                printf("Thread %zu sleeping\n", thread_id);
                 // sleep until there's work to do
                 tree->thread_wait();
+                tree->decrement_num_inactive_threads();
+                printf("Thread %zu awake\n", thread_id);
                 // pull work off thread and kick off another round of bbound
                 shared_q->lock();
                 if (!shared_q->empty()) {

@@ -152,6 +152,10 @@ class CacheTree {
     inline void lock(unsigned short thread_id);
     inline void unlock(unsigned short thread_id);
 
+    inline unsigned short num_inactive_threads() const;
+    inline void increment_num_inactive_threads();
+    inline void decrement_num_inactive_threads();
+
   protected:
     std::ofstream t_;
     Node* root_;
@@ -174,6 +178,8 @@ class CacheTree {
     rule_t *rules_;
     rule_t *labels_;
     rule_t *minority_;
+
+    unsigned short inactive_threads_;
 
     char const *type_;
     void gc_helper(Node* node, unsigned short thread_id);
@@ -468,6 +474,18 @@ inline void CacheTree::lock(unsigned short thread_id) {
 
 inline void CacheTree::unlock(unsigned short thread_id) {
   tree_lks_[thread_id].unlock();
+}
+
+inline unsigned short CacheTree::num_inactive_threads() const {
+    return inactive_threads_;
+}
+
+inline void CacheTree::increment_num_inactive_threads() {
+    inactive_threads_++;
+}
+
+inline void CacheTree::decrement_num_inactive_threads() {
+    inactive_threads_--;
 }
 
 void delete_interior(CacheTree* tree, Node* node, bool destructive, bool update_remaining_state_space);

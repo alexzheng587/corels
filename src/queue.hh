@@ -142,4 +142,7 @@ extern void bbound_init(CacheTree* tree);
 extern void evaluate_children(CacheTree* tree, Node* parent,
     tracking_vector<unsigned short, DataStruct::Tree> parent_prefix,
     VECTOR parent_not_captured, std::vector<unsigned short> rules, Queue* q,
-    PermutationMap* p, double* min_objective);
+    PermutationMap* p, unsigned short thread_id);
+
+extern bool bbound_loop(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
+    VECTOR captured, VECTOR not_captured, unsigned short thread_id, bool special_call);

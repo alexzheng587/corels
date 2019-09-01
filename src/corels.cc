@@ -22,7 +22,7 @@ Queue::Queue(std::function<bool(Node*, Node*)> cmp, char const *type)
 void evaluate_children(CacheTree* tree, Node* parent,
     tracking_vector<unsigned short, DataStruct::Tree> parent_prefix,
     VECTOR parent_not_captured, tracking_vector<unsigned short, DataStruct::Tree> rules,
-    Queue* q, PermutationMap* p, double* min_objective, unsigned short thread_id) {
+    Queue* q, PermutationMap* p, unsigned short thread_id) {
 
     VECTOR captured, captured_zeros, not_captured, not_captured_zeros, not_captured_equivalent;
     int num_captured, c0, c1, captured_correct;
@@ -179,35 +179,17 @@ void bbound_init(CacheTree* tree) {
     logger->setInitialTime(timestamp());
 }
 
-
-/*
- * Explores the search space by using a queue to order the search process.
- * The queue can be ordered by DFS, BFS, or an alternative priority metric (e.g. lower bound).
+/**
+ * Returns true if exiting because queue is empty, false if num_nodes reached
  */
-int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
-    unsigned short thread_id, double* min_objective) {
-
-    bool print_queue = 0;
+bool bbound_loop(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
+    VECTOR captured, VECTOR not_captured, unsigned short thread_id, bool special_call) {
     size_t num_iter = 0;
+    // Not used anywhere
     int cnt;
-    double cur_min_objective = 1;
-    VECTOR captured, not_captured;
-    rule_vinit(tree->nsamples(), &captured);
-    rule_vinit(tree->nsamples(), &not_captured);
-    rule_vandnot(not_captured,
-             tree->rule(0).truthtable, captured,
-             tree->nsamples(), &cnt);
-
+    double cur_min_objective = tree->min_objective();
+    // TODO: think about better time logging
     double start = timestamp();
-    int verbosity = logger->getVerbosity();
-
-    //logger->dumpState();
-
-    // If we have multiple threads, then we want to populate the initial
-    // queue with the single-rule lists using just our range; after this
-    // initial setup, we continuue normally, adding any rule after the
-    // first.
-    bool special_call = tree->num_threads() != 1;
 
     while ((tree->num_nodes() < max_num_nodes) && !q->empty()) {
         double t0 = timestamp();
@@ -221,17 +203,20 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
             rule_vandnot(not_captured,
                          tree->rule(0).truthtable, captured,
                          tree->nsamples(), &cnt);
-            //min_obj_lk.lock();
-            //cur_min_objective = *min_objective;
-            //min_obj_lk.unlock();
 	    if (special_call) {
 	        // GET MY RANGE OF RULES
-		evaluate_children(tree, node_ordered.first, node_ordered.second,
-		    not_captured, tree->get_subrange(thread_id), q, p, min_objective, thread_id);
-		special_call = false;
-	    } else {
-		evaluate_children(tree, node_ordered.first, node_ordered.second,
-		    not_captured, tree->rule_perm(), q, p, min_objective, thread_id);
+            evaluate_children(tree, node_ordered.first, node_ordered.second,
+                not_captured, tree->get_subrange(thread_id), q, p, thread_id);
+            special_call = false;
+	    } else if(tree->num_inactive_threads() > 0) {
+            printf("NUM INACTIVE THREADS: %zu\n", tree->num_inactive_threads());
+            // TODO: divvy up work onto shared queue
+            // TODO: wake up sleeping threads
+            evaluate_children(tree, node_ordered.first, node_ordered.second,
+                not_captured, tree->rule_perm(), q, p, thread_id);
+        } else {
+            evaluate_children(tree, node_ordered.first, node_ordered.second,
+                not_captured, tree->rule_perm(), q, p, thread_id);
 	    }
 
             logger->addToEvalChildrenTime(time_diff(t1));
@@ -241,8 +226,6 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
 	    if (tree->min_objective() < cur_min_objective) {
                 cur_min_objective = tree->min_objective();
                 min_obj_lk.unlock();
-                //min_objective = tree->min_objective();
-                //tree->update_min_objective(*min_objective);
                 if(featureDecisions->do_garbage_collection()) {
                     printf("THREAD %zu: before garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", 
                             thread_id, tree->num_nodes(thread_id), logger->getLogRemainingSpaceSize());
@@ -258,7 +241,7 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
         logger->setQueueSize(q->size());
         ++num_iter;
         if ((num_iter % 10000) == 0) {
-            if (verbosity >= 10)
+            if (logger->getVerbosity() >= 10)
                 printf("THREAD %zu: iter: %zu, tree: %zu, queue: %zu, pmap: %zu, log10(remaining): %zu, time elapsed: %f\n",
                        thread_id, num_iter, tree->num_nodes(thread_id), q->size(), p->size(), logger->getLogRemainingSpaceSize(), time_diff(start));
         }
@@ -268,22 +251,60 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
         }
     }
     logger->dumpState(); // second last log record (before queue elements deleted)
-    if (verbosity >= 1)
+    if (logger->getVerbosity() >= 1)
         printf("THREAD %zu: iter: %zu, tree: %zu, queue: %zu, pmap: %zu, log10(remaining): %zu, time elapsed: %f\n",
                thread_id, num_iter, tree->num_nodes(thread_id), q->size(), p->size(), logger->getLogRemainingSpaceSize(), time_diff(start));
-    if (q->empty())
+    if (q->empty()) {
         printf("Exited because queue empty\n");
-    else
+        return true;
+    }
+    else {
         printf("Exited because max number of nodes in the tree was reached\n");
+        return false;
+    }
+}
 
+/*
+ * Explores the search space by using a queue to order the search process.
+ * The queue can be ordered by DFS, BFS, or an alternative priority metric (e.g. lower bound).
+ */
+int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
+    unsigned short thread_id, double* min_objective) {
+
+    bool print_queue = 0;
+    int cnt;
+    VECTOR captured, not_captured;
+    rule_vinit(tree->nsamples(), &captured);
+    rule_vinit(tree->nsamples(), &not_captured);
+    rule_vandnot(not_captured,
+             tree->rule(0).truthtable, captured,
+             tree->nsamples(), &cnt);
+
+
+    // If we have multiple threads, then we want to populate the initial
+    // queue with the single-rule lists using just our range; after this
+    // initial setup, we continuue normally, adding any rule after the
+    // first.
+    bool special_call = tree->num_threads() != 1;
+
+    while(!tree->done()) {
+        bool queue_empty = bbound_loop(tree, max_num_nodes, q, p, captured, not_captured, thread_id, special_call);
+        tree->increment_num_inactive_threads();
+        if(tree->num_inactive_threads() == tree->num_threads()) {
+            //tree->wake_all_inactive_threads();
+            // then all shouldexit
+        } else {
+            // sleep on cv
+        }
+    }
     // Print out queue
-    ofstream f;
+    /*ofstream f;
     if (print_queue) {
         char fname[] = "queue.txt";
         printf("Writing queue elements to: %s\n", fname);
         f.open(fname, ios::out | ios::trunc);
         f << "lower_bound objective length frac_captured rule_list\n";
-    }
+    }*/
 
 /*    // Clean up data structures
     printf("Deleting queue elements and corresponding nodes in the cache,"
@@ -321,12 +342,13 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
     }
     printf("minimum lower bound in queue: %1.10f\n\n", min_lower_bound);
     */
-    if (print_queue)
+    /*if (print_queue)
         f.close();
+    */
     // last log record (before cache deleted)
     logger->dumpState();
 
     rule_vfree(&captured);
     rule_vfree(&not_captured);
-    return num_iter;
+    return 0;
 }

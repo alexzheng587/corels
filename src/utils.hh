@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rule.h"
+#include "features.hh"
 
 #include <cstdlib>
 #include <sys/time.h>
@@ -397,6 +398,7 @@ class Logger : public NullLogger {
 };
 
 extern NullLogger* logger;
+extern FeatureToggle* featureDecisions;
 
 inline double timestamp() {
     struct timeval now;

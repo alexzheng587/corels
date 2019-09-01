@@ -198,8 +198,6 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
              tree->rule(0).truthtable, captured,
              tree->nsamples(), &cnt);
 
-    size_t queue_min_length = logger->getQueueMinLen();
-
     double start = timestamp();
     int verbosity = logger->getVerbosity();
 
@@ -245,24 +243,19 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
                 min_obj_lk.unlock();
                 //min_objective = tree->min_objective();
                 //tree->update_min_objective(*min_objective);
-                //if (verbosity >= 10)
+                if(featureDecisions->do_garbage_collection()) {
                     printf("THREAD %zu: before garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", 
                             thread_id, tree->num_nodes(thread_id), logger->getLogRemainingSpaceSize());
-                logger->dumpState();
-                tree->garbage_collect(thread_id);
-                logger->dumpState();
-                //if (verbosity >= 10)
+                    logger->dumpState();
+                    tree->garbage_collect(thread_id);
+                    logger->dumpState();
                     printf("THREAD %zu: after garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", thread_id, tree->num_nodes(thread_id), logger->getLogRemainingSpaceSize());
+                }
             } else {
                 min_obj_lk.unlock();
             }
         }
         logger->setQueueSize(q->size());
-        if (queue_min_length < logger->getQueueMinLen()) {
-            // garbage collect the permutation map: can be simplified for the case of BFS
-            queue_min_length = logger->getQueueMinLen();
-            //pmap_garbage_collect(p, queue_min_length);
-        }
         ++num_iter;
         if ((num_iter % 10000) == 0) {
             if (verbosity >= 10)

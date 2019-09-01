@@ -6,6 +6,7 @@
 #include <getopt.h>
 #include <pthread.h>
 #include <stdio.h>
+#include "features.hh"
 
 #define BUFSZ 512
 
@@ -19,6 +20,8 @@ int lock_ac = 0;
  * To turn off, pass verbosity <= 1
  */
 NullLogger* logger;
+
+FeatureToggle* featureDecisions;
 
 int main(int argc, char *argv[]) {
     const char usage[] = "USAGE: %s [-b] [-t num_threads]"
@@ -186,6 +189,9 @@ int main(int argc, char *argv[]) {
     else
         logger = new NullLogger();
 
+    // TOOD: use cmd line params to initialize features
+    featureDecisions = new FeatureToggle(false);
+
     double* min_objective = (double*) malloc(sizeof(double*));
     *min_objective = 1.0;
 
@@ -245,23 +251,15 @@ int main(int argc, char *argv[]) {
     	qs[i].push(tree->root());
     }
 
-    //if (num_threads == 1) {
-	//bbound(tree, max_num_nodes/num_threads, &qs[0], p, 0, min_objective);
-    //} else {
-
 	// Let the threads loose
 	for(size_t i = 0; i < num_threads; ++i) {
 	    threads[i] = std::thread(bbound, tree, max_num_nodes/num_threads,
 		&qs[i], p, i, min_objective);
 	}
 
-	// Garbage collection thread
-	//std::thread(garbage_collect, tree);
-
 	for(size_t i = 0; i < num_threads; ++i) {
 	    threads[i].join();
 	}
-    //}
 
     size_t tree_mem = logger->getTreeMemory(); 
     size_t pmap_mem = logger->getPmapMemory(); 

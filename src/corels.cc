@@ -306,11 +306,11 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
             } 
             while (shared_q->empty()) {
                 tree->increment_num_inactive_threads();
-                printf("Thread %zu sleeping\n", thread_id);
+                // printf("Thread %zu sleeping\n", thread_id);
                 // sleep until there's work to do
                 shared_q->unlock();
                 tree->thread_wait();
-                printf("Thread %zu awake\n", thread_id);
+                // printf("Thread %zu awake\n", thread_id);
                 if (tree->done()) {
                     printf("Thread %zu exiting\n", thread_id);
                     return 0;
@@ -321,8 +321,8 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
             // pull work off thread and kick off another round of bbound
             internal_root work = shared_q->pop();
             shared_q->unlock();
-            // q->push(work.first);
-            // init_rules = work.second;
+            q->push(work.first);
+            init_rules = work.second;
         } else {
             // max num nodes has been reached
             tree->set_done(true);

@@ -11,6 +11,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <numeric>
 #include <thread>
 #include <stdlib.h>
 #include <vector>
@@ -475,12 +476,36 @@ inline tracking_vector<unsigned short, DataStruct::Tree> CacheTree::rule_perm() 
 
 
 inline std::vector<tracking_vector<unsigned short, DataStruct::Tree> > CacheTree::split_rules(size_t n) {
-    size_t nrules = rule_perm_.size();
-    size_t split_size = (nrules + n - 1) / n;
     std::vector<tracking_vector<unsigned short, DataStruct::Tree> > splits;
+    /*size_t nrules = rule_perm_.size();
+    size_t split_size = (nrules + n - 1) / n;
     for(size_t i = 0; i < n; ++i){
         tracking_vector<unsigned short, DataStruct::Tree> split(rule_perm_.begin() + split_size * i, rule_perm_.begin() + split_size * (i + 1));
         splits.push_back(split);
+    }
+    return splits;*/
+
+    tracking_vector<unsigned short, DataStruct::Tree> rule_perm = rule_perm_;
+    std::iota(rule_perm.begin(), rule_perm.end(), 1);
+    std::random_shuffle(rule_perm.begin(), rule_perm.end());
+
+    unsigned short rules_per_thread = (nrules_-1) / n;
+    unsigned short inc = (nrules_ - 1) - (rules_per_thread * n);
+    unsigned short sIdx = 0;
+
+    for(size_t i = 0; i < n; ++i) {
+        unsigned short eIdx = sIdx + rules_per_thread + (i < inc ? 1 : 0);
+        // printf("START INDEX: %zu, END INDEX: %zu\n", sIdx, eIdx);
+        tracking_vector<unsigned short, DataStruct::Tree> split(rule_perm.begin() + sIdx, rule_perm.begin() + eIdx);
+        for(auto it = split.begin(); it != split.end(); ++it) {
+            auto val = *it;
+            if(val > nrules_) {
+                printf("BAD\n");
+            }
+        }
+        //printVector(split);
+        splits.push_back(split);
+        sIdx = eIdx;
     }
     return splits;
 }
@@ -526,6 +551,7 @@ inline void CacheTree::set_done(bool is_done) {
 inline void CacheTree::thread_wait() {
     std::unique_lock<std::mutex> inactive_thread_lk(inactive_thread_lk_);
     inactive_thread_cv_.wait(inactive_thread_lk);
+    inactive_thread_lk.unlock();
 }
 
 inline void CacheTree::wake_all_inactive() {

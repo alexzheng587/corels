@@ -207,7 +207,7 @@ bool bbound_loop(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap
 
             if(tree->num_inactive_threads() > 0) {
                 // printf("NUM INACTIVE THREADS: %zu\n", tree->num_inactive_threads());
-                std::vector<tracking_vector<unsigned short, DataStruct::Tree> > rule_splits = tree->split_rules(tree->num_inactive_threads());
+                std::vector<tracking_vector<unsigned short, DataStruct::Tree> > rule_splits = tree->split_rules(2);
                 shared_q->lock();
                 for(std::vector<tracking_vector<unsigned short, DataStruct::Tree> >::iterator it = rule_splits.begin();
                     it != rule_splits.end(); ++it) {
@@ -255,11 +255,11 @@ bool bbound_loop(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap
         initialization_rules = tree->rule_perm();
     }
     logger->dumpState(); // second last log record (before queue elements deleted)
-    if (logger->getVerbosity() >= 1)
+    if (logger->getVerbosity() >= 10)
         printf("THREAD %zu: iter: %zu, tree: %zu, queue: %zu, pmap: %zu, log10(remaining): %zu, time elapsed: %f\n",
                thread_id, num_iter, tree->num_nodes(thread_id), q->size(), p->size(), logger->getLogRemainingSpaceSize(), time_diff(start));
     if (q->empty()) {
-        printf("Exited because queue empty\n");
+        // printf("Exited because queue empty\n");
         return true;
     }
     else {
@@ -275,6 +275,7 @@ bool bbound_loop(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap
 int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
     unsigned short thread_id, SharedQueue* shared_q) {
     int cnt;
+    // These are initialized in q->select
     VECTOR captured, not_captured;
     rule_vinit(tree->nsamples(), &captured);
     rule_vinit(tree->nsamples(), &not_captured);
@@ -292,34 +293,40 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
     while(!tree->done()) {
         bool queue_empty = bbound_loop(tree, max_num_nodes, q, p, captured, not_captured, thread_id, init_rules, shared_q);
         if(queue_empty) {
-            tree->increment_num_inactive_threads();
-            if(tree->num_inactive_threads() == tree->num_threads()) {
+            shared_q->lock();
+            if(shared_q->empty() && tree->num_inactive_threads() == tree->num_threads() - 1) {
+                tree->increment_num_inactive_threads();
                 printf("All threads done\n");
-                shared_q->lock();
                 assert(shared_q->empty());
-                shared_q->unlock();
                 tree->set_done(true);
+                shared_q->unlock();
                 tree->wake_all_inactive();
-            } else {
+                printf("Thread %zu exiting\n", thread_id);
+                return 0;
+            } 
+            while (shared_q->empty()) {
+                tree->increment_num_inactive_threads();
                 printf("Thread %zu sleeping\n", thread_id);
                 // sleep until there's work to do
+                shared_q->unlock();
                 tree->thread_wait();
-                tree->decrement_num_inactive_threads();
                 printf("Thread %zu awake\n", thread_id);
-                // pull work off thread and kick off another round of bbound
+                if (tree->done()) {
+                    printf("Thread %zu exiting\n", thread_id);
+                    return 0;
+                } 
+                tree->decrement_num_inactive_threads();
                 shared_q->lock();
-                if (!shared_q->empty()) {
-                    internal_root work = shared_q->pop();
-                    shared_q->unlock();
-                    q->push(work.first);
-                    init_rules = work.second;
-                } else {
-                    shared_q->unlock();
-                }
             }
+            // pull work off thread and kick off another round of bbound
+            internal_root work = shared_q->pop();
+            shared_q->unlock();
+            // q->push(work.first);
+            // init_rules = work.second;
         } else {
             // max num nodes has been reached
             tree->set_done(true);
+            tree->wake_all_inactive();
         }
     }
     // Print out queue

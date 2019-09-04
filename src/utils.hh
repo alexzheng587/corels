@@ -4,6 +4,7 @@
 #include "features.hh"
 
 #include <cstdlib>
+#include <iostream>
 #include <sys/time.h>
 #include <string.h>
 #include <stdio.h>
@@ -424,3 +425,10 @@ void print_final_rulelist(const tracking_vector<unsigned short, DataStruct::Tree
                           char fname[]);
 
 void print_machine_info();
+
+// From: https://stackoverflow.com/questions/32346861/how-to-write-a-generic-print-for-vector-of-vectors-using-c
+template<typename T>
+void printVector(const T& t) {
+    std::copy(t.cbegin(), t.cend(), std::ostream_iterator<typename T::value_type>(std::cout, ", "));
+    std::cout << "\n";
+}

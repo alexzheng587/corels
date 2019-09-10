@@ -59,7 +59,7 @@ void evaluate_children(CacheTree* tree, Node* parent,
         // captured represents data captured by the new rule
         rule_vand(captured, parent_not_captured, tree->rule(i).truthtable, nsamples, &num_captured);
         // lower bound on antecedent support
-        if ((tree->ablation() != 1) && (num_captured < threshold)) 
+        if ((tree->ablation() != 1) && (num_captured < threshold))
             continue;
         rule_vand(captured_zeros, captured, tree->label(0).truthtable, nsamples, &c0);
         c1 = num_captured - c0;
@@ -224,12 +224,12 @@ bool bbound_loop(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap
             logger->addToEvalChildrenTime(time_diff(t1));
             logger->incEvalChildrenNum();
             min_obj_lk.lock();
-            // SET CUR MIN OBJECTIVE 
+            // SET CUR MIN OBJECTIVE
             if (tree->min_objective() < cur_min_objective) {
                     cur_min_objective = tree->min_objective();
                     min_obj_lk.unlock();
                     if(featureDecisions->do_garbage_collection()) {
-                        printf("THREAD %zu: before garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", 
+                        printf("THREAD %zu: before garbage_collect. num_nodes: %zu, log10(remaining): %zu\n",
                                 thread_id, tree->num_nodes(thread_id), logger->getLogRemainingSpaceSize());
                         logger->dumpState();
                         tree->garbage_collect(thread_id);
@@ -303,7 +303,7 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
                 tree->wake_all_inactive();
                 printf("Thread %zu exiting\n", thread_id);
                 return 0;
-            } 
+            }
             while (shared_q->empty()) {
                 tree->increment_num_inactive_threads();
                 // printf("Thread %zu sleeping\n", thread_id);
@@ -314,7 +314,7 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
                 if (tree->done()) {
                     printf("Thread %zu exiting\n", thread_id);
                     return 0;
-                } 
+                }
                 tree->decrement_num_inactive_threads();
                 shared_q->lock();
             }

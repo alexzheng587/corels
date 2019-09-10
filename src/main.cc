@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
             pch ? pch + 1 : "",
             run_bfs ? "bfs" : "",
             run_curiosity ? curiosity_map[curiosity_policy].c_str() : "",
-            use_prefix_perm_map ? "with_prefix_perm_map" : 
+            use_prefix_perm_map ? "with_prefix_perm_map" :
                 (use_captured_sym_map ? "with_captured_symmetry_map" : "no_pmap"),
             meta ? "minor" : "no_minor",
             ablation ? ((ablation == 1) ? "support" : "lookahead") : "none",
@@ -259,9 +259,9 @@ int main(int argc, char *argv[]) {
 	    threads[i].join();
 	}
 
-    size_t tree_mem = logger->getTreeMemory(); 
-    size_t pmap_mem = logger->getPmapMemory(); 
-    size_t queue_mem = logger->getQueueMemory(); 
+    size_t tree_mem = logger->getTreeMemory();
+    size_t pmap_mem = logger->getPmapMemory();
+    size_t queue_mem = logger->getQueueMemory();
     printf("TREE mem usage: %zu\n", tree_mem);
     printf("PMAP mem usage: %zu\n", pmap_mem);
     printf("QUEUE mem usage: %zu\n", queue_mem);
@@ -277,6 +277,7 @@ int main(int argc, char *argv[]) {
 
     printf("final total time: %f\n", time_diff(init));
     printf("Number of lock acquistions: %d\n", lock_ac);
+    printf("Number of shared_queue acquisitions: %d\n", shared_q->n_acc());
 
     logger->dumpState();
     logger->closeFile();

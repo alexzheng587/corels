@@ -14,9 +14,12 @@ class SharedQueue
         /* data */
         std::mutex queue_lk_;
         std::queue<internal_root> q_;
-        
+        size_t accs_;
+
     public:
-        SharedQueue(/* args */) {};
+        SharedQueue(/* args */) {
+          accs_ = 0;
+        };
         ~SharedQueue();
 
         inline bool empty();
@@ -25,9 +28,11 @@ class SharedQueue
         inline void push(internal_root entry);
         inline void lock();
         inline void unlock();
+        inline size_t n_acc() const;
 };
 
 inline void SharedQueue::lock() {
+    ++accs_;
     queue_lk_.lock();
 }
 
@@ -51,4 +56,8 @@ inline internal_root SharedQueue::pop() {
     internal_root entry = q_.front();
     q_.pop();
     return entry;
+}
+
+inline size_t SharedQueue::n_acc() const {
+    return accs_;
 }

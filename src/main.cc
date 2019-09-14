@@ -197,7 +197,7 @@ int main(int argc, char *argv[]) {
 
     strcpy(run_type, "LEARNING RULE LIST via ");
     char const *type = "node";
-    std::function<bool(Node*, Node*)> cmp;
+    std::function<bool(InternalRoot, InternalRoot)> cmp;
     if (curiosity_policy == 1) {
         strcat(run_type, "CURIOUS");
         cmp = curious_cmp;
@@ -245,7 +245,9 @@ int main(int argc, char *argv[]) {
     Queue qs[num_threads];
     for(size_t i = 0; i < num_threads; ++i) {
         qs[i] = Queue(cmp, run_type);
-    	qs[i].push(tree->root());
+        tracking_vector<unsigned short, DataStruct::Tree> init_rules = tree->get_subrange(i);
+        InternalRoot iroot = std::make_pair(tree->root(), init_rules);
+        qs[i].push(iroot);
     }
 
     SharedQueue* shared_q = new SharedQueue();

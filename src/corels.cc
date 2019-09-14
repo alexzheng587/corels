@@ -8,8 +8,8 @@
 
 extern std::mutex min_obj_lk;
 
-Queue::Queue(std::function<bool(Node*, Node*)> cmp, char const *type)
-    : q_(new q (cmp)), type_(type) {}
+Queue::Queue(std::function<bool(InternalRoot, InternalRoot)> cmp, char const *type)
+    : q_(new q(cmp)), type_(type) {}
 
 /*
  * Performs incremental computation on a node, evaluating the bounds and inserting into the cache,
@@ -19,10 +19,10 @@ Queue::Queue(std::function<bool(Node*, Node*)> cmp, char const *type)
  * parent -- the node that is going to have all of its children evaluated.
  * parent_not_captured -- the vector representing data points NOT captured by the parent.
  */
-void evaluate_children(CacheTree* tree, Node* parent,
-    tracking_vector<unsigned short, DataStruct::Tree> parent_prefix,
-    VECTOR parent_not_captured, tracking_vector<unsigned short, DataStruct::Tree> rules,
-    Queue* q, PermutationMap* p, unsigned short thread_id) {
+void evaluate_children(CacheTree *tree, Node *parent,
+                       tracking_vector<unsigned short, DataStruct::Tree> parent_prefix,
+                       VECTOR parent_not_captured, tracking_vector<unsigned short, DataStruct::Tree> rules,
+                       Queue *q, PermutationMap *p, unsigned short thread_id) {
 
     VECTOR captured, captured_zeros, not_captured, not_captured_zeros, not_captured_equivalent;
     int num_captured, c0, c1, captured_correct;
@@ -46,16 +46,16 @@ void evaluate_children(CacheTree* tree, Node* parent,
     parent_equivalent_minority = parent->equivalent_minority();
     double t0 = timestamp();
 
-    for(tracking_vector<unsigned short, DataStruct::Tree>::iterator it = rules.begin();
-        it != rules.end(); ++it) {
+    for (tracking_vector<unsigned short, DataStruct::Tree>::iterator it = rules.begin();
+         it != rules.end(); ++it) {
 
         i = *it;
         double t1 = timestamp();
 
         // check if this rule is already in the prefix
         if (std::find(parent_prefix.begin(), parent_prefix.end(), i) !=
-	    parent_prefix.end())
-		continue;
+            parent_prefix.end())
+            continue;
         // captured represents data captured by the new rule
         rule_vand(captured, parent_not_captured, tree->rule(i).truthtable, nsamples, &num_captured);
         // lower bound on antecedent support
@@ -79,8 +79,8 @@ void evaluate_children(CacheTree* tree, Node* parent,
         logger->incLowerBoundNum();
         //min_obj_lk.lock();
         if (lower_bound >= tree->min_objective()) // hierarchical objective lower bound
-            //min_obj_lk.unlock();
-	        continue;
+                                                  //min_obj_lk.unlock();
+            continue;
         double t2 = timestamp();
         rule_vandnot(not_captured, parent_not_captured, captured, nsamples, &num_not_captured);
         rule_vand(not_captured_zeros, not_captured, tree->label(0).truthtable, nsamples, &d0);
@@ -120,9 +120,9 @@ void evaluate_children(CacheTree* tree, Node* parent,
             //min_obj_lk.unlock()
             double t3 = timestamp();
             // check permutation bound
-            Node* n = p->insert(i, nrules, prediction, default_prediction,
-                                   lower_bound, objective, parent, num_not_captured, nsamples,
-                                   len_prefix, c, equivalent_minority, tree, not_captured, parent_prefix, thread_id);
+            Node *n = p->insert(i, nrules, prediction, default_prediction,
+                                lower_bound, objective, parent, num_not_captured, nsamples,
+                                len_prefix, c, equivalent_minority, tree, not_captured, parent_prefix, thread_id);
             logger->addToPermMapInsertionTime(time_diff(t3));
             // n is NULL if this rule fails the permutaiton bound
             if (n) {
@@ -133,7 +133,8 @@ void evaluate_children(CacheTree* tree, Node* parent,
                 logger->addToTreeInsertionTime(time_diff(t4));
                 double t5 = timestamp();
                 n->set_in_queue(true);
-                q->push(n);
+                InternalRoot iroot = std::make_pair(n, (tracking_vector<unsigned short, DataStruct::Tree>)NULL);
+                q->push(iroot);
                 logger->setQueueSize(q->size());
                 if (tree->calculate_size())
                     logger->addQueueElement(len_prefix, lower_bound, false);
@@ -163,10 +164,10 @@ void evaluate_children(CacheTree* tree, Node* parent,
     }
 }
 
-void bbound_init(CacheTree* tree) {
+void bbound_init(CacheTree *tree) {
 
     // Initialize tree and queue
-    if(tree->root() == NULL)
+    if (tree->root() == NULL)
         tree->insert_root();
     logger->initializeState(tree->calculate_size());
     logger->incPrefixLen(0);
@@ -182,9 +183,9 @@ void bbound_init(CacheTree* tree) {
 /**
  * Returns true if exiting because queue is empty, false if num_nodes reached
  */
-bool bbound_loop(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
-    VECTOR captured, VECTOR not_captured, unsigned short thread_id,
-    tracking_vector<unsigned short, DataStruct::Tree> initialization_rules, SharedQueue* shared_q) {
+bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap *p,
+                 VECTOR captured, VECTOR not_captured, unsigned short thread_id,
+                 tracking_vector<unsigned short, DataStruct::Tree> initialization_rules, SharedQueue *shared_q) {
     size_t num_iter = 0;
     // Not used anywhere
     int cnt;
@@ -194,10 +195,16 @@ bool bbound_loop(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap
 
     while ((tree->num_nodes() < max_num_nodes) && !q->empty()) {
         double t0 = timestamp();
-        std::pair<Node*, tracking_vector<unsigned short, DataStruct::Tree> > node_ordered = q->select(tree, captured, thread_id);
+        std::pair<InternalRoot, tracking_vector<unsigned short, DataStruct::Tree>> node_ordered = q->select(tree, captured, thread_id);
         logger->addToNodeSelectTime(time_diff(t0));
         logger->incNodeSelectNum();
-        Node* current_node = node_ordered.first;
+        InternalRoot iroot = node_ordered.first;
+        Node *current_node = iroot.first;
+        tracking_vector<unsigned short, DataStruct::Tree> initialization_rules = iroot.second;
+        // TODO: check if initialization_rules is NULL?
+        if (initialization_rules.size() == 0) {
+            initialization_rules = tree->rule_perm();
+        }
         if (current_node) {
             double t1 = timestamp();
             // not_captured = default rule truthtable & ~ captured
@@ -205,20 +212,21 @@ bool bbound_loop(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap
                          tree->rule(0).truthtable, captured,
                          tree->nsamples(), &cnt);
 
-            if(tree->num_inactive_threads() > 0) {
+            if (tree->num_inactive_threads() > 0) {
                 // printf("NUM INACTIVE THREADS: %zu\n", tree->num_inactive_threads());
-                std::vector<tracking_vector<unsigned short, DataStruct::Tree> > rule_splits = tree->split_rules(2);
+                std::vector<tracking_vector<unsigned short, DataStruct::Tree>> rule_splits = tree->split_rules(2);
                 shared_q->lock();
-                for(std::vector<tracking_vector<unsigned short, DataStruct::Tree> >::iterator it = rule_splits.begin();
-                    it != rule_splits.end(); ++it) {
-                    internal_root entry = std::make_pair(current_node, *it);
-                    shared_q->push(entry);
+                Queue *other_q = shared_q->pop();
+                for (std::vector<tracking_vector<unsigned short, DataStruct::Tree>>::iterator it = rule_splits.begin();
+                     it != rule_splits.end(); ++it) {
+                    InternalRoot entry = std::make_pair(current_node, *it);
+                    other_q->push(entry);
                 }
                 shared_q->unlock();
                 tree->wake_n_inactive(tree->num_inactive_threads());
             } else {
                 evaluate_children(tree, current_node, node_ordered.second,
-                    not_captured, initialization_rules, q, p, thread_id);
+                                  not_captured, initialization_rules, q, p, thread_id);
             }
 
             logger->addToEvalChildrenTime(time_diff(t1));
@@ -226,16 +234,16 @@ bool bbound_loop(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap
             min_obj_lk.lock();
             // SET CUR MIN OBJECTIVE
             if (tree->min_objective() < cur_min_objective) {
-                    cur_min_objective = tree->min_objective();
-                    min_obj_lk.unlock();
-                    if(featureDecisions->do_garbage_collection()) {
-                        printf("THREAD %zu: before garbage_collect. num_nodes: %zu, log10(remaining): %zu\n",
-                                thread_id, tree->num_nodes(thread_id), logger->getLogRemainingSpaceSize());
-                        logger->dumpState();
-                        tree->garbage_collect(thread_id);
-                        logger->dumpState();
-                        printf("THREAD %zu: after garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", thread_id, tree->num_nodes(thread_id), logger->getLogRemainingSpaceSize());
-                    }
+                cur_min_objective = tree->min_objective();
+                min_obj_lk.unlock();
+                if (featureDecisions->do_garbage_collection()) {
+                    printf("THREAD %zu: before garbage_collect. num_nodes: %zu, log10(remaining): %zu\n",
+                           thread_id, tree->num_nodes(thread_id), logger->getLogRemainingSpaceSize());
+                    logger->dumpState();
+                    tree->garbage_collect(thread_id);
+                    logger->dumpState();
+                    printf("THREAD %zu: after garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", thread_id, tree->num_nodes(thread_id), logger->getLogRemainingSpaceSize());
+                }
             } else {
                 min_obj_lk.unlock();
             }
@@ -261,8 +269,7 @@ bool bbound_loop(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap
     if (q->empty()) {
         // printf("Exited because queue empty\n");
         return true;
-    }
-    else {
+    } else {
         printf("Exited because max number of nodes in the tree was reached\n");
         return false;
     }
@@ -272,17 +279,16 @@ bool bbound_loop(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap
  * Explores the search space by using a queue to order the search process.
  * The queue can be ordered by DFS, BFS, or an alternative priority metric (e.g. lower bound).
  */
-int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
-    unsigned short thread_id, SharedQueue* shared_q) {
+int bbound(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap *p,
+           unsigned short thread_id, SharedQueue *shared_q) {
     int cnt;
     // These are initialized in q->select
     VECTOR captured, not_captured;
     rule_vinit(tree->nsamples(), &captured);
     rule_vinit(tree->nsamples(), &not_captured);
     rule_vandnot(not_captured,
-             tree->rule(0).truthtable, captured,
-             tree->nsamples(), &cnt);
-
+                 tree->rule(0).truthtable, captured,
+                 tree->nsamples(), &cnt);
 
     // If we have multiple threads, then we want to populate the initial
     // queue with the single-rule lists using just our range; after this
@@ -290,39 +296,35 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
     // first.
     tracking_vector<unsigned short, DataStruct::Tree> init_rules = tree->get_subrange(thread_id);
 
-    while(!tree->done()) {
+    while (!tree->done()) {
         bool queue_empty = bbound_loop(tree, max_num_nodes, q, p, captured, not_captured, thread_id, init_rules, shared_q);
-        if(queue_empty) {
+        if (queue_empty) {
+            // TODO: maybe don't use shared queue lock as proxy when incrementing/decrementing active thread count
             shared_q->lock();
-            if(shared_q->empty() && tree->num_inactive_threads() == tree->num_threads() - 1) {
+            if (tree->num_inactive_threads() == tree->num_threads() - 1) {
                 tree->increment_num_inactive_threads();
                 printf("All threads done\n");
-                assert(shared_q->empty());
                 tree->set_done(true);
                 shared_q->unlock();
                 tree->wake_all_inactive();
                 printf("Thread %zu exiting\n", thread_id);
                 return 0;
             }
-            while (shared_q->empty()) {
+            while (q->empty()) {
                 tree->increment_num_inactive_threads();
-                // printf("Thread %zu sleeping\n", thread_id);
+                printf("Thread %zu sleeping\n", thread_id);
                 // sleep until there's work to do
                 shared_q->unlock();
                 tree->thread_wait();
-                // printf("Thread %zu awake\n", thread_id);
+                printf("Thread %zu awake\n", thread_id);
                 if (tree->done()) {
                     printf("Thread %zu exiting\n", thread_id);
                     return 0;
                 }
-                tree->decrement_num_inactive_threads();
                 shared_q->lock();
+                tree->decrement_num_inactive_threads();
             }
-            // pull work off thread and kick off another round of bbound
-            internal_root work = shared_q->pop();
             shared_q->unlock();
-            q->push(work.first);
-            init_rules = work.second;
         } else {
             // max num nodes has been reached
             tree->set_done(true);
@@ -338,7 +340,7 @@ int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
         f << "lower_bound objective length frac_captured rule_list\n";
     }*/
 
-/*    // Clean up data structures
+    /*    // Clean up data structures
     printf("Deleting queue elements and corresponding nodes in the cache,"
             "since they may not be reachable by the tree's destructor\n");
     printf("\nminimum objective: %1.10f\n", tree->min_objective());

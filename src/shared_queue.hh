@@ -5,15 +5,13 @@
 #include <queue>
 #include <mutex>
 
-typedef std::pair<Node*, tracking_vector<unsigned short, DataStruct::Tree> > internal_root;
-
 class SharedQueue
 {
     //
     private:
         /* data */
         std::mutex queue_lk_;
-        std::queue<internal_root> q_;
+        std::queue<Queue*> q_;
         size_t accs_;
 
     public:
@@ -24,8 +22,8 @@ class SharedQueue
 
         inline bool empty();
         inline size_t size();
-        inline internal_root pop();
-        inline void push(internal_root entry);
+        inline Queue* pop();
+        inline void push(Queue* entry);
         inline void lock();
         inline void unlock();
         inline size_t n_acc() const;
@@ -48,12 +46,12 @@ inline size_t SharedQueue::size() {
     return q_.size();
 }
 
-inline void SharedQueue::push(internal_root entry) {
+inline void SharedQueue::push(Queue* entry) {
     q_.push(entry);
 }
 
-inline internal_root SharedQueue::pop() {
-    internal_root entry = q_.front();
+inline Queue* SharedQueue::pop() {
+    Queue* entry = q_.front();
     q_.pop();
     return entry;
 }

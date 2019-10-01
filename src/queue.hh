@@ -7,49 +7,66 @@
 #include <queue>
 #include <set>
 
-typedef std::pair<Node*, tracking_vector<unsigned short, DataStruct::Tree> > InternalRoot;
+class InternalRoot {
+    public:
+        InternalRoot() {
+            node_ = NULL;
+            rules_ = NULL;
+        }
+        InternalRoot(Node* node, tracking_vector<unsigned short, DataStruct::Tree>* rules) {
+            node_ = node;
+            rules_ = rules;
+        }
+        inline Node* node() { return node_; }
+        inline tracking_vector<unsigned short, DataStruct::Tree>* rules() { return rules_; }
+    protected:
+        Node* node_;
+        tracking_vector<unsigned short, DataStruct::Tree>* rules_;
+};
+
+typedef InternalRoot* EntryType;
 
 // pass custom allocator function to track memory allocations in the queue
-typedef std::priority_queue<InternalRoot, tracking_vector<InternalRoot, DataStruct::Queue>,
-        std::function<bool(InternalRoot, InternalRoot)> > q;
+typedef std::priority_queue<EntryType, tracking_vector<EntryType, DataStruct::Queue>,
+        std::function<bool(EntryType, EntryType)> > q;
 
 // orders based on depth (BFS)
-static std::function<bool(InternalRoot, InternalRoot)> base_cmp = [](InternalRoot left, InternalRoot right) {
-    return left.first->depth() >= right.first->depth();
+static std::function<bool(EntryType, EntryType)> base_cmp = [](EntryType left, EntryType right) {
+    return left->node()->depth() >= right->node()->depth();
 };
 
 // orders based on curiosity metric.
-static std::function<bool(InternalRoot, InternalRoot)> curious_cmp = [](InternalRoot left, InternalRoot right) {
-    return left.first->get_curiosity() >= right.first->get_curiosity();
+static std::function<bool(EntryType, EntryType)> curious_cmp = [](EntryType left, EntryType right) {
+    return left->node()->get_curiosity() >= right->node()->get_curiosity();
 };
 
 // orders based on lower bound.
-static std::function<bool(InternalRoot, InternalRoot)> lb_cmp = [](InternalRoot left, InternalRoot right) {
-    return left.first->lower_bound() >= right.first->lower_bound();
+static std::function<bool(EntryType, EntryType)> lb_cmp = [](EntryType left, EntryType right) {
+    return left->node()->lower_bound() >= right->node()->lower_bound();
 };
 
 // orders based on objective.
-static std::function<bool(InternalRoot, InternalRoot)> objective_cmp = [](InternalRoot left, InternalRoot right) {
-    return left.first->objective() >= right.first->objective();
+static std::function<bool(EntryType, EntryType)> objective_cmp = [](EntryType left, EntryType right) {
+    return left->node()->objective() >= right->node()->objective();
 };
 
 // orders based on depth (DFS)
-static std::function<bool(InternalRoot, InternalRoot)> dfs_cmp = [](InternalRoot left, InternalRoot right) {
-    return left.first->depth() <= right.first->depth();
+static std::function<bool(EntryType, EntryType)> dfs_cmp = [](EntryType left, EntryType right) {
+    return left->node()->depth() <= right->node()->depth();
 };
 
 class Queue {
     public:
-        Queue(std::function<bool(InternalRoot, InternalRoot)> cmp, char const *type);
+        Queue(std::function<bool(EntryType, EntryType)> cmp, char const *type);
         // by default, initialize this as a BFS queue
         Queue() : Queue(base_cmp, "BFS") {};
-        InternalRoot front() {
+        EntryType front() {
             return q_->top();
         }
         inline void pop() {
             q_->pop();
         }
-        void push(InternalRoot node) {
+        void push(EntryType node) {
             q_->push(node);
         }
         size_t size() {
@@ -62,18 +79,18 @@ class Queue {
             return type_;
         }
 
-        std::pair<InternalRoot, tracking_vector<unsigned short, DataStruct::Tree> > select(CacheTree* tree, VECTOR captured, unsigned short thread_id) {
+        std::pair<EntryType, tracking_vector<unsigned short, DataStruct::Tree> > select(CacheTree* tree, VECTOR captured, unsigned short thread_id) {
 begin:
             int cnt;
             tracking_vector<unsigned short, DataStruct::Tree> prefix;
             Node *node;
-            InternalRoot iroot;
+            EntryType iroot;
             tracking_vector<unsigned short, DataStruct::Tree> init_rules;
             bool valid = true;
             double lb;
             do {
                 iroot = q_->top();
-                node = iroot.first;
+                node = iroot->node();
                 q_->pop();
                 // We can arrive at a situation where a thread is slow to start
                 // and therefore the root hasn't been popped off for the last thread
@@ -108,7 +125,7 @@ begin:
                 }
             } while (!q_->empty() && !valid);
             if (!valid) {
-                return std::make_pair(std::make_pair((Node*)NULL, (tracking_vector<unsigned short, DataStruct::Tree>)NULL), prefix);
+                return std::make_pair((EntryType)NULL, prefix);
             }
 
             rule_vclear(tree->nsamples(), captured);
@@ -152,4 +169,4 @@ extern void evaluate_children(CacheTree* tree, Node* parent,
     PermutationMap* p, unsigned short thread_id);
 
 extern bool bbound_loop(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
-    VECTOR captured, VECTOR not_captured, unsigned short thread_id, bool special_call);
+    VECTOR captured, VECTOR not_captured, unsigned short thread_id, SharedQueue *shared_q);

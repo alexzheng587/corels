@@ -51,6 +51,10 @@ inline void SharedQueue::push(Queue* entry) {
 }
 
 inline Queue* SharedQueue::pop() {
+    if(q_.empty()) {
+        // TODO: change to NULL
+        return (Queue*)0xDEADBEEF;
+    }
     Queue* entry = q_.front();
     q_.pop();
     return entry;

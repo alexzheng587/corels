@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
     const char usage[] = "USAGE: %s [-b] [-t num_threads]"
         "[-n max_num_nodes] [-r regularization] [-v verbosity] "
         "-c (1|2|3|4) -p (0|1|2) [-f logging_frequency]"
-        "-a (0|1|2) [-s] [-L latex_out] [-k random_seed]"
+        "-a (0|1|2) [-L latex_out] [-k random_seed]"
         "data.out data.label\n\n"
         "%s\n";
 
@@ -197,7 +197,7 @@ int main(int argc, char *argv[]) {
 
     strcpy(run_type, "LEARNING RULE LIST via ");
     char const *type = "node";
-    std::function<bool(InternalRoot, InternalRoot)> cmp;
+    std::function<bool(EntryType, EntryType)> cmp;
     if (curiosity_policy == 1) {
         strcat(run_type, "CURIOUS");
         cmp = curious_cmp;
@@ -245,8 +245,8 @@ int main(int argc, char *argv[]) {
     Queue qs[num_threads];
     for(size_t i = 0; i < num_threads; ++i) {
         qs[i] = Queue(cmp, run_type);
-        tracking_vector<unsigned short, DataStruct::Tree> init_rules = tree->get_subrange(i);
-        InternalRoot iroot = std::make_pair(tree->root(), init_rules);
+        tracking_vector<unsigned short, DataStruct::Tree>* init_rules = tree->get_subrange(i);
+        InternalRoot* iroot = new InternalRoot(tree->root(), init_rules);
         qs[i].push(iroot);
     }
 

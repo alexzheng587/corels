@@ -138,9 +138,9 @@ class CacheTree {
     inline void decrement_num_nodes();
     inline int ablation() const;
     inline bool calculate_size() const;
-    inline tracking_vector<unsigned short, DataStruct::Tree> get_subrange(size_t i);
-    inline tracking_vector<unsigned short, DataStruct::Tree> rule_perm();
-    inline std::vector<tracking_vector<unsigned short, DataStruct::Tree> > split_rules(size_t n);
+    inline tracking_vector<unsigned short, DataStruct::Tree>* get_subrange(size_t i);
+    inline tracking_vector<unsigned short, DataStruct::Tree>* rule_perm();
+    inline std::vector<tracking_vector<unsigned short, DataStruct::Tree>* > split_rules(size_t n);
 
     void insert_root();
     void insert(Node* node, unsigned short thread_id);
@@ -155,9 +155,12 @@ class CacheTree {
     inline void lock(unsigned short thread_id);
     inline void unlock(unsigned short thread_id);
 
+
     inline unsigned short num_inactive_threads() const;
     inline void increment_num_inactive_threads();
     inline void decrement_num_inactive_threads();
+    inline void lock_inactive_thread_lk();
+    inline void unlock_inactive_thread_lk();
 
     inline bool done() const;
     inline void set_done(bool is_done);
@@ -194,6 +197,7 @@ class CacheTree {
 
     std::mutex inactive_thread_lk_;
     std::condition_variable inactive_thread_cv_;
+    std::mutex root_lk_;
 
     char const *type_;
     void gc_helper(Node* node, unsigned short thread_id);
@@ -338,9 +342,9 @@ inline size_t CacheTree::num_nodes() const {
 }
 
 inline size_t CacheTree::num_nodes(unsigned short thread_id) {
-    tracking_vector<unsigned short, DataStruct::Tree> range = get_subrange(thread_id);
+    tracking_vector<unsigned short, DataStruct::Tree>* range = get_subrange(thread_id);
     size_t ret = 1;
-    for (tracking_vector<unsigned short, DataStruct::Tree>::iterator it = range.begin(); it != range.end(); ++it) {
+    for (tracking_vector<unsigned short, DataStruct::Tree>::iterator it = range->begin(); it != range->end(); ++it) {
         //std::cout << *it << std::endl;
         ret += nn_helper(root_->child(*it));
     }
@@ -462,21 +466,22 @@ inline void CacheTree::increment_num_evaluated() {
     logger->setTreeNumEvaluated(num_evaluated_);
 }
 
-inline tracking_vector<unsigned short, DataStruct::Tree> CacheTree::get_subrange(size_t i) {
+inline tracking_vector<unsigned short, DataStruct::Tree>* CacheTree::get_subrange(size_t i) {
 	size_t start, end;
 	start = ranges_[i].first;
 	end = ranges_[i].second;
-	return tracking_vector<unsigned short, DataStruct::Tree>(rule_perm_.begin() + start,
-	        rule_perm_.begin() + end);
+	tracking_vector<unsigned short, DataStruct::Tree>* subrange = new tracking_vector<unsigned short, DataStruct::Tree>;
+    subrange->assign(rule_perm_.begin() + start,rule_perm_.begin() + end);
+    return subrange;
 }
 
-inline tracking_vector<unsigned short, DataStruct::Tree> CacheTree::rule_perm() {
-    return rule_perm_;
+inline tracking_vector<unsigned short, DataStruct::Tree>* CacheTree::rule_perm() {
+    return &rule_perm_;
 }
 
 
-inline std::vector<tracking_vector<unsigned short, DataStruct::Tree> > CacheTree::split_rules(size_t n) {
-    std::vector<tracking_vector<unsigned short, DataStruct::Tree> > splits;
+inline std::vector<tracking_vector<unsigned short, DataStruct::Tree>* > CacheTree::split_rules(size_t n) {
+    std::vector<tracking_vector<unsigned short, DataStruct::Tree>* > splits;
     /*size_t nrules = rule_perm_.size();
     size_t split_size = (nrules + n - 1) / n;
     for(size_t i = 0; i < n; ++i){
@@ -496,14 +501,8 @@ inline std::vector<tracking_vector<unsigned short, DataStruct::Tree> > CacheTree
     for(size_t i = 0; i < n; ++i) {
         unsigned short eIdx = sIdx + rules_per_thread + (i < inc ? 1 : 0);
         // printf("START INDEX: %zu, END INDEX: %zu\n", sIdx, eIdx);
-        tracking_vector<unsigned short, DataStruct::Tree> split(rule_perm.begin() + sIdx, rule_perm.begin() + eIdx);
-        for(auto it = split.begin(); it != split.end(); ++it) {
-            auto val = *it;
-            if(val > nrules_) {
-                printf("BAD\n");
-            }
-        }
-        //printVector(split);
+        tracking_vector<unsigned short, DataStruct::Tree>* split = new tracking_vector<unsigned short, DataStruct::Tree>;
+        split->assign(rule_perm.begin() + sIdx, rule_perm.begin() + eIdx);
         splits.push_back(split);
         sIdx = eIdx;
     }
@@ -548,6 +547,8 @@ inline void CacheTree::set_done(bool is_done) {
     done_ = is_done;
 }
 
+// NOTE: The thread will have the inactive_thread_lk_ when it wakes up
+// Also, assume the calling thread has NOT already acquired the inactive_thread_lk_ before claling
 inline void CacheTree::thread_wait() {
     std::unique_lock<std::mutex> inactive_thread_lk(inactive_thread_lk_);
     inactive_thread_cv_.wait(inactive_thread_lk);
@@ -561,6 +562,14 @@ inline void CacheTree::wake_all_inactive() {
 inline void CacheTree::wake_n_inactive(size_t n) {
     for(size_t i = 0; i < n; ++i)
         inactive_thread_cv_.notify_one();
+}
+
+inline void CacheTree::lock_inactive_thread_lk() {
+    inactive_thread_lk_.lock();
+}
+
+inline void CacheTree::unlock_inactive_thread_lk() {
+    inactive_thread_lk_.unlock();
 }
 
 

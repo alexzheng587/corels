@@ -161,6 +161,7 @@ class CacheTree {
     inline void decrement_num_inactive_threads();
     inline void lock_inactive_thread_lk();
     inline void unlock_inactive_thread_lk();
+    inline size_t n_acc() const;
 
     inline bool done() const;
     inline void set_done(bool is_done);
@@ -198,6 +199,7 @@ class CacheTree {
     std::mutex inactive_thread_lk_;
     std::condition_variable inactive_thread_cv_;
     std::mutex root_lk_;
+    size_t n_acc_; 
 
     char const *type_;
     void gc_helper(Node* node, unsigned short thread_id);
@@ -565,11 +567,16 @@ inline void CacheTree::wake_n_inactive(size_t n) {
 }
 
 inline void CacheTree::lock_inactive_thread_lk() {
+    n_acc_++;
     inactive_thread_lk_.lock();
 }
 
 inline void CacheTree::unlock_inactive_thread_lk() {
     inactive_thread_lk_.unlock();
+}
+
+inline size_t CacheTree::n_acc() const {
+    return n_acc_;
 }
 
 

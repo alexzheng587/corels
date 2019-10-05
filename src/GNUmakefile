@@ -1,7 +1,7 @@
 CFLAGS := -g -W -Wall -Wno-unused-parameter -I. -DGMP -O0 -fno-omit-frame-pointer
 CXXFLAGS := $(CFLAGS) -std=c++11
 CFLAGS += -std=c99
-LIBS += -L/usr/local/lib -lgmpxx -lgmp -lpthread
+LIBS += -L/usr/local/lib -lgmpxx -lgmp -lpthread -lprofiler
 
 ifneq ($(shell uname -n),beepboop)
     LDFLAGS :=
@@ -15,9 +15,7 @@ ifneq ($(shell uname),Darwin)
 endif
 
 CC = gcc
-CXX = g++ #-std=c++11
-#CC = clang
-#CXX = clang++ -std=c++11
+CXX = g++
 
 DEPSDIR := .deps
 

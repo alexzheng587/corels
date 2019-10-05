@@ -280,6 +280,7 @@ int main(int argc, char *argv[]) {
     printf("final total time: %f\n", time_diff(init));
     printf("Number of lock acquistions: %d\n", lock_ac);
     printf("Number of shared_queue acquisitions: %d\n", shared_q->n_acc());
+    printf("Number of tree acquisitions: %d\n", tree->n_acc());
 
     logger->dumpState();
     logger->closeFile();

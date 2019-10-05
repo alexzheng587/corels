@@ -233,11 +233,13 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
                          tree->rule(0).truthtable, captured,
                          tree->nsamples(), &cnt);
 
-            tree->lock_inactive_thread_lk();
             if (tree->num_inactive_threads() > 0) {
-                initialization_rules = split_work(tree, shared_q, current_node);
+                tree->lock_inactive_thread_lk();
+                if (tree->num_inactive_threads() > 0) {
+                    initialization_rules = split_work(tree, shared_q, current_node);
+                }
+                tree->unlock_inactive_thread_lk();
             }
-            tree->unlock_inactive_thread_lk();
             evaluate_children(tree, current_node, parent_prefix, not_captured, *initialization_rules, q, p, thread_id);
 
             logger->addToEvalChildrenTime(time_diff(t1));
@@ -301,7 +303,6 @@ int bbound(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap *p,
     while (!tree->done()) {
         bool queue_empty = bbound_loop(tree, max_num_nodes, q, p, captured, not_captured, thread_id, shared_q);
         if (queue_empty) {
-            // TODO: maybe don't use shared queue lock as proxy when incrementing/decrementing active thread count
             shared_q->lock();
             shared_q->push(q);
             shared_q->unlock();

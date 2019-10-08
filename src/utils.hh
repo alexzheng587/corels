@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <fstream>
 #include <vector>
+#include <iterator>
 #include <gmpxx.h>
 
 using namespace std;

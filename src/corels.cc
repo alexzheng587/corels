@@ -180,14 +180,15 @@ void bbound_init(CacheTree *tree) {
     logger->setInitialTime(timestamp());
 }
 
+// Assumes we have thread_inactive_lk when enters, releases lock within this function
 tracking_vector<unsigned short, DataStruct::Tree>* split_work(CacheTree *tree, SharedQueue *shared_q, Node* current_node) {
-    // printf("NUM INACTIVE THREADS: %zu\n", tree->num_inactive_threads());
     size_t n_splits = 2;
     std::vector<tracking_vector<unsigned short, DataStruct::Tree>* > rule_splits = tree->split_rules(n_splits);
     Queue *other_q;
     shared_q->lock();
     if (shared_q->empty()) {
        shared_q->unlock(); 
+       tree->unlock_inactive_thread_lk();
        return tree->rule_perm();
     } else {
         for (size_t i = 0; i < n_splits - 1; ++i) {
@@ -198,6 +199,7 @@ tracking_vector<unsigned short, DataStruct::Tree>* split_work(CacheTree *tree, S
         }
     }
     shared_q->unlock();
+    tree->unlock_inactive_thread_lk();
     tree->wake_n_inactive(tree->num_inactive_threads());
     return rule_splits[n_splits - 1];
 }
@@ -231,8 +233,9 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
                 tree->lock_inactive_thread_lk();
                 if (tree->num_inactive_threads() > 0) {
                     initialization_rules = split_work(tree, shared_q, current_node);
+                } else {
+                    tree->unlock_inactive_thread_lk();
                 }
-                tree->unlock_inactive_thread_lk();
             }
             if (initialization_rules == NULL || initialization_rules->empty()) {
                 initialization_rules = tree->rule_perm();

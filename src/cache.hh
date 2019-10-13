@@ -550,11 +550,10 @@ inline void CacheTree::set_done(bool is_done) {
 }
 
 // NOTE: The thread will have the inactive_thread_lk_ when it wakes up
-// Also, assume the calling thread has NOT already acquired the inactive_thread_lk_ before claling
+// Also, assume the calling thread HAS already acquired the inactive_thread_lk_ before claling
 inline void CacheTree::thread_wait() {
-    std::unique_lock<std::mutex> inactive_thread_lk(inactive_thread_lk_);
+    std::unique_lock<std::mutex> inactive_thread_lk(inactive_thread_lk_, std::adopt_lock);
     inactive_thread_cv_.wait(inactive_thread_lk);
-    inactive_thread_lk.unlock();
 }
 
 inline void CacheTree::wake_all_inactive() {

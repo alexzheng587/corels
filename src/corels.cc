@@ -321,9 +321,9 @@ int bbound(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap *p,
                 tree->increment_num_inactive_threads();
                 // printf("Thread %zu sleeping\n", thread_id);
                 // sleep until there's work to do
-                tree->unlock_inactive_thread_lk();
+                // tree->unlock_inactive_thread_lk();
                 tree->thread_wait();
-                tree->lock_inactive_thread_lk();
+                // tree->lock_inactive_thread_lk();
                 // printf("Thread %zu awake\n", thread_id);
                 if (tree->done()) {
                     printf("Thread %zu exiting\n", thread_id);

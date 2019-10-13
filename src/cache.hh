@@ -194,12 +194,12 @@ class CacheTree {
     rule_t *minority_;
 
     unsigned short inactive_threads_;
+    size_t n_acc_; 
     bool done_;
 
     std::mutex inactive_thread_lk_;
     std::condition_variable inactive_thread_cv_;
     std::mutex root_lk_;
-    size_t n_acc_; 
 
     char const *type_;
     void gc_helper(Node* node, unsigned short thread_id);

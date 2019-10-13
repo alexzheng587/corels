@@ -26,11 +26,11 @@ Node::Node(unsigned short id, size_t nrules, bool prediction,
 CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, size_t nthreads,
     rule_t *rules, rule_t *labels, rule_t *minority, int ablation,
     bool calculate_size, char const *type, size_t random_seed)
-    : root_(0), nsamples_(nsamples), nrules_(nrules), c_(c),
+    : root_(NULL), nsamples_(nsamples), nrules_(nrules), c_(c),
       num_nodes_(0), num_evaluated_(0), ablation_(ablation),
       calculate_size_(calculate_size), min_objective_(0.5),
       opt_rulelist_({}), opt_predictions_({}), rule_perm_(nrules - 1),
-      ranges_(nthreads), type_(type), inactive_threads_(0), n_acc_(0) {
+      ranges_(nthreads), type_(type), inactive_threads_(0), n_acc_(0), done_(false) {
     opt_rulelist_.resize(0);
     opt_predictions_.resize(0);
     rules_ = rules;

@@ -1,4 +1,5 @@
-CFLAGS := -g -W -Wall -Wno-unused-parameter -I. -DGMP -O0 -fno-omit-frame-pointer
+# IF DEBUGGING, CHANGE TO -O0
+CFLAGS := -g -W -Wall -Wno-unused-parameter -I. -DGMP -O3 -fno-omit-frame-pointer
 CXXFLAGS := $(CFLAGS) -std=c++11
 CFLAGS += -std=c99
 LIBS += -L/usr/local/lib -lgmpxx -lgmp -lpthread -lprofiler

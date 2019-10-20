@@ -148,17 +148,18 @@ void CacheTree::insert(Node* node, unsigned short thread_id) {
         std::cout << "NULL NODE" << std::endl;
     }
     // TODO: clean up
-    if (node->parent() == root_) {
-        root_lk_.lock();
+    /* if (node->parent() == root_) {
     } else {
         tree_lks_[thread_id].lock();
-    }
+    } */
+    root_lk_.lock();
     node->parent()->children_.insert(std::make_pair(node->id(), node));
-    if (node->parent() == root_) {
+    root_lk_.unlock();
+    /* if (node->parent() == root_) {
         root_lk_.unlock();
     } else {
         tree_lks_[thread_id].unlock();
-    }
+    } */
     ++num_nodes_;
     logger->setTreeNumNodes(num_nodes_);
 }

@@ -7,6 +7,8 @@
 #include <sys/resource.h>
 
 extern std::mutex min_obj_lk;
+extern std::mutex inactive_thread_lk;
+std::condition_variable inactive_thread_cv;
 
 Queue::Queue(std::function<bool(EntryType, EntryType)> cmp, char const *type)
     : q_(new q(cmp)), type_(type) {}
@@ -188,7 +190,8 @@ tracking_vector<unsigned short, DataStruct::Tree>* split_work(CacheTree *tree, S
     shared_q->lock();
     if (shared_q->empty()) {
        shared_q->unlock(); 
-       tree->unlock_inactive_thread_lk();
+       inactive_thread_lk.unlock();
+       //tree->unlock_inactive_thread_lk();
        return tree->rule_perm();
     } else {
         for (size_t i = 0; i < n_splits - 1; ++i) {
@@ -199,8 +202,11 @@ tracking_vector<unsigned short, DataStruct::Tree>* split_work(CacheTree *tree, S
         }
     }
     shared_q->unlock();
-    tree->unlock_inactive_thread_lk();
-    tree->wake_n_inactive(tree->num_inactive_threads());
+    inactive_thread_lk.unlock();
+    // tree->unlock_inactive_thread_lk();
+    //tree->wake_n_inactive(tree->num_inactive_threads());
+    for(size_t i = 0; i < tree->num_inactive_threads(); ++i)
+        inactive_thread_cv.notify_one();
     return rule_splits[n_splits - 1];
 }
 
@@ -230,11 +236,13 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
                          tree->nsamples(), &cnt);
 
             if (tree->num_inactive_threads() > 0) {
-                tree->lock_inactive_thread_lk();
+                //tree->lock_inactive_thread_lk();
+                inactive_thread_lk.lock();
                 if (tree->num_inactive_threads() > 0) {
                     initialization_rules = split_work(tree, shared_q, current_node);
                 } else {
-                    tree->unlock_inactive_thread_lk();
+                    //tree->unlock_inactive_thread_lk();
+                    inactive_thread_lk.unlock();
                 }
             }
             if (initialization_rules == NULL || initialization_rules->empty()) {
@@ -310,13 +318,15 @@ int bbound(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap *p,
             shared_q->lock();
             shared_q->push(q);
             shared_q->unlock();
-            tree->lock_inactive_thread_lk();
+            // std::mutex inactive_thread_lk = tree->get_inactive_thread_lk();
+            std::unique_lock<std::mutex> unique_inactive_thread_lk(inactive_thread_lk);
             if (tree->num_inactive_threads() == tree->num_threads() - 1) {
                 tree->increment_num_inactive_threads();
                 printf("All threads done\n");
                 tree->set_done(true);
-                tree->unlock_inactive_thread_lk();
-                tree->wake_all_inactive();
+                // tree->unlock_inactive_thread_lk();
+                // tree->wake_all_inactive();
+                inactive_thread_cv.notify_all();
                 printf("Thread %zu exiting\n", thread_id);
                 return 0;
             }
@@ -325,21 +335,23 @@ int bbound(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap *p,
                 // printf("Thread %zu sleeping\n", thread_id);
                 // sleep until there's work to do
                 // tree->unlock_inactive_thread_lk();
-                tree->thread_wait();
+                //tree->thread_wait(unique_inactive_thread_lk);
+                inactive_thread_cv.wait(unique_inactive_thread_lk);
                 // tree->lock_inactive_thread_lk();
                 // printf("Thread %zu awake\n", thread_id);
                 if (tree->done()) {
                     printf("Thread %zu exiting\n", thread_id);
-                    tree->unlock_inactive_thread_lk();
+                    // tree->unlock_inactive_thread_lk();
                     return 0;
                 }
                 tree->decrement_num_inactive_threads();
             }
-            tree->unlock_inactive_thread_lk();
+            //tree->unlock_inactive_thread_lk();
         } else {
             // max num nodes has been reached
             tree->set_done(true);
-            tree->wake_all_inactive();
+            // tree->wake_all_inactive();
+            inactive_thread_cv.notify_all();
         }
     }
     // Print out queue

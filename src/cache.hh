@@ -17,6 +17,7 @@
 #include <vector>
 
 extern std::mutex min_obj_lk;
+//extern std::mutex inactive_thread_lk_;
 
 class Node {
   public:
@@ -159,16 +160,18 @@ class CacheTree {
     inline unsigned short num_inactive_threads() const;
     inline void increment_num_inactive_threads();
     inline void decrement_num_inactive_threads();
+    /*inline std::mutex get_inactive_thread_lk();
     inline void lock_inactive_thread_lk();
-    inline void unlock_inactive_thread_lk();
+    inline void unlock_inactive_thread_lk();*/
+    inline void inc_n_acc();
     inline size_t n_acc() const;
 
     inline bool done() const;
     inline void set_done(bool is_done);
 
-    inline void thread_wait();
+    /*inline void thread_wait(std::unique_lock<std::mutex> unique_lk);
     inline void wake_all_inactive();
-    inline void wake_n_inactive(size_t n);
+    inline void wake_n_inactive(size_t n);*/
 
   protected:
     std::ofstream t_;
@@ -197,8 +200,8 @@ class CacheTree {
     size_t n_acc_; 
     bool done_;
 
-    std::mutex inactive_thread_lk_;
-    std::condition_variable inactive_thread_cv_;
+    //std::mutex* inactive_thread_lk_;
+    // std::condition_variable inactive_thread_cv_;
     std::mutex root_lk_;
 
     char const *type_;
@@ -551,9 +554,9 @@ inline void CacheTree::set_done(bool is_done) {
 
 // NOTE: The thread will have the inactive_thread_lk_ when it wakes up
 // Also, assume the calling thread HAS already acquired the inactive_thread_lk_ before claling
-inline void CacheTree::thread_wait() {
-    std::unique_lock<std::mutex> inactive_thread_lk(inactive_thread_lk_, std::adopt_lock);
-    inactive_thread_cv_.wait(inactive_thread_lk);
+/*inline void CacheTree::thread_wait(std::unique_lock<std::mutex> unique_lk) {
+    // std::unique_lock<std::mutex> inactive_thread_lk(inactive_thread_lk_, std::adopt_lock);
+    inactive_thread_cv_.wait(unique_lk);
 }
 
 inline void CacheTree::wake_all_inactive() {
@@ -563,15 +566,23 @@ inline void CacheTree::wake_all_inactive() {
 inline void CacheTree::wake_n_inactive(size_t n) {
     for(size_t i = 0; i < n; ++i)
         inactive_thread_cv_.notify_one();
-}
+}*/
 
-inline void CacheTree::lock_inactive_thread_lk() {
+/*inline void CacheTree::lock_inactive_thread_lk() {
     n_acc_++;
-    inactive_thread_lk_.lock();
+    inactive_thread_lk_->lock();
 }
 
 inline void CacheTree::unlock_inactive_thread_lk() {
-    inactive_thread_lk_.unlock();
+    inactive_thread_lk_->unlock();
+}
+
+inline std::mutex CacheTree::get_inactive_thread_lk() {
+    return *inactive_thread_lk_;
+}*/
+
+inline void CacheTree::inc_n_acc() {
+    n_acc_++;
 }
 
 inline size_t CacheTree::n_acc() const {

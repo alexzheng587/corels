@@ -309,12 +309,13 @@ void delete_subtree(CacheTree* tree, Node* node, bool destructive,
 }
 
 size_t nn_helper (Node* node) {
-    if (node == NULL)
+    /*if (node == NULL)
         return 0;
 
     size_t ret = 1;
     for (std::map<unsigned short, Node*>::iterator it = node->children_begin(); it != node->children_end(); it++) {
         ret += nn_helper(it->second);
     }
-    return ret;
+    return ret;*/
+    return 0;
 }

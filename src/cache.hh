@@ -76,6 +76,8 @@ class Node {
     bool done_;
     bool deleted_;
     bool in_queue_;
+    // TODO: think if we can remove
+    std::mutex child_lk_;
 
     friend class CacheTree;
 };

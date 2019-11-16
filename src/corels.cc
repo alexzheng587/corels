@@ -11,7 +11,7 @@ extern std::mutex inactive_thread_lk;
 std::condition_variable inactive_thread_cv;
 
 Queue::Queue(std::function<bool(EntryType, EntryType)> cmp, char const *type)
-    : q_(new q(cmp)), type_(type) {}
+    : q_(new q(cmp)), type_(type), cmp_(cmp) {}
 
 /*
  * Performs incremental computation on a node, evaluating the bounds and inserting into the cache,
@@ -183,31 +183,34 @@ void bbound_init(CacheTree *tree) {
 }
 
 // Assumes we have thread_inactive_lk when enters, releases lock within this function
-tracking_vector<unsigned short, DataStruct::Tree>* split_work(CacheTree *tree, SharedQueue *shared_q, Node* current_node) {
+void split_work(CacheTree *tree, Queue* q, SharedQueue *shared_q) {
     size_t n_splits = 2;
-    std::vector<tracking_vector<unsigned short, DataStruct::Tree>* > rule_splits = tree->split_rules(n_splits);
-    Queue *other_q;
+    Queue** other_qs = new Queue* [n_splits];
     shared_q->lock();
     if (shared_q->empty()) {
        shared_q->unlock(); 
        inactive_thread_lk.unlock();
-       //tree->unlock_inactive_thread_lk();
-       return tree->rule_perm();
+       return;
     } else {
         for (size_t i = 0; i < n_splits - 1; ++i) {
-            other_q = shared_q->pop();
-            tracking_vector<unsigned short, DataStruct::Tree>* init_rules = rule_splits.at(i);
-            InternalRoot* entry = new InternalRoot(current_node, init_rules);
-            other_q->push(entry);
+            other_qs[i] = shared_q->pop();
         }
     }
     shared_q->unlock();
+    size_t q_sz = q->size();
+    for (size_t i = 0; i < n_splits - 1; ++i) {
+        Queue* other_q = other_qs[i];
+        /*for(size_t j = 0; j < q_sz / n_splits; ++j) {
+            other_q->push(q->front());
+        }*/
+        q->move(other_q, q_sz / n_splits);
+    }
     inactive_thread_lk.unlock();
-    // tree->unlock_inactive_thread_lk();
+    delete[] other_qs;
     //tree->wake_n_inactive(tree->num_inactive_threads());
     for(size_t i = 0; i < tree->num_inactive_threads(); ++i)
         inactive_thread_cv.notify_one();
-    return rule_splits[n_splits - 1];
+    return;
 }
 
 /**
@@ -221,6 +224,14 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
     double cur_min_objective = tree->min_objective();
 
     while ((tree->num_nodes() < max_num_nodes) && !q->empty()) {
+        if (tree->num_inactive_threads() > 0) {
+            inactive_thread_lk.lock();
+            if (tree->num_inactive_threads() > 0) {
+                split_work(tree, q, shared_q);
+            } else {
+                inactive_thread_lk.unlock();
+            }
+        }
         double t0 = timestamp();
         std::pair<EntryType, tracking_vector<unsigned short, DataStruct::Tree> > node_ordered = q->select(tree, captured, thread_id);
         logger->addToNodeSelectTime(time_diff(t0));
@@ -234,17 +245,6 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
             rule_vandnot(not_captured,
                          tree->rule(0).truthtable, captured,
                          tree->nsamples(), &cnt);
-
-            if (tree->num_inactive_threads() > 0) {
-                //tree->lock_inactive_thread_lk();
-                inactive_thread_lk.lock();
-                if (tree->num_inactive_threads() > 0) {
-                    initialization_rules = split_work(tree, shared_q, current_node);
-                } else {
-                    //tree->unlock_inactive_thread_lk();
-                    inactive_thread_lk.unlock();
-                }
-            }
             if (initialization_rules == NULL || initialization_rules->empty()) {
                 initialization_rules = tree->rule_perm();
             }

@@ -55,11 +55,21 @@ static std::function<bool(EntryType, EntryType)> dfs_cmp = [](EntryType left, En
     return left->node()->depth() <= right->node()->depth();
 };
 
+template <class T, class S, class C>
+    S& Container(priority_queue<T, S, C>& q) {
+        struct HackedQueue : private priority_queue<T, S, C> {
+            static S& Container(priority_queue<T, S, C>& q) {
+                return q.*&HackedQueue::c;
+            }
+        };
+    return HackedQueue::Container(q);
+}
+
 class Queue {
     public:
         Queue(std::function<bool(EntryType, EntryType)> cmp, char const *type);
         // by default, initialize this as a BFS queue
-        Queue() : Queue(base_cmp, "BFS") {};
+        Queue() : Queue(base_cmp, "BFS") {}
         EntryType front() {
             return q_->top();
         }
@@ -77,6 +87,15 @@ class Queue {
         }
         inline char const * type() {
             return type_;
+        }
+        void move(Queue* other_q, size_t n_elt) {
+            tracking_vector<EntryType, DataStruct::Queue> v1 = Container(*q_);
+            tracking_vector<EntryType, DataStruct::Queue> v2 = Container(*other_q->q_);
+            v2.insert(v2.end(), std::make_move_iterator(v1.begin() + n_elt), 
+                                std::make_move_iterator(v1.end()));
+            v1.erase(v1.begin() + n_elt, v1.end());
+            std::make_heap(v1.begin(), v1.end(), cmp_);
+            std::make_heap(v2.begin(), v2.end(), other_q->cmp_);
         }
 
         std::pair<EntryType, tracking_vector<unsigned short, DataStruct::Tree> > select(CacheTree* tree, VECTOR captured, unsigned short thread_id) {
@@ -154,6 +173,7 @@ begin:
     protected:
         q* q_;
         char const *type_;
+        std::function<bool(EntryType, EntryType)> cmp_;
 };
 
 

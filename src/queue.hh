@@ -88,7 +88,7 @@ class Queue {
         inline char const * type() {
             return type_;
         }
-        void move(Queue* other_q, size_t n_elt) {
+        /*void move(Queue* other_q, size_t n_elt) {
             tracking_vector<EntryType, DataStruct::Queue> v1 = Container(*q_);
             tracking_vector<EntryType, DataStruct::Queue> v2 = Container(*other_q->q_);
             v2.insert(v2.end(), std::make_move_iterator(v1.begin() + n_elt), 
@@ -96,6 +96,13 @@ class Queue {
             v1.erase(v1.begin() + n_elt, v1.end());
             std::make_heap(v1.begin(), v1.end(), cmp_);
             std::make_heap(v2.begin(), v2.end(), other_q->cmp_);
+        }*/
+        void move(Queue* other_q, size_t n_elt) {
+            for(size_t i = 0; i < n_elt; ++i) {
+                EntryType elt = front();
+                pop();
+                other_q->push(elt);
+            }
         }
 
         std::pair<EntryType, tracking_vector<unsigned short, DataStruct::Tree> > select(CacheTree* tree, VECTOR captured, unsigned short thread_id) {

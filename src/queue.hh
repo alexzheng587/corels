@@ -98,10 +98,20 @@ class Queue {
             std::make_heap(v2.begin(), v2.end(), other_q->cmp_);
         }*/
         void move(Queue* other_q, size_t n_elt) {
+            bool odd = true;
+            std::vector<EntryType> backup_vec;
             for(size_t i = 0; i < n_elt; ++i) {
                 EntryType elt = front();
                 pop();
-                other_q->push(elt);
+                if (odd) {
+                    other_q->push(elt);
+                } else {
+                    backup_vec.push_back(elt);
+                }
+                odd = !odd;
+            }
+            for(auto it = backup_vec.begin(); it != backup_vec.end(); ++it) {
+                push(*it);
             }
         }
 

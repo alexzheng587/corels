@@ -98,9 +98,10 @@ void evaluate_children(CacheTree *tree, Node *parent,
         logger->addToObjTime(time_diff(t2));
         logger->incObjNum();
         if (objective < tree->min_objective()) {
+            double old_min_obj = tree->min_objective();
             if (tree->update_obj_and_list(objective, parent_prefix, i, parent, prediction, default_prediction)) {
-                printf("THREAD %zu: min(objective): %1.5f -> %1.5f, length: %d, cache size: %zu\n",
-                       thread_id, tree->min_objective(), objective, len_prefix, tree->num_nodes());
+                printf("THREAD %zu: min(objective): %.17g -> %.17g, length: %d, cache size: %zu\n",
+                       thread_id, old_min_obj, objective, len_prefix, tree->num_nodes());
                 logger->setTreeMinObj(objective);
                 // dump state when min objective is updated
                 logger->dumpState();
@@ -219,7 +220,7 @@ void split_work(CacheTree *tree, Queue* q, SharedQueue *shared_q) {
  * Returns true if exiting because queue is empty, false if num_nodes reached
  */
 bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap *p,
-                 VECTOR captured, VECTOR not_captured, unsigned short thread_id, SharedQueue *shared_q) {
+                 VECTOR captured, VECTOR not_captured, unsigned short thread_id, SharedQueue *shared_q, double start) {
     size_t num_iter = 0;
     // Not used anywhere
     int cnt;
@@ -281,8 +282,8 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
         ++num_iter;
         if ((num_iter % 10000) == 0) {
             if (logger->getVerbosity() >= 10)
-                printf("THREAD %zu: iter: %zu, tree: %zu, queue: %zu, pmap: %zu, log10(remaining): %zu\n",
-                       thread_id, num_iter, tree->num_nodes(thread_id), q->size(), p->size(), logger->getLogRemainingSpaceSize());
+                printf("THREAD %zu: iter: %zu, tree: %zu, queue: %zu, pmap: %zu, log10(remaining): %zu, time elapsed: %f\n",
+                       thread_id, num_iter, tree->num_nodes(thread_id), q->size(), p->size(), logger->getLogRemainingSpaceSize(), time_diff(start));
         }
         // want ~1000 records for detailed figures
         if ((num_iter % logger->getFrequency()) == 0)
@@ -318,7 +319,7 @@ int bbound(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap *p,
 
     double start = timestamp();
     while (!tree->done()) {
-        bool queue_empty = bbound_loop(tree, max_num_nodes, q, p, captured, not_captured, thread_id, shared_q);
+        bool queue_empty = bbound_loop(tree, max_num_nodes, q, p, captured, not_captured, thread_id, shared_q, start);
         // printf("THREAD %zu: time elapsed %f\n", thread_id, time_diff(start));
         if (queue_empty) {
             shared_q->lock();

@@ -46,13 +46,13 @@ void evaluate_children(CacheTree *tree, Node *parent,
     len_prefix = parent->depth() + 1;
     parent_lower_bound = parent->lower_bound();
     parent_equivalent_minority = parent->equivalent_minority();
-    double t0 = timestamp();
+    double t0 = logger->timestamp();
 
     for (tracking_vector<unsigned short, DataStruct::Tree>::iterator it = rules.begin();
          it != rules.end(); ++it) {
 
         i = *it;
-        double t1 = timestamp();
+        double t1 = logger->timestamp();
 
         // check if this rule is already in the prefix
         if (std::find(parent_prefix.begin(), parent_prefix.end(), i) !=
@@ -83,7 +83,7 @@ void evaluate_children(CacheTree *tree, Node *parent,
         if (lower_bound >= tree->min_objective()) // hierarchical objective lower bound
                                                   //min_obj_lk.unlock();
             continue;
-        double t2 = timestamp();
+        double t2 = logger->timestamp();
         rule_vandnot(not_captured, parent_not_captured, captured, nsamples, &num_not_captured);
         rule_vand(not_captured_zeros, not_captured, tree->label(0).truthtable, nsamples, &d0);
         d1 = num_not_captured - d0;
@@ -121,7 +121,7 @@ void evaluate_children(CacheTree *tree, Node *parent,
         // only add node to our datastructures if its children will be viable
         if (lookahead_bound < tree->min_objective()) {
             //min_obj_lk.unlock()
-            double t3 = timestamp();
+            double t3 = logger->timestamp();
             // check permutation bound
             Node *n = p->insert(i, nrules, prediction, default_prediction,
                                 lower_bound, objective, parent, num_not_captured, nsamples,
@@ -129,12 +129,12 @@ void evaluate_children(CacheTree *tree, Node *parent,
             logger->addToPermMapInsertionTime(time_diff(t3));
             // n is NULL if this rule fails the permutaiton bound
             if (n) {
-                double t4 = timestamp();
+                double t4 = logger->timestamp();
                 tree->insert(n, thread_id);
                 logger->incTreeInsertionNum();
                 logger->incPrefixLen(len_prefix);
                 logger->addToTreeInsertionTime(time_diff(t4));
-                double t5 = timestamp();
+                double t5 = logger->timestamp();
                 n->set_in_queue(true);
                 InternalRoot* iroot = new InternalRoot(n, NULL);
                 q->push(iroot);
@@ -180,7 +180,7 @@ void bbound_init(CacheTree *tree) {
     // Initialize log
     logger->dumpState();
     logger->initRemainingSpaceSize();
-    logger->setInitialTime(timestamp());
+    logger->setInitialTime(logger->timestamp());
 }
 
 // Assumes we have thread_inactive_lk when enters, releases lock within this function
@@ -239,7 +239,7 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
 //                inactive_thread_lk.unlock();
             }
         }
-        double t0 = timestamp();
+        double t0 = logger->timestamp();
         std::pair<EntryType, tracking_vector<unsigned short, DataStruct::Tree> > node_ordered = q->select(tree, captured, thread_id);
         logger->addToNodeSelectTime(time_diff(t0));
         logger->incNodeSelectNum();
@@ -256,7 +256,7 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
                 initialization_rules = tree->rule_perm();
             }
 
-            double t1 = timestamp();
+            double t1 = logger->timestamp();
             evaluate_children(tree, current_node, parent_prefix, not_captured, *initialization_rules, q, p, thread_id);
             logger->addToEvalChildrenTime(time_diff(t1));
             logger->incEvalChildrenNum();
@@ -317,7 +317,7 @@ int bbound(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap *p,
                  tree->rule(0).truthtable, captured,
                  tree->nsamples(), &cnt);
 
-    double start = timestamp();
+    double start = logger->timestamp();
     while (!tree->done()) {
         bool queue_empty = bbound_loop(tree, max_num_nodes, q, p, captured, not_captured, thread_id, shared_q, start);
         // printf("THREAD %zu: time elapsed %f\n", thread_id, time_diff(start));

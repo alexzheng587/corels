@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
     // TOOD: use cmd line params to initialize features
     featureDecisions = new FeatureToggle(false);
 
-    double init = timestamp();
+    double init = logger->timestamp();
     char run_type[BUFSZ];
 
     strcpy(run_type, "LEARNING RULE LIST via ");

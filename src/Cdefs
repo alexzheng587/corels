@@ -1,0 +1,6 @@
+-u malloc
+-u free
+-u realloc
+-u getenv
+-u setenv
+-u __errno_location

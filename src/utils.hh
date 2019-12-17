@@ -242,7 +242,7 @@ class Logger : public NullLogger {
     inline void setTotalTime(double t) override {
         _state.total_time = t;
     }
-    virtual double timestamp() override {
+    inline double timestamp() override {
         return timestamp();
     }
     inline void addToPermMapInsertionTime(double t) override {

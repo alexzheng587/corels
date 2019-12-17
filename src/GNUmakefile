@@ -1,8 +1,8 @@
 # IF DEBUGGING, CHANGE TO -O0
-CFLAGS := -g -W -Wall -Wno-unused-parameter -I. -DGMP -O3 -fno-omit-frame-pointer
+CFLAGS := -g -W -Wall -Wno-unused-parameter -I. -O3 -DGMP -fno-omit-frame-pointer @Cdefs @Pdefs
 CXXFLAGS := $(CFLAGS) -std=c++11
 CFLAGS += -std=c99
-LIBS += -L/usr/local/lib -lgmpxx -lgmp -lpthread # -lprofiler -ltcmalloc
+LIBS += -lpthread -lgmpxx -lgmp # -lprofiler -ltcmalloc
 LDFLAGS :=
 
 ifneq ($(shell uname),Darwin)

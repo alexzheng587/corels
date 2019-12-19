@@ -77,7 +77,7 @@ void evaluate_children(CacheTree *tree, Node *parent,
             continue;
         // subtract off parent equivalent points bound because we want to use pure lower bound from parent
         lower_bound = parent_lower_bound - parent_equivalent_minority + (double)(num_captured - captured_correct) / nsamples + c;
-        logger->addToLowerBoundTime(time_diff(t1));
+        logger->addToLowerBoundTime(logger->time_diff(t1));
         logger->incLowerBoundNum();
         //min_obj_lk.lock();
         if (lower_bound >= tree->min_objective()) // hierarchical objective lower bound
@@ -95,7 +95,7 @@ void evaluate_children(CacheTree *tree, Node *parent,
             default_correct = d1;
         }
         objective = lower_bound + (double)(num_not_captured - default_correct) / nsamples;
-        logger->addToObjTime(time_diff(t2));
+        logger->addToObjTime(logger->time_diff(t2));
         logger->incObjNum();
         if (objective < tree->min_objective()) {
             double old_min_obj = tree->min_objective();
@@ -126,14 +126,14 @@ void evaluate_children(CacheTree *tree, Node *parent,
             Node *n = p->insert(i, nrules, prediction, default_prediction,
                                 lower_bound, objective, parent, num_not_captured, nsamples,
                                 len_prefix, c, equivalent_minority, tree, not_captured, parent_prefix, thread_id);
-            logger->addToPermMapInsertionTime(time_diff(t3));
+            logger->addToPermMapInsertionTime(logger->time_diff(t3));
             // n is NULL if this rule fails the permutaiton bound
             if (n) {
                 double t4 = logger->timestamp();
                 tree->insert(n, thread_id);
                 logger->incTreeInsertionNum();
                 logger->incPrefixLen(len_prefix);
-                logger->addToTreeInsertionTime(time_diff(t4));
+                logger->addToTreeInsertionTime(logger->time_diff(t4));
                 double t5 = logger->timestamp();
                 n->set_in_queue(true);
                 InternalRoot* iroot = new InternalRoot(n, NULL);
@@ -141,7 +141,7 @@ void evaluate_children(CacheTree *tree, Node *parent,
                 logger->setQueueSize(q->size());
                 if (tree->calculate_size())
                     logger->addQueueElement(len_prefix, lower_bound, false);
-                logger->addToQueueInsertionTime(time_diff(t5));
+                logger->addToQueueInsertionTime(logger->time_diff(t5));
             }
         } // else:  objective lower bound with one-step lookahead
         // else { min_obj_lk.unlock() }
@@ -153,7 +153,7 @@ void evaluate_children(CacheTree *tree, Node *parent,
     rule_vfree(&not_captured_zeros);
     rule_vfree(&not_captured_equivalent);
 
-    logger->addToRuleEvalTime(time_diff(t0));
+    logger->addToRuleEvalTime(logger->time_diff(t0));
     logger->incRuleEvalNum();
     logger->decPrefixLen(parent->depth());
     if (tree->calculate_size())
@@ -241,7 +241,7 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
         }
         double t0 = logger->timestamp();
         std::pair<EntryType, tracking_vector<unsigned short, DataStruct::Tree> > node_ordered = q->select(tree, captured, thread_id);
-        logger->addToNodeSelectTime(time_diff(t0));
+        logger->addToNodeSelectTime(logger->time_diff(t0));
         logger->incNodeSelectNum();
         InternalRoot* iroot = node_ordered.first;
         if(iroot) {
@@ -258,7 +258,7 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
 
             double t1 = logger->timestamp();
             evaluate_children(tree, current_node, parent_prefix, not_captured, *initialization_rules, q, p, thread_id);
-            logger->addToEvalChildrenTime(time_diff(t1));
+            logger->addToEvalChildrenTime(logger->time_diff(t1));
             logger->incEvalChildrenNum();
 
             min_obj_lk.lock();
@@ -268,11 +268,11 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
                 min_obj_lk.unlock();
                 if (featureDecisions->do_garbage_collection()) {
                     printf("THREAD %zu: before garbage_collect. num_nodes: %zu, log10(remaining): %zu\n",
-                           thread_id, tree->num_nodes(thread_id), logger->getLogRemainingSpaceSize());
+                           thread_id, tree->num_nodes(), logger->getLogRemainingSpaceSize());
                     logger->dumpState();
                     tree->garbage_collect(thread_id);
                     logger->dumpState();
-                    printf("THREAD %zu: after garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", thread_id, tree->num_nodes(thread_id), logger->getLogRemainingSpaceSize());
+                    printf("THREAD %zu: after garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", thread_id, tree->num_nodes(), logger->getLogRemainingSpaceSize());
                 }
             } else {
                 min_obj_lk.unlock();
@@ -283,7 +283,7 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
         if ((num_iter % 10000) == 0) {
             if (logger->getVerbosity() >= 10)
                 printf("THREAD %zu: iter: %zu, tree: %zu, queue: %zu, pmap: %zu, log10(remaining): %zu, time elapsed: %f\n",
-                       thread_id, num_iter, tree->num_nodes(thread_id), q->size(), p->size(), logger->getLogRemainingSpaceSize(), time_diff(start));
+                       thread_id, num_iter, tree->num_nodes(), q->size(), p->size(), logger->getLogRemainingSpaceSize(), logger->time_diff(start));
         }
         // want ~1000 records for detailed figures
         if ((num_iter % logger->getFrequency()) == 0)
@@ -292,12 +292,12 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
     logger->dumpState(); // second last log record (before queue elements deleted)
     if (logger->getVerbosity() >= 10)
         printf("THREAD %zu: iter: %zu, tree: %zu, queue: %zu, pmap: %zu, log10(remaining): %zu\n",
-               thread_id, num_iter, tree->num_nodes(thread_id), q->size(), p->size(), logger->getLogRemainingSpaceSize());
+               thread_id, num_iter, tree->num_nodes(), q->size(), p->size(), logger->getLogRemainingSpaceSize());
     if (q->empty()) {
         // printf("Exited because queue empty\n");
         return true;
     } else {
-        printf("Exited because max number of nodes in the tree was reached\n");
+        printf("Exited because max number of nodes (%zu) in the tree was reached\n", tree->num_nodes());
         return false;
     }
 }
@@ -320,7 +320,7 @@ int bbound(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap *p,
     double start = logger->timestamp();
     while (!tree->done()) {
         bool queue_empty = bbound_loop(tree, max_num_nodes, q, p, captured, not_captured, thread_id, shared_q, start);
-        // printf("THREAD %zu: time elapsed %f\n", thread_id, time_diff(start));
+        // printf("THREAD %zu: time elapsed %f\n", thread_id, logger->time_diff(start));
         if (queue_empty) {
             shared_q->lock();
             shared_q->push(q);
@@ -335,23 +335,19 @@ int bbound(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap *p,
                 // tree->unlock_inactive_thread_lk();
                 // tree->wake_all_inactive();
                 inactive_thread_cv.notify_all();
-                printf("Thread %zu exiting\n", thread_id);
+                printf("Thread %zu notifying and exiting\n", thread_id);
                 return 0;
             }
             while (q->empty()) {
                 //tree->increment_num_inactive_threads();
                 // printf("Thread %zu sleeping\n", thread_id);
-                // sleep until there's work to do
-                // tree->unlock_inactive_thread_lk();
-                //tree->thread_wait(unique_inactive_thread_lk);
-                inactive_thread_cv.wait(unique_inactive_thread_lk);
-                // tree->lock_inactive_thread_lk();
                 // printf("Thread %zu awake\n", thread_id);
                 if (tree->done()) {
                     printf("Thread %zu exiting\n", thread_id);
                     //tree->decrement_num_inactive_threads();
-                    // tree->unlock_inactive_thread_lk();
                     return 0;
+                } else {
+                    inactive_thread_cv.wait(unique_inactive_thread_lk);
                 }
                 //tree->decrement_num_inactive_threads();
             }

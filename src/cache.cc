@@ -178,13 +178,13 @@ void CacheTree::prune_up(Node* node) {
             //id = node->id();
             //parent = node->parent();
             //parent->children_.erase(id);
-            --num_nodes_;
+            // --num_nodes_;
             node->set_deleted();
             //delete node;
             node = parent;
             --depth;
         } else {
-            --num_nodes_;
+            // --num_nodes_;
             break;
         }
     }

@@ -15,10 +15,14 @@
 
 using namespace std;
 
-inline double timestamp() {
+inline double get_timestamp() {
     struct timeval now;
     gettimeofday(&now, 0);
     return now.tv_sec + now.tv_usec * 0.000001;
+}
+
+inline double get_time_diff(double t0) {
+    return get_timestamp() - t0;
 }
 
 enum class DataStruct { Tree, Queue, Pmap};
@@ -55,6 +59,7 @@ class NullLogger {
     virtual inline double getInitialTime() { return 0.0; }
     virtual inline void setTotalTime(double t) {}
     virtual inline double timestamp() { return 0.0; }
+    virtual inline double time_diff(double t) { return 0.0; }
     virtual inline void addToPermMapInsertionTime(double t) {}
     virtual inline void incPermMapInsertionNum() {}
     virtual inline void setCurrentLowerBound(double lb) {}
@@ -243,7 +248,10 @@ class Logger : public NullLogger {
         _state.total_time = t;
     }
     inline double timestamp() override {
-        return timestamp();
+        return get_timestamp();
+    }
+    inline double time_diff(double t) override {
+        return get_time_diff(t);
     }
     inline void addToPermMapInsertionTime(double t) override {
         _state.permutation_map_insertion_time += t;
@@ -412,9 +420,6 @@ class Logger : public NullLogger {
 extern NullLogger* logger;
 extern FeatureToggle* featureDecisions;
 
-inline double time_diff(double t0) {
-    return timestamp() - t0;
-}
 
 #include "alloc.hh"
 /* 

@@ -45,7 +45,7 @@ void Logger::dumpState() {
 
     log_lk.lock();
     // update timestamp here
-    setTotalTime(time_diff(_state.initial_time));
+    setTotalTime(get_time_diff(_state.initial_time));
 
     _f << std::this_thread::get_id() << ","
        << _state.total_time << ","

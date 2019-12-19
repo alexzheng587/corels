@@ -188,7 +188,7 @@ class CacheTree {
     int ablation_; // Used to remove support (1) or lookahead (2) bounds
     bool calculate_size_;
 
-    double min_objective_;
+    std::atomic<double> min_objective_;
     tracking_vector<unsigned short, DataStruct::Tree> opt_rulelist_;
     tracking_vector<bool, DataStruct::Tree> opt_predictions_;
     tracking_vector<unsigned short, DataStruct::Tree> rule_perm_;
@@ -200,7 +200,7 @@ class CacheTree {
 
     unsigned short inactive_threads_;
     size_t n_acc_; 
-    bool done_;
+    std::atomic<bool> done_;
 
     //std::mutex* inactive_thread_lk_;
     // std::condition_variable inactive_thread_cv_;

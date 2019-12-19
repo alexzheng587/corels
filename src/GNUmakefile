@@ -1,5 +1,5 @@
 # IF DEBUGGING, CHANGE TO -O0
-CFLAGS := -g -W -Wall -Wno-unused-parameter -I. -O3 -DGMP -fno-omit-frame-pointer @Cdefs @Pdefs
+CFLAGS := -g -W -Wall -Wno-unused-parameter -I. -O3 -DGMP -fno-omit-frame-pointer # @Cdefs @Pdefs
 CXXFLAGS := $(CFLAGS) -std=c++11
 CFLAGS += -std=c99
 LIBS += -lpthread -lgmpxx -lgmp # -lprofiler -ltcmalloc

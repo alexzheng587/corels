@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
     // TOOD: use cmd line params to initialize features
     featureDecisions = new FeatureToggle(false);
 
-    double init = timestamp();
+    double init = get_timestamp();
     char run_type[BUFSZ];
 
     strcpy(run_type, "LEARNING RULE LIST via ");
@@ -278,7 +278,7 @@ int main(int argc, char *argv[]) {
     print_final_rulelist(r_list, tree->opt_predictions(),
                          latex_out, rules, labels, opt_fname);
 
-    printf("final total time: %f\n", time_diff(init));
+    printf("final total time: %f\n", get_time_diff(init));
     printf("Number of lock acquistions: %d\n", lock_ac);
     printf("Number of shared_queue acquisitions: %d\n", shared_q->n_acc());
     printf("Number of tree acquisitions: %d\n", tree->n_acc());

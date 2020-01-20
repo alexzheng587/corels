@@ -13,6 +13,7 @@
 std::mutex log_lk;
 std::mutex min_obj_lk;
 std::mutex inactive_thread_lk;
+std::mutex shared_q_lk;
 int lock_ac = 0;
 //pthread_rwlock_t pmap_lk = PTHREAD_RWLOCK_INITIALIZER;
 
@@ -279,8 +280,6 @@ int main(int argc, char *argv[]) {
                          latex_out, rules, labels, opt_fname);
 
     printf("final total time: %f\n", get_time_diff(init));
-    printf("Number of lock acquistions: %d\n", lock_ac);
-    printf("Number of shared_queue acquisitions: %d\n", shared_q->n_acc());
     printf("Number of tree acquisitions: %d\n", tree->n_acc());
 
     logger->dumpState();

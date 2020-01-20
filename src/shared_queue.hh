@@ -10,7 +10,6 @@ class SharedQueue
     //
     private:
         /* data */
-        std::mutex queue_lk_;
         std::queue<Queue*> q_;
         size_t accs_;
 
@@ -24,19 +23,8 @@ class SharedQueue
         inline size_t size();
         inline Queue* pop();
         inline void push(Queue* entry);
-        inline void lock();
-        inline void unlock();
         inline size_t n_acc() const;
 };
-
-inline void SharedQueue::lock() {
-    ++accs_;
-    queue_lk_.lock();
-}
-
-inline void SharedQueue::unlock() {
-    queue_lk_.unlock();
-}
 
 inline bool SharedQueue::empty() {
     return q_.empty();

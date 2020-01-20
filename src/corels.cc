@@ -8,6 +8,7 @@
 
 extern std::mutex min_obj_lk;
 extern std::mutex inactive_thread_lk;
+extern std::mutex shared_q_lk;
 std::condition_variable inactive_thread_cv;
 
 Queue::Queue(std::function<bool(EntryType, EntryType)> cmp, char const *type)
@@ -186,18 +187,11 @@ void bbound_init(CacheTree *tree) {
 // Assumes we have thread_inactive_lk when enters, releases lock within this function
 void split_work(CacheTree *tree, Queue* q, SharedQueue *shared_q) {
     std::vector<Queue*> other_qs;
-    //shared_q->lock();
-    /*if (shared_q->empty()) {
-       shared_q->unlock(); 
-       inactive_thread_lk.unlock();
-       return;
-    } else {
-        */
     for (size_t i = 0; i < shared_q->size(); ++i) {
         other_qs.push_back(shared_q->pop());
     }
    // }
-    shared_q->unlock();
+    shared_q_lk.unlock();
     
     size_t q_sz = (q->size() / (other_qs.size() + 1)) + 1;
     for (std::vector<Queue*>::iterator it = other_qs.begin(); it != other_qs.end(); ++it) {
@@ -228,16 +222,12 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
     double cur_min_objective = tree->min_objective();
 
     while ((tree->num_nodes() < max_num_nodes) && !q->empty()) {
-        //if (tree->num_inactive_threads() > 0) {
         if (!shared_q->empty()) {
-            //inactive_thread_lk.lock();
-            shared_q->lock();
-            //if (tree->num_inactive_threads() > 0) {
+            shared_q_lk.lock();
             if (!shared_q->empty() && q->size() > tree->num_threads()) {
                 split_work(tree, q, shared_q);
             } else {
-                shared_q->unlock();
-//                inactive_thread_lk.unlock();
+                shared_q_lk.unlock();
             }
         }
         double t0 = logger->timestamp();
@@ -328,19 +318,21 @@ int bbound(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap *p,
     // 1. The max number of nodes specified by the user is reached
     // 2. There is no more work to do (all queues are empty == shared_q is full)
     // Encodes implicit invariant that queues must be empty to be on shared_q
+    shared_q_lk.lock();
     while (bbound_loop_cond(max_node_reached, shared_q, tree)) {
+        shared_q_lk.unlock();
         max_node_reached = !bbound_loop(tree, max_num_nodes, q, p, captured, not_captured, thread_id, shared_q, start);
-        shared_q->lock();
+        shared_q_lk.lock();
         shared_q->push(q);
 
         std::unique_lock<std::mutex> unique_inactive_thread_lk(inactive_thread_lk);
         while (q->empty() && bbound_loop_cond(max_node_reached, shared_q, tree)) {
-            shared_q->unlock();
+            shared_q_lk.unlock();
             inactive_thread_cv.wait(unique_inactive_thread_lk);
-            shared_q->lock();
+            shared_q_lk.lock();
         }
-        shared_q->unlock();
     }
+    shared_q_lk.unlock();
     std::unique_lock<std::mutex> unique_inactive_thread_lk(inactive_thread_lk);
     inactive_thread_cv.notify_all();
     // Print out queue

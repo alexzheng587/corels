@@ -209,6 +209,7 @@ void split_work(CacheTree *tree, Queue* q, SharedQueue *shared_q) {
         //tree->decrement_num_inactive_threads();
     }
     //inactive_thread_lk.unlock();
+    std::unique_lock<std::mutex> unique_inactive_thread_lk(inactive_thread_lk);
     inactive_thread_cv.notify_all();
     //tree->wake_n_inactive(tree->num_inactive_threads());
     //for(unsigned short i = 0; i < tree->num_inactive_threads(); ++i)
@@ -302,6 +303,10 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
     }
 }
 
+bool bbound_loop_cond(bool max_node_reached, SharedQueue* shared_q, CacheTree* tree) {
+    return !max_node_reached && shared_q->size() < tree->num_threads();
+}
+
 /*
  * Explores the search space by using a queue to order the search process.
  * The queue can be ordered by DFS, BFS, or an alternative priority metric (e.g. lower bound).
@@ -318,46 +323,26 @@ int bbound(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap *p,
                  tree->nsamples(), &cnt);
 
     double start = logger->timestamp();
-    while (!tree->done()) {
-        bool queue_empty = bbound_loop(tree, max_num_nodes, q, p, captured, not_captured, thread_id, shared_q, start);
-        // printf("THREAD %zu: time elapsed %f\n", thread_id, logger->time_diff(start));
-        if (queue_empty) {
-            shared_q->lock();
-            shared_q->push(q);
+    bool max_node_reached = false;
+    // Continues to run the bbound_loop function until one of the following:
+    // 1. The max number of nodes specified by the user is reached
+    // 2. There is no more work to do (all queues are empty == shared_q is full)
+    // Encodes implicit invariant that queues must be empty to be on shared_q
+    while (bbound_loop_cond(max_node_reached, shared_q, tree)) {
+        max_node_reached = !bbound_loop(tree, max_num_nodes, q, p, captured, not_captured, thread_id, shared_q, start);
+        shared_q->lock();
+        shared_q->push(q);
+
+        std::unique_lock<std::mutex> unique_inactive_thread_lk(inactive_thread_lk);
+        while (q->empty() && bbound_loop_cond(max_node_reached, shared_q, tree)) {
             shared_q->unlock();
-            // std::mutex inactive_thread_lk = tree->get_inactive_thread_lk();
-            std::unique_lock<std::mutex> unique_inactive_thread_lk(inactive_thread_lk);
-            //if (tree->num_inactive_threads() == tree->num_threads() - 1) {
-            if (shared_q->size() == tree->num_threads()) {
-                //tree->increment_num_inactive_threads();
-                printf("All threads done\n");
-                tree->set_done(true);
-                // tree->unlock_inactive_thread_lk();
-                // tree->wake_all_inactive();
-                inactive_thread_cv.notify_all();
-                printf("Thread %zu notifying and exiting\n", thread_id);
-                return 0;
-            }
-            while (q->empty()) {
-                //tree->increment_num_inactive_threads();
-                // printf("Thread %zu sleeping\n", thread_id);
-                // printf("Thread %zu awake\n", thread_id);
-                if (tree->done()) {
-                    printf("Thread %zu exiting\n", thread_id);
-                    //tree->decrement_num_inactive_threads();
-                    return 0;
-                } else {
-                    inactive_thread_cv.wait(unique_inactive_thread_lk);
-                }
-                //tree->decrement_num_inactive_threads();
-            }
-            //tree->unlock_inactive_thread_lk();
-        } else {
-            // max num nodes has been reached
-            tree->set_done(true);
-            inactive_thread_cv.notify_all();
+            inactive_thread_cv.wait(unique_inactive_thread_lk);
+            shared_q->lock();
         }
+        shared_q->unlock();
     }
+    std::unique_lock<std::mutex> unique_inactive_thread_lk(inactive_thread_lk);
+    inactive_thread_cv.notify_all();
     // Print out queue
     /*ofstream f;
     if (print_queue) {

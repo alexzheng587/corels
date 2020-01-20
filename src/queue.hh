@@ -207,3 +207,6 @@ extern void evaluate_children(CacheTree* tree, Node* parent,
 
 extern bool bbound_loop(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
     VECTOR captured, VECTOR not_captured, unsigned short thread_id, SharedQueue *shared_q);
+
+
+bool bbound_loop_cond(bool max_node_reached, SharedQueue* shared_q, CacheTree* tree);

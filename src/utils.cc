@@ -1,3 +1,6 @@
+# ifdef VAL
+#include "common.hh"
+# endif
 #include "utils.hh"
 #include <stdio.h>
 #include <assert.h>
@@ -179,4 +182,21 @@ void print_machine_info() {
                buffer.version,
                buffer.machine);
     }
+}
+
+void* execute_native_thread_routine(void* __p)
+{
+    thread::_State_ptr __t{ static_cast<thread::_State*>(__p) };
+    __t->_M_run();
+    return nullptr;
+}
+
+void thread::_M_start_thread(_State_ptr state, void (*)())
+{
+    const int err = __gthread_create(&_M_id._M_thread,
+                     &execute_native_thread_routine,
+                     state.get());
+    if (err)
+      __throw_system_error(err);
+    state.release();
 }

@@ -1,3 +1,6 @@
+# ifdef VAL
+#include "common.hh"
+# endif
 #include "pmap.hh"
 
 PrefixPermutationMap::PrefixPermutationMap()

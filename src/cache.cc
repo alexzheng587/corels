@@ -1,3 +1,6 @@
+# ifdef VAL
+#include "common.hh"
+# endif 
 #include "cache.hh"
 #include "utils.hh"
 #include <memory>

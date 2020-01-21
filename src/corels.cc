@@ -1,3 +1,6 @@
+# ifdef VAL
+#include "common.hh"
+# endif
 #include "queue.hh"
 #include <algorithm>
 #include <iostream>
@@ -288,7 +291,9 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
         // printf("Exited because queue empty\n");
         return true;
     } else {
-        printf("Exited because max number of nodes (%zu) in the tree was reached\n", tree->num_nodes());
+        if(logger->getVerbosity() > 0) {
+            printf("Exited because max number of nodes (%zu) in the tree was reached\n", tree->num_nodes());
+        }
         return false;
     }
 }

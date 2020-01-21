@@ -1,3 +1,6 @@
+# ifdef VAL
+#include "common.hh"
+# endif
 #include "features.hh"
 #include "queue.hh"
 #include <iostream>

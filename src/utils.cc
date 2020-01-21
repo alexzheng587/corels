@@ -184,6 +184,7 @@ void print_machine_info() {
     }
 }
 
+# ifdef VAL
 void* execute_native_thread_routine(void* __p)
 {
     thread::_State_ptr __t{ static_cast<thread::_State*>(__p) };
@@ -200,3 +201,4 @@ void thread::_M_start_thread(_State_ptr state, void (*)())
       __throw_system_error(err);
     state.release();
 }
+# endif

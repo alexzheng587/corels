@@ -10,8 +10,6 @@
 #include <set>
 #include <unordered_map>
 
-extern int lock_ac;
-//extern pthread_rwlock_t pmap_lk_;
 
 /*
  * Represent prefix canonical order using an array of shorts.

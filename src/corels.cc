@@ -205,7 +205,6 @@ void split_work(CacheTree *tree, Queue* q, SharedQueue *shared_q) {
         q->move(other_q, q_sz);
         //tree->decrement_num_inactive_threads();
     }
-    //inactive_thread_lk.unlock();
     std::unique_lock<std::mutex> unique_inactive_thread_lk(inactive_thread_lk);
     inactive_thread_cv.notify_all();
     //tree->wake_n_inactive(tree->num_inactive_threads());
@@ -327,10 +326,10 @@ int bbound(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap *p,
     while (bbound_loop_cond(max_node_reached, shared_q, tree)) {
         shared_q_lk.unlock();
         max_node_reached = !bbound_loop(tree, max_num_nodes, q, p, captured, not_captured, thread_id, shared_q, start);
+        std::unique_lock<std::mutex> unique_inactive_thread_lk(inactive_thread_lk);
         shared_q_lk.lock();
         shared_q->push(q);
 
-        std::unique_lock<std::mutex> unique_inactive_thread_lk(inactive_thread_lk);
         while (q->empty() && bbound_loop_cond(max_node_reached, shared_q, tree)) {
             shared_q_lk.unlock();
             inactive_thread_cv.wait(unique_inactive_thread_lk);

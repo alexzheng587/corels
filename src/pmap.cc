@@ -37,7 +37,6 @@ Node* PrefixPermutationMap::insert (unsigned short new_rule, size_t nrules, bool
     prefix_key key = { pre_key };
     
     Node* child = NULL;
-    ++lock_ac;
     std::unique_lock<std::mutex> key_lk(key_lk_);
     PrefixLocks::iterator key_iter = active_keys.find(key);
     // Wait for other thread to finish with current entry

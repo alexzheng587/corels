@@ -37,6 +37,8 @@ class Node {
     inline void set_done();
     inline bool deleted() const;
     inline void set_deleted();
+    inline void lock();
+    inline void unlock();
     inline bool in_queue() const;
     inline void set_in_queue(bool new_val);
 
@@ -117,7 +119,6 @@ class CacheTree {
 
     inline size_t num_nodes() const;
     inline size_t num_nodes(unsigned short thread_id);
-    inline size_t num_evaluated() const;
     inline size_t num_threads() const;
     inline rule_t rule(unsigned short idx) const;
     inline char* rule_features(unsigned short idx) const;
@@ -136,7 +137,6 @@ class CacheTree {
                              unsigned short new_rule_id);
     void update_opt_predictions(Node* parent, bool new_pred, bool new_default_pred);
 
-    inline void increment_num_evaluated();
     inline void decrement_num_nodes();
     inline int ablation() const;
     inline bool calculate_size() const;
@@ -179,8 +179,7 @@ class CacheTree {
     size_t nthreads_;
     double c_;
 
-    size_t num_nodes_;
-    size_t num_evaluated_;
+    std::atomic<size_t> num_nodes_;
     int ablation_; // Used to remove support (1) or lookahead (2) bounds
     bool calculate_size_;
 
@@ -239,6 +238,14 @@ inline bool Node::deleted() const{
 
 inline void Node::set_deleted() {
     deleted_ = 1;
+}
+
+inline void Node::lock() {
+    child_lk_.lock();
+}
+
+inline void Node::unlock() {
+    child_lk_.unlock();
 }
 
 inline bool Node::in_queue() const {
@@ -356,10 +363,6 @@ inline size_t CacheTree::num_threads() const {
     return nthreads_;
 }
 
-inline size_t CacheTree::num_evaluated() const {
-    return num_evaluated_;
-}
-
 inline rule_t CacheTree::rule(unsigned short idx) const{
     return rules_[idx];
 }
@@ -456,15 +459,6 @@ CacheTree::update_opt_predictions(Node* parent, bool new_pred, bool new_default_
     opt_predictions_.assign(predictions.begin(), predictions.end());
     opt_predictions_.push_back(new_pred);
     opt_predictions_.push_back(new_default_pred);
-}
-
-/*
- * Increment number of nodes evaluated after performing incremental computation
- * in evaluate_children.
- */
-inline void CacheTree::increment_num_evaluated() {
-    ++num_evaluated_;
-    logger->setTreeNumEvaluated(num_evaluated_);
 }
 
 inline tracking_vector<unsigned short, DataStruct::Tree>* CacheTree::get_subrange(size_t i) {

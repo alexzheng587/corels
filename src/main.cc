@@ -272,7 +272,7 @@ int main(int argc, char *argv[]) {
     printf("QUEUE mem usage: %zu\n", queue_mem);
 
     printf("final num_nodes: %zu\n", tree->num_nodes());
-    printf("final num_evaluated: %zu\n", tree->num_evaluated());
+    printf("final num_evaluated: %zu\n", logger->getTreeNumEvaluated());
     printf("final min_objective: %1.5f\n", tree->min_objective());
     const tracking_vector<unsigned short, DataStruct::Tree>& r_list = tree->opt_rulelist();
     printf("final accuracy: %1.5f\n",

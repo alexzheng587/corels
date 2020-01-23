@@ -66,7 +66,8 @@ class NullLogger {
     virtual inline void setTreeMinObj(double o) {}
     virtual inline void setTreePrefixLen(size_t n) {}
     virtual inline void setTreeNumNodes(size_t n) {}
-    virtual inline void setTreeNumEvaluated(size_t n) {}
+    virtual inline void incTreeNumEvaluated() {}
+    virtual inline size_t getTreeNumEvaluated() { return 0; }
     virtual inline size_t getTreeMemory() { return 0; }
     virtual inline void addToQueueInsertionTime(double t) {}
     virtual inline void setQueueSize(size_t n) {}
@@ -271,8 +272,11 @@ class Logger : public NullLogger {
     inline void setTreeNumNodes(size_t n) override {
         _state.tree_num_nodes = n;
     }
-    inline void setTreeNumEvaluated(size_t n) override {
-        _state.tree_num_evaluated = n;
+    inline void incTreeNumEvaluated() override {
+        _state.tree_num_evaluated++;
+    }
+    inline size_t getTreeNumEvaluated() override {
+        return _state.tree_num_evaluated;
     }
     inline size_t getTreeMemory() override {
         return _state.tree_memory;

@@ -167,7 +167,7 @@ void evaluate_children(CacheTree *tree, Node *parent,
         //parent->set_done();
     } else {
         //parent->set_done();
-        tree->increment_num_evaluated();
+        logger->incTreeNumEvaluated();
     }
 }
 

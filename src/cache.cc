@@ -30,7 +30,7 @@ CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, size_t nthreads,
     rule_t *rules, rule_t *labels, rule_t *minority, int ablation,
     bool calculate_size, char const *type, size_t random_seed)
     : root_(NULL), nsamples_(nsamples), nrules_(nrules), c_(c),
-      num_nodes_(0), num_evaluated_(0), ablation_(ablation),
+      num_nodes_(0), ablation_(ablation),
       calculate_size_(calculate_size), min_objective_(0.5),
       opt_rulelist_({}), opt_predictions_({}), rule_perm_(nrules - 1),
       ranges_(nthreads), type_(type), inactive_threads_(0), n_acc_(0), done_(false) {
@@ -74,7 +74,6 @@ CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, size_t nthreads,
 
     logger->setTreeMinObj(min_objective_);
     logger->setTreeNumNodes(num_nodes_);
-    logger->setTreeNumEvaluated(num_evaluated_);
 }
 
 CacheTree::~CacheTree() {
@@ -182,7 +181,9 @@ void CacheTree::prune_up(Node* node) {
             //parent = node->parent();
             //parent->children_.erase(id);
             // --num_nodes_;
+            node->lock();
             node->set_deleted();
+            node->unlock();
             //delete node;
             node = parent;
             --depth;
@@ -280,7 +281,9 @@ void delete_subtree(CacheTree* tree, Node* node, bool destructive,
         // delete interior nodes
         if (node->in_queue()) {
             // Must have deleted/cleared child map here
+            node->lock();
             node->set_deleted();
+            node->unlock();
         } else {
             logger->removeFromMemory(sizeof(*node), DataStruct::Tree);
             tree->lock(thread_id);
@@ -294,7 +297,9 @@ void delete_subtree(CacheTree* tree, Node* node, bool destructive,
         // only delete leaf nodes in destructive mode
         if (node->in_queue()) {
             // Must have deleted/cleared child map here
+            node->lock();
             node->set_deleted();
+            node->unlock();
         } else if (destructive) {  
             //std::cout << "DELETE LEAF " << node->id() << std::endl;
             logger->removeFromMemory(sizeof(*node), DataStruct::Tree);
@@ -308,7 +313,9 @@ void delete_subtree(CacheTree* tree, Node* node, bool destructive,
             logger->decPrefixLen(node->depth());
             if (update_remaining_state_space)
                 logger->removeQueueElement(node->depth(), node->lower_bound(), false);
+            node->lock();
             node->set_deleted();
+            node->unlock();
         }
     }
 }

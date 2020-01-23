@@ -65,7 +65,9 @@ Node* PrefixPermutationMap::insert (unsigned short new_rule, size_t nrules, bool
                     Node* permuted_parent = permuted_node->parent();
                     permuted_parent->delete_child(permuted_node->id());
                 }
+                permuted_node->lock();
                 permuted_node->set_deleted();
+                permuted_node->unlock();
                 logger->incPmapDiscardNum();
             } else {
                 logger->incPmapNullNum();

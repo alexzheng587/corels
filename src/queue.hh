@@ -142,21 +142,26 @@ begin:
 
                 node->set_in_queue(false);
                 // delete leaf nodes that were lazily marked
+                node->lock();
                 if (node->deleted() || (lb >= tree->min_objective())) {
+                    node->unlock();
                     if(featureDecisions->do_garbage_collection()) {
                         tree->decrement_num_nodes();
                         logger->removeFromMemory(sizeof(*node), DataStruct::Tree);
                         tree->lock(thread_id);
+                        node->lock();
                         if (!node->deleted()) {
                             Node* parent = node->parent();
                             parent->delete_child(node->id());
                         }
+                        node->unlock();
                         node->clear_children();
                         delete node;
                         tree->unlock(thread_id);
                     }
                     valid = false;
                 } else {
+                    node->unlock();
                     valid = true;
                 }
             } while (!q_->empty() && !valid);

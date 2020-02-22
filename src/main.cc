@@ -264,6 +264,11 @@ int main(int argc, char *argv[]) {
 	    threads[i].join();
 	}
 
+    delete threads;
+    delete shared_q;
+    delete tree;
+    delete p;
+
     size_t tree_mem = logger->getTreeMemory();
     size_t pmap_mem = logger->getPmapMemory();
     size_t queue_mem = logger->getQueueMemory();

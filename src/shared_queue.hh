@@ -17,7 +17,7 @@ class SharedQueue
         SharedQueue(/* args */) {
           accs_ = 0;
         };
-        ~SharedQueue();
+        ~SharedQueue() {};
 
         inline bool empty();
         inline size_t size();

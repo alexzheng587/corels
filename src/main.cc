@@ -122,27 +122,28 @@ int main(int argc, char *argv[]) {
         snprintf(error_txt, BUFSZ,
                 "you must use at least and at most one of (-b | -c)");
     }
-    if (argc < 2 + optind) {
-        error = true;
-        snprintf(error_txt, BUFSZ,
-                "you must specify data files for rules and labels");
-    }
-    for (int i = 0; i < argc; ++i) {
-        std::cout << argv[i] << "\n";
-    }
-    if (access(argv[0], R_OK) < 0 || access(argv[1], R_OK) < 0) {
-        error = true;
-        snprintf(error_txt, BUFSZ,
-                "specified data files for rules (%s) and/or labels (%s) do not exist", argv[0], argv[1]);
-    }
     if (run_curiosity && !((curiosity_policy >= 1) && (curiosity_policy <= 4))) {
         error = true;
         snprintf(error_txt, BUFSZ,
                 "you must specify a curiosity type (1|2|3|4)");
     }
+    if (argc < 2 + optind) {
+        error = true;
+        snprintf(error_txt, BUFSZ,
+                "you must specify data files for rules and labels");
+    }
 
+    argc -= optind;
+    char* exec_name = argv[0];
+    argv += optind;
+
+    if (access(argv[0], R_OK) < 0 || access(argv[1], R_OK) < 0) {
+        error = true;
+        snprintf(error_txt, BUFSZ,
+                "specified data files for rules (%s) and/or labels (%s) do not exist", argv[0], argv[1]);
+    }
     if (error) {
-        fprintf(stderr, usage, argv[0], error_txt);
+        fprintf(stderr, usage, exec_name, error_txt);
         exit(1);
     }
 
@@ -151,9 +152,6 @@ int main(int argc, char *argv[]) {
     curiosity_map[2] = "curious_lb";
     curiosity_map[3] = "curious_obj";
     curiosity_map[4] = "dfs";
-
-    argc -= optind;
-    argv += optind;
 
     int nrules, nsamples, nlabels, nsamples_chk, errno;
     rule_t *rules, *labels;

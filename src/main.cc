@@ -250,7 +250,7 @@ int main(int argc, char *argv[]) {
     bbound_init(tree);
 
     // Set up per-thread queues
-    std::thread* threads = new std::thread[num_threads];
+    std::thread threads[num_threads];
 
     Queue qs[num_threads];
     for(size_t i = 0; i < num_threads; ++i) {
@@ -271,7 +271,7 @@ int main(int argc, char *argv[]) {
 	    threads[i].join();
 	}
 
-    delete threads;
+    //delete tree;
     delete shared_q;
     delete p;
 
@@ -292,7 +292,7 @@ int main(int argc, char *argv[]) {
                          latex_out, rules, labels, opt_fname);
 
     printf("final total time: %f\n", get_time_diff(init));
-    printf("Number of tree acquisitions: %d\n", tree->n_acc());
+    printf("Number of tree acquisitions: %zu\n", tree->n_acc());
 
     logger->dumpState();
     logger->closeFile();

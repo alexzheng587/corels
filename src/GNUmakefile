@@ -49,6 +49,9 @@ evaluate-test.o: evaluate-test.cc $(DEPSDIR)/stamp
 evaluate.o: evaluate.cc $(DEPSDIR)/stamp
 	$(CXX) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@
 
+acceptance:
+	cd ../tests_acceptance && ./test.sh
+
 $(DEPSDIR)/stamp:
 	mkdir -p $(dir $@)
 	touch $@
@@ -62,5 +65,5 @@ ifneq ($(DEPFILES),)
 include $(DEPFILES)
 endif
 
-.PHONY: all clean
+.PHONY: all clean acceptance
 .SUFFIXES:

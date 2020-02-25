@@ -70,6 +70,11 @@ class Queue {
         Queue(std::function<bool(EntryType, EntryType)> cmp, char const *type);
         // by default, initialize this as a BFS queue
         Queue() : Queue(base_cmp, "BFS") {}
+        ~Queue() {
+            if (!q_->empty()) {
+                printf("QUEUE NOT EMPTY");
+            }
+        }
         EntryType front() {
             return q_->top();
         }

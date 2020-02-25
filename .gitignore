@@ -138,3 +138,5 @@ data/**
 
 ## Intel traces
 thr-t*
+
+*.xcodeproj*

@@ -139,7 +139,9 @@ void evaluate_children(CacheTree *tree, Node *parent,
                 logger->incPrefixLen(len_prefix);
                 logger->addToTreeInsertionTime(logger->time_diff(t4));
                 double t5 = logger->timestamp();
+                n->lock();
                 n->set_in_queue(true);
+                n->unlock();
                 InternalRoot* iroot = new InternalRoot(n, NULL);
                 q->push(iroot);
                 logger->setQueueSize(q->size());

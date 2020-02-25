@@ -140,9 +140,9 @@ begin:
                     lb = node->lower_bound();
                 logger->setCurrentLowerBound(lb);
 
+                node->lock();
                 node->set_in_queue(false);
                 // delete leaf nodes that were lazily marked
-                node->lock();
                 if (node->deleted() || (lb >= tree->min_objective())) {
                     node->unlock();
                     if(featureDecisions->do_garbage_collection()) {

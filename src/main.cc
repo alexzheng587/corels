@@ -266,7 +266,6 @@ int main(int argc, char *argv[]) {
 
     delete threads;
     delete shared_q;
-    delete tree;
     delete p;
 
     size_t tree_mem = logger->getTreeMemory();

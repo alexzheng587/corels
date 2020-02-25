@@ -8,6 +8,7 @@
 #include <string>
 #include <thread>
 #include <getopt.h>
+#include <unistd.h>
 #include <pthread.h>
 #include <stdio.h>
 
@@ -125,6 +126,14 @@ int main(int argc, char *argv[]) {
         error = true;
         snprintf(error_txt, BUFSZ,
                 "you must specify data files for rules and labels");
+    }
+    for (int i = 0; i < argc; ++i) {
+        std::cout << argv[i] << "\n";
+    }
+    if (access(argv[0], R_OK) < 0 || access(argv[1], R_OK) < 0) {
+        error = true;
+        snprintf(error_txt, BUFSZ,
+                "specified data files for rules (%s) and/or labels (%s) do not exist", argv[0], argv[1]);
     }
     if (run_curiosity && !((curiosity_policy >= 1) && (curiosity_policy <= 4))) {
         error = true;

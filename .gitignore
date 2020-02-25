@@ -96,14 +96,12 @@ src/tags
 src/corels
 src/corels-cli
 src/ruletest
-tests
 evaluate-test
 figs/*png
 logs/
 cache/
 bbcache
 corels
-tests/tests
 profiles/
 eval/tdata_R.label
 eval/tdata_R.out

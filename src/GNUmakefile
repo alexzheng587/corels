@@ -1,6 +1,6 @@
 # IF DEBUGGING, CHANGE TO -O0
 # IF using valgrind, add -DVAL
-CFLAGS := -g -W -Wall -Wno-unused-parameter -I. -O3 -DGMP -fno-omit-frame-pointer # @Cdefs @Pdefs
+CFLAGS := -g -W -Wall -Wno-unused-parameter -I. -O0 -DGMP -fno-omit-frame-pointer # @Cdefs @Pdefs
 CXXFLAGS := $(CFLAGS) -std=c++11
 CFLAGS += -std=c99
 LIBS += -lpthread -lgmpxx -lgmp # -lprofiler -ltcmalloc
@@ -52,6 +52,9 @@ evaluate.o: evaluate.cc $(DEPSDIR)/stamp
 acceptance:
 	cd ../tests_acceptance && ./test.sh
 
+margo:
+	cd .. && ./tests_acceptance/margo/test.sh
+
 $(DEPSDIR)/stamp:
 	mkdir -p $(dir $@)
 	touch $@
@@ -65,5 +68,5 @@ ifneq ($(DEPFILES),)
 include $(DEPFILES)
 endif
 
-.PHONY: all clean acceptance
+.PHONY: all clean acceptance margo
 .SUFFIXES:

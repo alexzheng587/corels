@@ -1,6 +1,7 @@
 # ifdef VAL
 #include "common.hh"
 # endif
+#include <assert.h>
 #include "queue.hh"
 #include <algorithm>
 #include <iostream>
@@ -198,6 +199,8 @@ void split_work(CacheTree *tree, Queue* q, SharedQueue *shared_q) {
    // }
     shared_q_lk.unlock();
     
+    assert (q->size() > 0);
+    assert (q->size() < 1073741824);
     size_t q_sz = (q->size() / (other_qs.size() + 1)) + 1;
     for (std::vector<Queue*>::iterator it = other_qs.begin(); it != other_qs.end(); ++it) {
         Queue* other_q = *it;

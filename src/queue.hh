@@ -17,6 +17,14 @@ class InternalRoot {
             node_ = node;
             rules_ = rules;
         }
+        ~InternalRoot() {
+            if (node_ != NULL) {
+                delete node_;
+            }
+            if (rules_ != NULL) {
+                delete rules_;
+            }
+        }
         inline Node* node() { return node_; }
         inline tracking_vector<unsigned short, DataStruct::Tree>* rules() { return rules_; }
     protected:
@@ -76,7 +84,7 @@ class Queue {
                 q_->pop();
                 delete ent;
             }
-            delete q_;
+            //delete q_;
         }
         EntryType front() {
             return q_->top();

@@ -90,6 +90,7 @@ typedef std::unordered_map<captured_key, cap_val, captured_hash, cap_eq, track_a
 
 class PermutationMap {
     public:
+        virtual ~PermutationMap() {};
         virtual size_t size() { return 0; }
         virtual Node* insert (unsigned short new_rule,
                              size_t nrules, bool prediction, bool default_prediction, double lower_bound,
@@ -106,6 +107,7 @@ class PermutationMap {
 class PrefixPermutationMap : public PermutationMap {
 	public:
         PrefixPermutationMap ();
+        ~PrefixPermutationMap ();
         size_t size() override {
             return pmap->size();
         }
@@ -125,6 +127,7 @@ class PrefixPermutationMap : public PermutationMap {
 class CapturedPermutationMap : public PermutationMap {
 	public:
         CapturedPermutationMap();
+        ~CapturedPermutationMap();
         size_t size() override {
             return pmap->size();
         }
@@ -140,6 +143,7 @@ class CapturedPermutationMap : public PermutationMap {
 
 class NullPermutationMap : public PermutationMap  {
     public:
+        ~NullPermutationMap() {};
         size_t size() override {return 0;}
         Node* insert (unsigned short new_rule, size_t nrules, bool prediction, bool default_prediction, double lower_bound,
                         double objective, Node* parent, int num_not_captured, int nsamples, int len_prefix,

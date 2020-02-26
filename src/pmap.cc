@@ -7,8 +7,17 @@ PrefixPermutationMap::PrefixPermutationMap()
     : pmap(new PrefixMap) {
 }
 
+PrefixPermutationMap::~PrefixPermutationMap() {
+    delete pmap;
+}
+
 CapturedPermutationMap::CapturedPermutationMap()
     : pmap(new CapturedMap) {}
+
+CapturedPermutationMap::~CapturedPermutationMap() {
+    delete pmap;
+
+}
 
 Node* PrefixPermutationMap::insert (unsigned short new_rule, size_t nrules, bool prediction, 
         bool default_prediction, double lower_bound, double objective, Node* parent, 

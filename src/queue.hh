@@ -7,6 +7,8 @@
 #include <queue>
 #include <set>
 
+extern std::mutex min_obj_lk;
+
 class InternalRoot {
     public:
         InternalRoot() {
@@ -16,6 +18,14 @@ class InternalRoot {
         InternalRoot(Node* node, tracking_vector<unsigned short, DataStruct::Tree>* rules) {
             node_ = node;
             rules_ = rules;
+        }
+        ~InternalRoot() {
+            if (node_ != NULL) {
+                delete node_;
+            }
+            if (rules_ != NULL) {
+                delete rules_;
+            }
         }
         inline Node* node() { return node_; }
         inline tracking_vector<unsigned short, DataStruct::Tree>* rules() { return rules_; }
@@ -76,7 +86,7 @@ class Queue {
                 q_->pop();
                 delete ent;
             }
-            delete q_;
+            //delete q_;
         }
         EntryType front() {
             return q_->top();
@@ -151,7 +161,9 @@ begin:
                 node->lock();
                 node->set_in_queue(false);
                 // delete leaf nodes that were lazily marked
+                min_obj_lk.lock();
                 if (node->deleted() || (lb >= tree->min_objective())) {
+                    min_obj_lk.unlock();
                     node->unlock();
                     if(featureDecisions->do_garbage_collection()) {
                         tree->decrement_num_nodes();
@@ -169,6 +181,7 @@ begin:
                     }
                     valid = false;
                 } else {
+                    min_obj_lk.unlock();
                     node->unlock();
                     valid = true;
                 }

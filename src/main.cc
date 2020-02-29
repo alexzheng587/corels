@@ -271,10 +271,6 @@ int main(int argc, char *argv[]) {
 	    threads[i].join();
 	}
 
-    //delete tree;
-    delete shared_q;
-    delete p;
-
     size_t tree_mem = logger->getTreeMemory();
     size_t pmap_mem = logger->getPmapMemory();
     size_t queue_mem = logger->getQueueMemory();
@@ -296,6 +292,14 @@ int main(int argc, char *argv[]) {
 
     logger->dumpState();
     logger->closeFile();
+
+    printf("delete shared queue\n");
+    delete shared_q;
+    printf("delete permutation map\n");
+    delete p;
+    printf("tree destructors\n");
+    delete tree;
+
     if (meta) {
         printf("\ndelete identical points indicator");
         rules_free(meta, nmeta, 0);
@@ -304,6 +308,5 @@ int main(int argc, char *argv[]) {
     rules_free(rules, nrules, 1);
     printf("delete labels\n");
     rules_free(labels, nlabels, 0);
-    printf("tree destructors\n");
     return 0;
 }

@@ -8,6 +8,10 @@ PrefixPermutationMap::PrefixPermutationMap()
 }
 
 PrefixPermutationMap::~PrefixPermutationMap() {
+    for(PrefixMap::iterator it = pmap->begin(); it != pmap->end(); ++it) {
+        prefix_key pkey = it->first;
+        free(pkey.key);
+    }
     delete pmap;
 }
 
@@ -16,7 +20,6 @@ CapturedPermutationMap::CapturedPermutationMap()
 
 CapturedPermutationMap::~CapturedPermutationMap() {
     delete pmap;
-
 }
 
 Node* PrefixPermutationMap::insert (unsigned short new_rule, size_t nrules, bool prediction, 
@@ -93,11 +96,10 @@ Node* PrefixPermutationMap::insert (unsigned short new_rule, size_t nrules, bool
                                  default_prediction, lower_bound, objective,
                                  parent, num_not_captured, nsamples, len_prefix,
                                  c, equivalent_minority);
-        unsigned char* ordered_prefix = &ordered[0];
         // Need to globally lock map when inserting otherwise iterators in other threads could be
         // invalidated if the unordere_map is resized.
         map_lk.lock();
-        pmap->insert(std::make_pair(key, std::make_tuple(lower_bound, ordered_prefix, thread_id)));
+        pmap->insert(std::make_pair(key, std::make_tuple(lower_bound, ordered, thread_id)));
         map_lk.unlock();
         logger->incPmapSize();
     }

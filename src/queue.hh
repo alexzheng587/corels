@@ -80,14 +80,8 @@ class Queue {
         Queue(std::function<bool(EntryType, EntryType)> cmp, char const *type);
         // by default, initialize this as a BFS queue
         Queue() : Queue(base_cmp, "BFS") {}
-        ~Queue() {
-            while (!q_->empty()) {
-                EntryType ent = q_->top();
-                q_->pop();
-                delete ent;
-            }
-            //delete q_;
-        }
+        ~Queue();
+
         EntryType front() {
             return q_->top();
         }

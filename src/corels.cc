@@ -18,6 +18,17 @@ std::condition_variable inactive_thread_cv;
 Queue::Queue(std::function<bool(EntryType, EntryType)> cmp, char const *type)
     : q_(new q(cmp)), type_(type), cmp_(cmp) {}
 
+Queue::~Queue() {
+    while (!q_->empty()) {
+        EntryType ent = q_->top();
+        q_->pop();
+        delete ent;
+    }
+    if (q_) {
+        delete q_;
+    }
+}
+
 /*
  * Performs incremental computation on a node, evaluating the bounds and inserting into the cache,
  * queue, and permutation map if appropriate.

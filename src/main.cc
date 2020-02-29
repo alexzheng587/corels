@@ -252,19 +252,19 @@ int main(int argc, char *argv[]) {
     // Set up per-thread queues
     std::thread threads[num_threads];
 
-    Queue qs[num_threads];
+    Queue* qs[num_threads];
     for(size_t i = 0; i < num_threads; ++i) {
-        qs[i] = Queue(cmp, run_type);
+        qs[i] = new Queue(cmp, run_type);
         tracking_vector<unsigned short, DataStruct::Tree>* init_rules = tree->get_subrange(i);
         InternalRoot* iroot = new InternalRoot(tree->root(), init_rules);
-        qs[i].push(iroot);
+        qs[i]->push(iroot);
     }
 
     SharedQueue* shared_q = new SharedQueue();
 
 	// Let the threads loose
 	for(size_t i = 0; i < num_threads; ++i) {
-	    threads[i] = std::thread(bbound, tree, max_num_nodes, &qs[i], p, i, shared_q);
+	    threads[i] = std::thread(bbound, tree, max_num_nodes, qs[i], p, i, shared_q);
 	}
 
 	for(size_t i = 0; i < num_threads; ++i) {
@@ -293,6 +293,10 @@ int main(int argc, char *argv[]) {
     logger->dumpState();
     logger->closeFile();
 
+    printf("delete queue(s)\n");
+    for(size_t i = 0; i < num_threads; ++i) {
+        delete qs[i];
+    }
     printf("delete shared queue\n");
     delete shared_q;
     printf("delete permutation map\n");

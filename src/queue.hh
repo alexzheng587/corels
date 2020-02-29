@@ -7,6 +7,8 @@
 #include <queue>
 #include <set>
 
+extern std::mutex min_obj_lk;
+
 class InternalRoot {
     public:
         InternalRoot() {
@@ -159,7 +161,9 @@ begin:
                 node->lock();
                 node->set_in_queue(false);
                 // delete leaf nodes that were lazily marked
+                min_obj_lk.lock();
                 if (node->deleted() || (lb >= tree->min_objective())) {
+                    min_obj_lk.unlock();
                     node->unlock();
                     if(featureDecisions->do_garbage_collection()) {
                         tree->decrement_num_nodes();
@@ -177,6 +181,7 @@ begin:
                     }
                     valid = false;
                 } else {
+                    min_obj_lk.unlock();
                     node->unlock();
                     valid = true;
                 }

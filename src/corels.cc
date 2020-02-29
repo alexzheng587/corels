@@ -84,10 +84,12 @@ void evaluate_children(CacheTree *tree, Node *parent,
         lower_bound = parent_lower_bound - parent_equivalent_minority + (double)(num_captured - captured_correct) / nsamples + c;
         logger->addToLowerBoundTime(logger->time_diff(t1));
         logger->incLowerBoundNum();
-        //min_obj_lk.lock();
-        if (lower_bound >= tree->min_objective()) // hierarchical objective lower bound
-                                                  //min_obj_lk.unlock();
+        min_obj_lk.lock();
+        if (lower_bound >= tree->min_objective()) { // hierarchical objective lower bound
+            min_obj_lk.unlock();
             continue;
+        }
+        min_obj_lk.unlock();
         double t2 = logger->timestamp();
         rule_vandnot(not_captured, parent_not_captured, captured, nsamples, &num_not_captured);
         rule_vand(not_captured_zeros, not_captured, tree->label(0).truthtable, nsamples, &d0);
@@ -102,8 +104,10 @@ void evaluate_children(CacheTree *tree, Node *parent,
         objective = lower_bound + (double)(num_not_captured - default_correct) / nsamples;
         logger->addToObjTime(logger->time_diff(t2));
         logger->incObjNum();
+        min_obj_lk.lock();
         if (objective < tree->min_objective()) {
             double old_min_obj = tree->min_objective();
+            min_obj_lk.unlock();
             if (tree->update_obj_and_list(objective, parent_prefix, i, parent, prediction, default_prediction)) {
                 printf("THREAD %zu: min(objective): %.17g -> %.17g, length: %d, cache size: %zu\n",
                        thread_id, old_min_obj, objective, len_prefix, tree->num_nodes());
@@ -111,6 +115,8 @@ void evaluate_children(CacheTree *tree, Node *parent,
                 // dump state when min objective is updated
                 logger->dumpState();
             }
+        } else {
+            min_obj_lk.unlock();
         }
         // calculate equivalent points bound to capture the fact that the minority points can never be captured correctly
         if (tree->has_minority()) {
@@ -122,10 +128,10 @@ void evaluate_children(CacheTree *tree, Node *parent,
             lookahead_bound = lower_bound + c;
         else
             lookahead_bound = lower_bound;
-        //min_obj_lk.lock();
         // only add node to our datastructures if its children will be viable
+        min_obj_lk.lock();
         if (lookahead_bound < tree->min_objective()) {
-            //min_obj_lk.unlock()
+            min_obj_lk.unlock();
             double t3 = logger->timestamp();
             // check permutation bound
             Node *n = p->insert(i, nrules, prediction, default_prediction,
@@ -151,7 +157,9 @@ void evaluate_children(CacheTree *tree, Node *parent,
                 logger->addToQueueInsertionTime(logger->time_diff(t5));
             }
         } // else:  objective lower bound with one-step lookahead
-        // else { min_obj_lk.unlock() }
+        else {
+            min_obj_lk.unlock();
+        }
     }
 
     rule_vfree(&captured);
@@ -226,7 +234,9 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
     size_t num_iter = 0;
     // Not used anywhere
     int cnt;
+    min_obj_lk.lock();
     double cur_min_objective = tree->min_objective();
+    min_obj_lk.unlock();
 
     while ((tree->num_nodes() < max_num_nodes) && !q->empty()) {
         if (!shared_q->empty()) {

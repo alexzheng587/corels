@@ -79,8 +79,19 @@ CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, size_t nthreads,
 CacheTree::~CacheTree() {
 	if (t_)
         close_print_file();
-	if (root_)
-        delete_subtree(this, root_, true, false, 0);
+    std::vector<Node*> nodes;
+    if (root_)
+        nodes.push_back(root_);
+    while(!nodes.empty()) {
+        Node* node = nodes.back();
+        nodes.pop_back();
+        for (std::map<unsigned short, Node*>::iterator it = node->children_begin(); it != node->children_end(); ++it) {
+            nodes.push_back(it->second);
+        }
+        delete node;
+    }
+	//if (root_)
+    //    delete_subtree(this, root_, true, false, 0);
 }
 
 

@@ -117,6 +117,12 @@ class PrefixPermutationMap : public PermutationMap {
             CacheTree* tree, VECTOR not_captured, tracking_vector<unsigned short, 
             DataStruct::Tree> parent_prefix, unsigned short thread_id) override;
 	private:
+        std::pair<prefix_key, unsigned char*>  construct_prefix_key_from_prefix_vector (tracking_vector<unsigned short, DataStruct::Tree> parent_prefix, 
+            unsigned short new_rule, int len_prefix);
+        PrefixMap::iterator find_prefix_key_in_pmap(prefix_key key);
+        void remove_existing_node(CacheTree* tree, PrefixMap::iterator iter, tracking_vector<unsigned short, DataStruct::Tree> parent_prefix, 
+            unsigned short thread_id);
+
 		PrefixMap* pmap;
         std::mutex map_lk;
         std::mutex key_lk_;

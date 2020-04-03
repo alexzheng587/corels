@@ -17,18 +17,11 @@
 struct prefix_key {
     unsigned short *key;
     // Only for debugging
-    prefix_key(prefix_key const&)=delete;
-    /*prefix_key(prefix_key const& old_pkey){
-        unsigned short *old_key = old_pkey.key;
-        unsigned short *new_key = (unsigned short*) malloc(sizeof(unsigned short) * old_key[0]);
-        memcpy(new_key, old_key, sizeof(unsigned short) * old_key[0]);
-        key = new_key;
-    }*/
+    // prefix_key(prefix_key const&)=delete;
     //prefix_key(prefix_key&&o):key(o.key){key=nullptr;}
 
     prefix_key(tracking_vector<unsigned short, DataStruct::Tree> prefix, unsigned int len_prefix) {
         key = (unsigned short *)malloc(sizeof(unsigned short) * (len_prefix + 1));
-        //printf("KEY CONSTRUCTOR CALLED ON %p\n", key);
         key[0] = (unsigned short)len_prefix;
         memcpy(&key[1], &prefix[0], len_prefix * sizeof(unsigned short));
     }
@@ -41,9 +34,7 @@ struct prefix_key {
         return true;
     }
     ~prefix_key() {
-        //printf("KEY DESTRUCTOR CALLED ON %p\n", key);
         free(key);
-        key = (unsigned short*)0xDEADBEEF;
     }
 };
 
@@ -63,10 +54,10 @@ struct prefix_val {
 };
 
 struct prefix_eq {
-    bool operator()(const prefix_key &k, const prefix_key &other) const {
+    bool operator()(const prefix_key* k, const prefix_key* other) const {
         // i = 0 checks for equivalent sizes, i > 0 checks for equivalent prefixes
-        for (size_t i = 0; i <= k.key[0]; ++i) {
-            if (k.key[i] != other.key[i])
+        for (size_t i = 0; i <= k->key[0]; ++i) {
+            if (k->key[i] != other->key[i])
                 return false;
         }
         return true;
@@ -77,19 +68,17 @@ struct prefix_eq {
  * Hash function from: http://www.cse.yorku.ca/~oz/hash.html
  */
 struct prefix_hash {
-    std::size_t operator()(const prefix_key &k) const {
+    std::size_t operator()(const prefix_key* k) const {
         unsigned long hash = 0;
-        for (size_t i = 1; i <= *k.key; ++i)
-            hash = k.key[i] + (hash << 6) + (hash << 16) - hash;
+        for (size_t i = 1; i <= (k->key)[0]; ++i)
+            hash = k->key[i] + (hash << 6) + (hash << 16) - hash;
         return hash;
     }
 };
 
 // Prefix Map typdefs
-//typedef std::unordered_map<prefix_key, bool, prefix_hash, prefix_eq, track_alloc<std::pair<const prefix_key, bool>, DataStruct::Pmap>> PrefixLocks;
-typedef std::vector<prefix_key> PrefixLocks;
-//typedef std::tuple<double, unsigned char *, size_t> prefix_val;
-typedef std::unordered_map<prefix_key, prefix_val*, prefix_hash, prefix_eq, track_alloc<std::pair<const prefix_key, prefix_val*>, DataStruct::Pmap>> PrefixMap;
+typedef std::vector<prefix_key*> PrefixLocks;
+typedef std::unordered_map<prefix_key*, prefix_val*, prefix_hash, prefix_eq, track_alloc<std::pair<prefix_key* const, prefix_val*>, DataStruct::Pmap>> PrefixMap;
 
 /*
  * Represents captured vector using the VECTOR type defined in rule.h
@@ -158,11 +147,13 @@ public:
                  CacheTree *tree, VECTOR not_captured, tracking_vector<unsigned short, DataStruct::Tree> prefix, unsigned short thread_id) override;
 
 private:
-    std::pair<prefix_key, unsigned char *> construct_prefix_key_from_prefix_vector(tracking_vector<unsigned short, DataStruct::Tree> prefix,
+    std::pair<prefix_key *, unsigned char *> construct_prefix_key_from_prefix_vector(tracking_vector<unsigned short, DataStruct::Tree> prefix,
                                                                                    unsigned short new_rule, int len_prefix);
-    PrefixMap::iterator find_prefix_key_in_pmap(prefix_key& key);
+    PrefixMap::iterator find_prefix_key_in_pmap(prefix_key *key);
     void remove_existing_node(CacheTree *tree, unsigned char *indices, tracking_vector<unsigned short, DataStruct::Tree> prefix,
                               unsigned short thread_id);
+
+    PrefixLocks::iterator find_key_in_active_keys(prefix_key *key);
 
     PrefixMap *pmap;
     std::mutex map_lk;

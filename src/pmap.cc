@@ -11,14 +11,9 @@ PrefixPermutationMap::PrefixPermutationMap()
 
 PrefixPermutationMap::~PrefixPermutationMap() {
     for (PrefixMap::iterator iter = pmap->begin(); iter != pmap->end(); ++iter) {
-        //prefix_key pkey = iter->first;
-        //free(pkey.key);
-        //unsigned char *old_ordered = std::get<1>(iter->second);
-        //unsigned char *old_ordered = iter->second->ordered;
-        //free(old_ordered);
         delete iter->second;
+        delete iter->first;
     }
-    printf("PMAP Destructor called");
     pmap->clear();
     delete pmap;
 }
@@ -41,10 +36,11 @@ Node *PrefixPermutationMap::insert(unsigned short new_rule, size_t nrules, bool 
     logger->incPermMapInsertionNum();
 
     // Initialization of prefix_key permutation
-    std::pair<prefix_key, unsigned char *> prefix_key_and_order = construct_prefix_key_from_prefix_vector(prefix, new_rule, len_prefix);
-    prefix_key key = prefix_key_and_order.first;
+    std::pair<prefix_key *, unsigned char *> prefix_key_and_order = construct_prefix_key_from_prefix_vector(prefix, new_rule, len_prefix);
+    prefix_key *key = prefix_key_and_order.first;
     unsigned char *ordered = prefix_key_and_order.second;
     Node *child = NULL;
+    bool delete_key = false;
 
     // Checking membership of prefix_key permutation
     PrefixMap::iterator iter = find_prefix_key_in_pmap(key);
@@ -53,9 +49,6 @@ Node *PrefixPermutationMap::insert(unsigned short new_rule, size_t nrules, bool 
         double permuted_lower_bound = cur_val->lower_bound;//std::get<0>(iter->second);
         if (lower_bound < permuted_lower_bound) {
             unsigned char *old_ordered = cur_val->ordered; //std::get<1>(iter->second);
-            if (old_ordered[0] == 0) {
-                printf("BAD OLD ORDERED\n");
-            }
             remove_existing_node(tree, old_ordered, prefix, thread_id);
             // Create new node and insert
             child = tree->construct_node(new_rule, nrules, prediction,
@@ -63,10 +56,10 @@ Node *PrefixPermutationMap::insert(unsigned short new_rule, size_t nrules, bool 
                                          parent, num_not_captured, nsamples,
                                          len_prefix, c, equivalent_minority);
             prefix_val *val = new prefix_val(lower_bound, ordered, len_prefix + 1, thread_id);
-            //pmap->insert(std::make_pair(iter->first, val));
-            iter->second = val; //std::make_tuple(lower_bound, ordered, thread_id);
+            iter->second = val;
             delete cur_val;
         }
+        delete_key = true;
     } else {
         // Create new node if permutation doesn't exist
         child = tree->construct_node(new_rule, nrules, prediction,
@@ -77,28 +70,28 @@ Node *PrefixPermutationMap::insert(unsigned short new_rule, size_t nrules, bool 
         // invalidated if the unordered_map is resized.
         map_lk.lock();
         prefix_val *val = new prefix_val(lower_bound, ordered, len_prefix + 1, thread_id);
-        pmap->insert(std::make_pair(key, val));//std::make_tuple(lower_bound, ordered, thread_id)));
+        pmap->insert(std::make_pair(key, val));
         map_lk.unlock();
         logger->incPmapSize();
     }
-    //free(key.key);
     free(ordered);
 
     // Clean up/Wake up any other threads waiting on this entry
     {
         std::lock_guard<std::mutex> key_lk(key_lk_);
-        //active_keys.erase(key);
         active_keys.erase(std::remove(active_keys.begin(), active_keys.end(), key), active_keys.end());
+    }
+    if (delete_key) {
+        delete key;
     }
     key_cv.notify_all();
     return child;
 }
 
-std::pair<prefix_key, unsigned char *> PrefixPermutationMap::construct_prefix_key_from_prefix_vector(tracking_vector<unsigned short, DataStruct::Tree> prefix,
+std::pair<prefix_key *, unsigned char *> PrefixPermutationMap::construct_prefix_key_from_prefix_vector(tracking_vector<unsigned short, DataStruct::Tree> prefix,
                                                                                                      unsigned short new_rule, int len_prefix) {
     // Initializing permutation constructs for purposes of comparison
     unsigned char *ordered = (unsigned char *)malloc(sizeof(unsigned char) * (len_prefix + 1));
-    //unsigned char ordered[len_prefix + 1];
     ordered[0] = (unsigned char)len_prefix;
 
     for (int i = 1; i < (len_prefix + 1); i++)
@@ -108,30 +101,32 @@ std::pair<prefix_key, unsigned char *> PrefixPermutationMap::construct_prefix_ke
     std::sort(&ordered[1], &ordered[len_prefix + 1], cmp);
 
     std::sort(prefix.begin(), prefix.end());
-    //unsigned short *pre_key = (unsigned short *)malloc(sizeof(unsigned short) * (len_prefix + 1));
-    //pre_key[0] = (unsigned short)len_prefix;
-    //memcpy(&pre_key[1], &prefix[0], len_prefix * sizeof(unsigned short));
-    prefix_key key = prefix_key(prefix, len_prefix);
+    prefix_key *key = new prefix_key(prefix, len_prefix);
 
     logger->addToMemory((len_prefix + 1) * (sizeof(unsigned char) + sizeof(unsigned short)), DataStruct::Pmap);
-    //prefix_key key = prefix_key(pre_key);
-    //free(pre_key);
-    return std::make_pair(key, (unsigned char*)ordered);
+    return std::make_pair(key, ordered);
 }
 
-PrefixMap::iterator PrefixPermutationMap::find_prefix_key_in_pmap(prefix_key& key) {
+
+PrefixLocks::iterator PrefixPermutationMap::find_key_in_active_keys(prefix_key *key) {
+    for(PrefixLocks::iterator iter = active_keys.begin(); iter != active_keys.end(); ++iter) {
+        prefix_key *k_active = *iter;
+        if(*k_active == *key) {
+            return iter;
+       }
+    }
+    return active_keys.end();
+} 
+
+PrefixMap::iterator PrefixPermutationMap::find_prefix_key_in_pmap(prefix_key *key) {
     std::unique_lock<std::mutex> key_lk(key_lk_);
-    //PrefixLocks::iterator key_iter = active_keys.find(key);
-    PrefixLocks::iterator key_iter = std::find(active_keys.begin(), active_keys.end(), key);
+    PrefixLocks::iterator key_iter = find_key_in_active_keys(key);
     // Wait for other thread to finish with current entry
     while (key_iter != active_keys.end()) {
         // TODO add counter to measure how many collisions there are
         key_cv.wait(key_lk);
-        key_iter = std::find(active_keys.begin(), active_keys.end(), key);
-        //key_iter = active_keys.find(key);
+        key_iter = find_key_in_active_keys(key);
     }
-    //std::pair<prefix_key, bool> active_key = std::make_pair(key, true);
-    //active_keys.insert(active_key);
     active_keys.push_back(key);
     key_lk.unlock();
     map_lk.lock();
@@ -147,9 +142,6 @@ void PrefixPermutationMap::remove_existing_node(CacheTree *tree, unsigned char *
     // Get existing node and garbage collect
     tree->lock(thread_id);
     tracking_vector<unsigned short, DataStruct::Tree> permuted_prefix(prefix.size());
-    if(indices[0] == 0) {
-        printf("ISSUE\n");
-    }
     for (unsigned char i = 0; i < indices[0]; ++i)
         permuted_prefix[i] = prefix[indices[i + 1]];
     if ((permuted_node = tree->check_prefix(permuted_prefix)) != NULL) {

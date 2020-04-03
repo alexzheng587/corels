@@ -20,8 +20,8 @@ Queue::Queue(std::function<bool(EntryType, EntryType)> cmp, char const *type)
 
 Queue::~Queue() {
     while (!q_->empty()) {
-        EntryType ent = q_->top();
-        q_->pop();
+        EntryType ent = front();
+        pop();
         delete ent;
     }
     if (q_) {
@@ -160,7 +160,7 @@ void evaluate_children(CacheTree *tree, Node *parent,
                 n->lock();
                 n->set_in_queue(true);
                 n->unlock();
-                InternalRoot* iroot = new InternalRoot(n, NULL);
+                InternalRoot* iroot = new InternalRoot(n);
                 q->push(iroot);
                 logger->setQueueSize(q->size());
                 if (tree->calculate_size())
@@ -266,17 +266,17 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
         if(iroot) {
             tracking_vector<unsigned short, DataStruct::Tree> parent_prefix = node_ordered.second;
             Node *current_node = iroot->node();
-            tracking_vector<unsigned short, DataStruct::Tree>* initialization_rules = iroot->rules();
+            tracking_vector<unsigned short, DataStruct::Tree> initialization_rules = iroot->rules();
             // not_captured = default rule truthtable & ~ captured
             rule_vandnot(not_captured,
                          tree->rule(0).truthtable, captured,
                          tree->nsamples(), &cnt);
-            if (initialization_rules == NULL || initialization_rules->empty()) {
+            if (initialization_rules.empty()) {
                 initialization_rules = tree->rule_perm();
             }
 
             double t1 = logger->timestamp();
-            evaluate_children(tree, current_node, parent_prefix, not_captured, *initialization_rules, q, p, thread_id);
+            evaluate_children(tree, current_node, parent_prefix, not_captured, initialization_rules, q, p, thread_id);
             logger->addToEvalChildrenTime(logger->time_diff(t1));
             logger->incEvalChildrenNum();
 
@@ -296,6 +296,7 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
             } else {
                 min_obj_lk.unlock();
             }
+            delete iroot;
         }
         logger->setQueueSize(q->size());
         ++num_iter;

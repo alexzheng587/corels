@@ -151,6 +151,7 @@ void CacheTree::insert_root() {
     logger->setTreeNumNodes(num_nodes_);
     opt_predictions_.push_back(default_prediction);
     logger->setTreePrefixLen(0);
+    rule_vfree(&tmp_vec); 
 }
 
 /*
@@ -257,9 +258,9 @@ void CacheTree::garbage_collect(unsigned short thread_id) {
     if (calculate_size_)
         logger->clearRemainingSpaceSize();
 
-    tracking_vector<unsigned short, DataStruct::Tree>* subrange = get_subrange(thread_id);
-    for (typename tracking_vector<unsigned short, DataStruct::Tree>::iterator rit = subrange->begin();
-        rit != subrange->end(); rit++) {
+    tracking_vector<unsigned short, DataStruct::Tree> subrange = get_subrange(thread_id);
+    for (typename tracking_vector<unsigned short, DataStruct::Tree>::iterator rit = subrange.begin();
+        rit != subrange.end(); rit++) {
             Node* cur_child = root_->child(*rit);
             if (cur_child != NULL)
                 gc_helper(root_->child(*rit), thread_id);

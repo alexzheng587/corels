@@ -13,25 +13,24 @@ class InternalRoot {
     public:
         InternalRoot() {
             node_ = NULL;
-            rules_ = NULL;
         }
-        InternalRoot(Node* node, tracking_vector<unsigned short, DataStruct::Tree>* rules) {
+        InternalRoot(Node* node) {
+            node_ = node;
+        }
+        InternalRoot(Node* node, tracking_vector<unsigned short, DataStruct::Tree> rules) {
             node_ = node;
             rules_ = rules;
         }
         ~InternalRoot() {
-            if (node_ != NULL) {
+            /*if (node_ != NULL) {
                 delete node_;
-            }
-            if (rules_ != NULL) {
-                delete rules_;
-            }
+            }*/
         }
         inline Node* node() { return node_; }
-        inline tracking_vector<unsigned short, DataStruct::Tree>* rules() { return rules_; }
+        inline tracking_vector<unsigned short, DataStruct::Tree> rules() { return rules_; }
     protected:
         Node* node_;
-        tracking_vector<unsigned short, DataStruct::Tree>* rules_;
+        tracking_vector<unsigned short, DataStruct::Tree> rules_;
 };
 
 typedef InternalRoot* EntryType;
@@ -126,6 +125,21 @@ class Queue {
                 push(*it);
             }
         }
+        void garbage_collect_queue(CacheTree* tree, Node* node, unsigned short thread_id) {
+            tree->decrement_num_nodes();
+            logger->removeFromMemory(sizeof(*node), DataStruct::Tree);
+            tree->lock(thread_id);
+            node->lock();
+            if (!node->deleted()) {
+                Node* parent = node->parent();
+                parent->delete_child(node->id());
+            }
+            node->unlock();
+            node->clear_children();
+            delete node;
+            tree->unlock(thread_id);
+        }
+
 
         std::pair<EntryType, tracking_vector<unsigned short, DataStruct::Tree> > select(CacheTree* tree, VECTOR captured, unsigned short thread_id) {
 begin:
@@ -133,7 +147,6 @@ begin:
             tracking_vector<unsigned short, DataStruct::Tree> prefix;
             Node *node;
             EntryType iroot;
-            tracking_vector<unsigned short, DataStruct::Tree> init_rules;
             bool valid = true;
             double lb;
             do {
@@ -160,18 +173,7 @@ begin:
                     min_obj_lk.unlock();
                     node->unlock();
                     if(featureDecisions->do_garbage_collection()) {
-                        tree->decrement_num_nodes();
-                        logger->removeFromMemory(sizeof(*node), DataStruct::Tree);
-                        tree->lock(thread_id);
-                        node->lock();
-                        if (!node->deleted()) {
-                            Node* parent = node->parent();
-                            parent->delete_child(node->id());
-                        }
-                        node->unlock();
-                        node->clear_children();
-                        delete node;
-                        tree->unlock(thread_id);
+                        garbage_collect_queue(tree, node, thread_id);
                     }
                     valid = false;
                 } else {

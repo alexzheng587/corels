@@ -34,7 +34,9 @@ public:
     virtual void closeFile() {}
     NullLogger() {}
     NullLogger(double c, size_t nrules, int verbosity, char *log_fname, int freq) {}
-    ~NullLogger() {}
+    ~NullLogger() {
+        mpz_clear(_state.remaining_space_size);
+    }
 
     virtual void setLogFileName(char *fname) {}
     virtual void dumpState() {}
@@ -188,6 +190,7 @@ public:
     ~Logger() {
         free(_state.prefix_lens);
         closeFile();
+        mpz_clear(_state.remaining_space_size);
     }
 
     void setLogFileName(char *fname) override;

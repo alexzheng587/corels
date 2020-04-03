@@ -6,7 +6,7 @@ class FeatureToggle
         bool garbage_collect_;
     public:
         FeatureToggle(/* args */);
-        ~FeatureToggle();
+        ~FeatureToggle() {};
 
         FeatureToggle(bool garbage_collect)
         {

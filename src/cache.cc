@@ -77,6 +77,7 @@ CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, size_t nthreads,
 }
 
 CacheTree::~CacheTree() {
+    printf("CacheTree destructor\n");
 	if (t_)
         close_print_file();
     std::vector<Node*> nodes;

@@ -301,6 +301,7 @@ int main(int argc, char *argv[]) {
     printf("delete permutation map\n");
     delete p;
     printf("tree destructors\n");
+    // TODO: maybe deadlocking here?
     delete tree;
     delete featureDecisions;
     delete logger;

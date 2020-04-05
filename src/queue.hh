@@ -22,6 +22,8 @@ class InternalRoot {
             rules_ = rules;
         }
         ~InternalRoot() {
+            //printf("delete iroot with node %p\n", node_);
+            node_ = (Node*) 0xDEADBEEF;
             /*if (node_ != NULL) {
                 delete node_;
             }*/
@@ -125,88 +127,11 @@ class Queue {
                 push(*it);
             }
         }
-        void garbage_collect_queue(CacheTree* tree, Node* node, unsigned short thread_id) {
-            tree->decrement_num_nodes();
-            logger->removeFromMemory(sizeof(*node), DataStruct::Tree);
-            tree->lock(thread_id);
-            node->lock();
-            if (!node->deleted()) {
-                Node* parent = node->parent();
-                parent->delete_child(node->id());
-            }
-            node->unlock();
-            node->clear_children();
-            delete node;
-            tree->unlock(thread_id);
-        }
 
-
-        std::pair<EntryType, tracking_vector<unsigned short, DataStruct::Tree> > select(CacheTree* tree, VECTOR captured, unsigned short thread_id) {
-begin:
-            int cnt;
-            tracking_vector<unsigned short, DataStruct::Tree> prefix;
-            Node *node;
-            EntryType iroot;
-            bool valid = true;
-            double lb;
-            do {
-                iroot = q_->top();
-                node = iroot->node();
-                q_->pop();
-                // We can arrive at a situation where a thread is slow to start
-                // and therefore the root hasn't been popped off for the last thread
-                // and it already has children -- this is not an error and we shouldn't fail the assert
-                // TODO: selected_node can't have children in your split
-                //if (selected_node != tree->root())
-                //    assert (selected_node->num_children() == 0);
-                if (tree->ablation() != 2)
-                    lb = node->lower_bound() + tree->c();
-                else
-                    lb = node->lower_bound();
-                logger->setCurrentLowerBound(lb);
-
-                node->lock();
-                node->set_in_queue(false);
-                // delete leaf nodes that were lazily marked
-                min_obj_lk.lock();
-                if (node->deleted() || (lb >= tree->min_objective())) {
-                    min_obj_lk.unlock();
-                    node->unlock();
-                    if(featureDecisions->do_garbage_collection()) {
-                        garbage_collect_queue(tree, node, thread_id);
-                    }
-                    valid = false;
-                } else {
-                    min_obj_lk.unlock();
-                    node->unlock();
-                    valid = true;
-                }
-            } while (!q_->empty() && !valid);
-            if (!valid) {
-                return std::make_pair((EntryType)NULL, prefix);
-            }
-
-            rule_vclear(tree->nsamples(), captured);
-            while (node != tree->root()) {
-                // need to delete interior nodes lazily too when parallel
-                if(node->deleted()) {
-                    if(featureDecisions->do_garbage_collection()) {
-                        // if the node is a leaf node, we can physically delete it (destructive mode)
-                        // otherwise, call delete_subtree non-destructively
-                        Node* parent = node->parent();
-                        parent->delete_child(node->id());
-                        delete_subtree(tree, node, (node->live_children() == 0), false, thread_id);
-                    }
-                    goto begin;
-                }
-                rule_vor(captured,
-                         captured, tree->rule(node->id()).truthtable,
-                         tree->nsamples(), &cnt);
-                prefix.push_back(node->id());
-                node = node->parent();
-            }
-            std::reverse(prefix.begin(), prefix.end());
-            return std::make_pair(iroot, prefix);
+        InternalRoot* select() {
+            InternalRoot* iroot = front();
+            pop();
+            return iroot;
         }
 
     protected:
@@ -226,6 +151,9 @@ extern void evaluate_children(CacheTree* tree, Node* parent,
     tracking_vector<unsigned short, DataStruct::Tree> parent_prefix,
     VECTOR parent_not_captured, std::vector<unsigned short> rules, Queue* q,
     PermutationMap* p, unsigned short thread_id);
+
+extern bool is_valid_node(Node* node, CacheTree* tree);
+extern tracking_vector<unsigned short, DataStruct::Tree> get_parent_prefix(CacheTree* tree, Node* node, VECTOR captured);
 
 extern bool bbound_loop(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
     VECTOR captured, VECTOR not_captured, unsigned short thread_id, SharedQueue *shared_q);

@@ -5,6 +5,7 @@
 #include "queue.hh"
 #include <algorithm>
 #include <iostream>
+#include <memory>
 #include <mutex>
 #include <numeric>
 #include <stdio.h>
@@ -19,6 +20,7 @@ Queue::Queue(std::function<bool(EntryType, EntryType)> cmp, char const *type)
     : q_(new q(cmp)), type_(type), cmp_(cmp) {}
 
 Queue::~Queue() {
+    printf("Queue destructor\n");
     while (!q_->empty()) {
         EntryType ent = front();
         pop();
@@ -215,20 +217,15 @@ void split_work(CacheTree *tree, Queue* q, SharedQueue *shared_q) {
     for (size_t i = 0; i < shared_q->size(); ++i) {
         other_qs.push_back(shared_q->pop());
     }
-   // }
-    shared_q_lk.unlock();
     
     assert (q->size() > 0);
     assert (q->size() < 1073741824);
     size_t q_sz = (q->size() / (other_qs.size() + 1)) + 1;
     for (std::vector<Queue*>::iterator it = other_qs.begin(); it != other_qs.end(); ++it) {
         Queue* other_q = *it;
-        /*for(size_t j = 0; j < q_sz / n_splits; ++j) {
-            other_q->push(q->front());
-        }*/
         q->move(other_q, q_sz);
-        //tree->decrement_num_inactive_threads();
     }
+    shared_q_lk.unlock();
     std::unique_lock<std::mutex> unique_inactive_thread_lk(inactive_thread_lk);
     inactive_thread_cv.notify_all();
     //tree->wake_n_inactive(tree->num_inactive_threads());
@@ -236,6 +233,59 @@ void split_work(CacheTree *tree, Queue* q, SharedQueue *shared_q) {
     //    inactive_thread_cv.notify_one();
     return;
 }
+
+bool is_valid_node(Node* node, CacheTree* tree) {
+    bool valid;
+    double lb;
+    // We can arrive at a situation where a thread is slow to start
+    // and therefore the root hasn't been popped off for the last thread
+    // and it already has children -- this is not an error and we shouldn't fail the assert
+    // TODO: selected_node can't have children in your split
+    //if (selected_node != tree->root())
+    //    assert (selected_node->num_children() == 0);
+    if (tree->ablation() != 2)
+        lb = node->lower_bound() + tree->c();
+    else
+        lb = node->lower_bound();
+    logger->setCurrentLowerBound(lb);
+
+    node->lock();
+    node->set_in_queue(false);
+    // delete leaf nodes that were lazily marked
+    min_obj_lk.lock();
+    if (node->deleted() || (lb >= tree->min_objective())) {
+        min_obj_lk.unlock();
+        node->unlock();
+        if(featureDecisions->do_garbage_collection()) {
+            // TODO: add delete_subtree call here
+            // e.g. delete_subtree(tree, node, (node->live_children() == 0), false, thread_id);
+            // garbage_collect_queue(tree, node, thread_id);
+        }
+        valid = false;
+    } else {
+        min_obj_lk.unlock();
+        node->unlock();
+        valid = true;
+    }
+    return valid;
+}
+
+tracking_vector<unsigned short, DataStruct::Tree> get_parent_prefix(CacheTree* tree, Node* node, VECTOR captured) {
+    tracking_vector<unsigned short, DataStruct::Tree> prefix;
+    int cnt;
+    rule_vclear(tree->nsamples(), captured);
+    while (node != tree->root()) {
+        // need to delete interior nodes lazily too when parallel
+        rule_vor(captured,
+                 captured, tree->rule(node->id()).truthtable,
+                 tree->nsamples(), &cnt);
+        prefix.push_back(node->id());
+        node = node->parent();
+    }
+    std::reverse(prefix.begin(), prefix.end());
+    return prefix;
+}
+
 
 /**
  * Returns true if exiting because queue is empty, false if num_nodes reached
@@ -250,6 +300,7 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
     min_obj_lk.unlock();
 
     while ((tree->num_nodes() < max_num_nodes) && !q->empty()) {
+        // TODO: fix synchronization here
         if (!shared_q->empty()) {
             shared_q_lk.lock();
             if (!shared_q->empty() && q->size() > tree->num_threads()) {
@@ -259,45 +310,45 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
             }
         }
         double t0 = logger->timestamp();
-        std::pair<EntryType, tracking_vector<unsigned short, DataStruct::Tree> > node_ordered = q->select(tree, captured, thread_id);
+        //std::pair<InternalRoot*, tracking_vector<unsigned short, DataStruct::Tree> > node_ordered = q->select(tree, captured, thread_id);
+        InternalRoot* iroot = q->select();
+        Node* current_node = iroot->node();
+        if(!is_valid_node(current_node, tree)) {
+            continue;
+        }
+        tracking_vector<unsigned short, DataStruct::Tree> parent_prefix = get_parent_prefix(tree, current_node, captured);
         logger->addToNodeSelectTime(logger->time_diff(t0));
         logger->incNodeSelectNum();
-        InternalRoot* iroot = node_ordered.first;
-        if(iroot) {
-            tracking_vector<unsigned short, DataStruct::Tree> parent_prefix = node_ordered.second;
-            Node *current_node = iroot->node();
-            tracking_vector<unsigned short, DataStruct::Tree> initialization_rules = iroot->rules();
-            // not_captured = default rule truthtable & ~ captured
-            rule_vandnot(not_captured,
-                         tree->rule(0).truthtable, captured,
-                         tree->nsamples(), &cnt);
-            if (initialization_rules.empty()) {
-                initialization_rules = tree->rule_perm();
-            }
 
-            double t1 = logger->timestamp();
-            evaluate_children(tree, current_node, parent_prefix, not_captured, initialization_rules, q, p, thread_id);
-            logger->addToEvalChildrenTime(logger->time_diff(t1));
-            logger->incEvalChildrenNum();
-
-            min_obj_lk.lock();
-            // SET CUR MIN OBJECTIVE
-            if (tree->min_objective() < cur_min_objective) {
-                cur_min_objective = tree->min_objective();
-                min_obj_lk.unlock();
-                if (featureDecisions->do_garbage_collection()) {
-                    printf("THREAD %zu: before garbage_collect. num_nodes: %zu, log10(remaining): %zu\n",
-                           thread_id, tree->num_nodes(), logger->getLogRemainingSpaceSize());
-                    logger->dumpState();
-                    tree->garbage_collect(thread_id);
-                    logger->dumpState();
-                    printf("THREAD %zu: after garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", thread_id, tree->num_nodes(), logger->getLogRemainingSpaceSize());
-                }
-            } else {
-                min_obj_lk.unlock();
-            }
-            delete iroot;
+        // not_captured = default rule truthtable & ~ captured
+        rule_vandnot(not_captured, tree->rule(0).truthtable, captured, tree->nsamples(), &cnt);
+        tracking_vector<unsigned short, DataStruct::Tree> initialization_rules = iroot->rules();
+        if (initialization_rules.empty()) {
+            initialization_rules = tree->rule_perm();
         }
+
+        double t1 = logger->timestamp();
+        evaluate_children(tree, current_node, parent_prefix, not_captured, initialization_rules, q, p, thread_id);
+        logger->addToEvalChildrenTime(logger->time_diff(t1));
+        logger->incEvalChildrenNum();
+
+        min_obj_lk.lock();
+        // SET CUR MIN OBJECTIVE
+        if (tree->min_objective() < cur_min_objective) {
+            cur_min_objective = tree->min_objective();
+            min_obj_lk.unlock();
+            if (featureDecisions->do_garbage_collection()) {
+                printf("THREAD %zu: before garbage_collect. num_nodes: %zu, log10(remaining): %zu\n",
+                       thread_id, tree->num_nodes(), logger->getLogRemainingSpaceSize());
+                logger->dumpState();
+                tree->garbage_collect(thread_id);
+                logger->dumpState();
+                printf("THREAD %zu: after garbage_collect. num_nodes: %zu, log10(remaining): %zu\n", thread_id, tree->num_nodes(), logger->getLogRemainingSpaceSize());
+            }
+        } else {
+            min_obj_lk.unlock();
+        }
+        //delete iroot;
         logger->setQueueSize(q->size());
         ++num_iter;
         if ((num_iter % 10000) == 0) {

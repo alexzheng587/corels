@@ -139,7 +139,10 @@ public:
     PrefixPermutationMap();
     ~PrefixPermutationMap();
     size_t size() override {
-        return pmap->size();
+        map_lk.lock();
+        size_t sz = pmap->size();
+        map_lk.unlock();
+        return sz;
     }
     Node *insert(unsigned short new_rule, size_t nrules, bool prediction,
                  bool default_prediction, double lower_bound, double objective, Node *parent,

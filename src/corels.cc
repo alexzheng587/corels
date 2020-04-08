@@ -1,9 +1,9 @@
-# ifdef VAL
+#ifdef VAL
 #include "common.hh"
-# endif
-#include <assert.h>
+#endif
 #include "queue.hh"
 #include <algorithm>
+#include <assert.h>
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -162,7 +162,7 @@ void evaluate_children(CacheTree *tree, Node *parent,
                 n->lock();
                 n->set_in_queue(true);
                 n->unlock();
-                InternalRoot* iroot = new InternalRoot(n);
+                InternalRoot *iroot = new InternalRoot(n);
                 q->push(iroot);
                 logger->setQueueSize(q->size());
                 if (tree->calculate_size())
@@ -212,20 +212,24 @@ void bbound_init(CacheTree *tree) {
 }
 
 // Assumes we have thread_inactive_lk when enters, releases lock within this function
-void split_work(CacheTree *tree, Queue* q, SharedQueue *shared_q) {
-    std::vector<Queue*> other_qs;
-    for (size_t i = 0; i < shared_q->size(); ++i) {
-        other_qs.push_back(shared_q->pop());
+void split_work(CacheTree *tree, Queue *q, SharedQueue *shared_q) {
+    std::vector<Queue *> other_qs;
+    for (size_t i = 0; i < shared_q->size_approx(); ++i) {
+        Queue *q;
+        if (shared_q->try_dequeue(&q)) {
+            other_qs.push_back(q);
+        }
+        //other_qs.push_back(shared_q->pop());
     }
-    
-    assert (q->size() > 0);
-    assert (q->size() < 1073741824);
+
+    assert(q->size() > 0);
+    assert(q->size() < 1073741824);
     size_t q_sz = (q->size() / (other_qs.size() + 1)) + 1;
-    for (std::vector<Queue*>::iterator it = other_qs.begin(); it != other_qs.end(); ++it) {
-        Queue* other_q = *it;
+    for (std::vector<Queue *>::iterator it = other_qs.begin(); it != other_qs.end(); ++it) {
+        Queue *other_q = *it;
         q->move(other_q, q_sz);
     }
-    shared_q_lk.unlock();
+    //shared_q_lk.unlock();
     std::unique_lock<std::mutex> unique_inactive_thread_lk(inactive_thread_lk);
     inactive_thread_cv.notify_all();
     //tree->wake_n_inactive(tree->num_inactive_threads());
@@ -234,7 +238,7 @@ void split_work(CacheTree *tree, Queue* q, SharedQueue *shared_q) {
     return;
 }
 
-bool is_valid_node(Node* node, CacheTree* tree) {
+bool is_valid_node(Node *node, CacheTree *tree) {
     bool valid;
     double lb;
     // We can arrive at a situation where a thread is slow to start
@@ -256,7 +260,7 @@ bool is_valid_node(Node* node, CacheTree* tree) {
     if (node->deleted() || (lb >= tree->min_objective())) {
         min_obj_lk.unlock();
         node->unlock();
-        if(featureDecisions->do_garbage_collection()) {
+        if (featureDecisions->do_garbage_collection()) {
             // TODO: add delete_subtree call here
             // e.g. delete_subtree(tree, node, (node->live_children() == 0), false, thread_id);
             // garbage_collect_queue(tree, node, thread_id);
@@ -270,7 +274,7 @@ bool is_valid_node(Node* node, CacheTree* tree) {
     return valid;
 }
 
-tracking_vector<unsigned short, DataStruct::Tree> get_parent_prefix(CacheTree* tree, Node* node, VECTOR captured) {
+tracking_vector<unsigned short, DataStruct::Tree> get_parent_prefix(CacheTree *tree, Node *node, VECTOR captured) {
     tracking_vector<unsigned short, DataStruct::Tree> prefix;
     int cnt;
     rule_vclear(tree->nsamples(), captured);
@@ -285,7 +289,6 @@ tracking_vector<unsigned short, DataStruct::Tree> get_parent_prefix(CacheTree* t
     std::reverse(prefix.begin(), prefix.end());
     return prefix;
 }
-
 
 /**
  * Returns true if exiting because queue is empty, false if num_nodes reached
@@ -302,18 +305,18 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
     while ((tree->num_nodes() < max_num_nodes) && !q->empty()) {
         // TODO: fix synchronization here
         if (!shared_q->empty()) {
-            shared_q_lk.lock();
+            //shared_q_lk.lock();
             if (!shared_q->empty() && q->size() > tree->num_threads()) {
                 split_work(tree, q, shared_q);
-            } else {
+            } /* else {
                 shared_q_lk.unlock();
-            }
+            }*/
         }
         double t0 = logger->timestamp();
         //std::pair<InternalRoot*, tracking_vector<unsigned short, DataStruct::Tree> > node_ordered = q->select(tree, captured, thread_id);
-        InternalRoot* iroot = q->select();
-        Node* current_node = iroot->node();
-        if(!is_valid_node(current_node, tree)) {
+        InternalRoot *iroot = q->select();
+        Node *current_node = iroot->node();
+        if (!is_valid_node(current_node, tree)) {
             continue;
         }
         tracking_vector<unsigned short, DataStruct::Tree> parent_prefix = get_parent_prefix(tree, current_node, captured);
@@ -368,14 +371,14 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
         // printf("Exited because queue empty\n");
         return true;
     } else {
-        if(logger->getVerbosity() > 0) {
+        if (logger->getVerbosity() > 0) {
             printf("Exited because max number of nodes (%zu) in the tree was reached\n", tree->num_nodes());
         }
         return false;
     }
 }
 
-bool bbound_loop_cond(bool max_node_reached, SharedQueue* shared_q, CacheTree* tree) {
+bool bbound_loop_cond(bool max_node_reached, SharedQueue *shared_q, CacheTree *tree) {
     return !max_node_reached && shared_q->size() < tree->num_threads();
 }
 

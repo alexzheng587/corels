@@ -4,8 +4,11 @@
 #include "queue.hh"
 #include <queue>
 #include <mutex>
+#include "concurrentqueue.h"
 
-class SharedQueue
+typedef SharedQueue moodycamel::ConcurrentQueue<Queue*>;
+
+class CSharedQueue
 {
     //
     private:
@@ -14,10 +17,10 @@ class SharedQueue
         size_t accs_;
 
     public:
-        SharedQueue(/* args */) {
+        CSharedQueue(/* args */) {
           accs_ = 0;
         };
-        ~SharedQueue() {};
+        ~CSharedQueue() {};
 
         inline bool empty();
         inline size_t size();
@@ -26,19 +29,19 @@ class SharedQueue
         inline size_t n_acc() const;
 };
 
-inline bool SharedQueue::empty() {
+inline bool CSharedQueue::empty() {
     return q_.empty();
 }
 
-inline size_t SharedQueue::size() {
+inline size_t CSharedQueue::size() {
     return q_.size();
 }
 
-inline void SharedQueue::push(Queue* entry) {
+inline void CSharedQueue::push(Queue* entry) {
     q_.push(entry);
 }
 
-inline Queue* SharedQueue::pop() {
+inline Queue* CSharedQueue::pop() {
     if(q_.empty()) {
         // TODO: change to NULL
         return (Queue*)0xDEADBEEF;
@@ -48,6 +51,7 @@ inline Queue* SharedQueue::pop() {
     return entry;
 }
 
-inline size_t SharedQueue::n_acc() const {
+inline size_t CSharedQueue::n_acc() const {
     return accs_;
 }
+*

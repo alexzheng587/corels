@@ -15,13 +15,14 @@ extern std::mutex min_obj_lk;
 extern std::mutex inactive_thread_lk;
 extern std::mutex shared_q_lk;
 std::condition_variable inactive_thread_cv;
+std::atomic<int> emptyQueues(0);
 
 Queue::Queue(std::function<bool(EntryType, EntryType)> cmp, char const *type)
     : q_(new q(cmp)), type_(type), cmp_(cmp) {}
 
 Queue::~Queue() {
-    printf("Queue destructor\n");
-    while (!q_->empty()) {
+    //printf("Queue destructor\n");
+    while (q_ != NULL && !q_->empty()) {
         EntryType ent = front();
         pop();
         delete ent;
@@ -213,25 +214,34 @@ void bbound_init(CacheTree *tree) {
 
 // Assumes we have thread_inactive_lk when enters, releases lock within this function
 void split_work(CacheTree *tree, Queue *q, SharedQueue *shared_q) {
-    std::vector<Queue *> other_qs;
-    for (size_t i = 0; i < shared_q->size_approx(); ++i) {
+    //std::vector<Queue *> other_qs;
+    /*for (size_t i = 0; i < shared_q->size_approx(); ++i) {
         Queue *q;
-        if (shared_q->try_dequeue(&q)) {
+        if (shared_q->try_dequeue(q)) {
             other_qs.push_back(q);
         }
         //other_qs.push_back(shared_q->pop());
-    }
+    }*/
 
     assert(q->size() > 0);
     assert(q->size() < 1073741824);
-    size_t q_sz = (q->size() / (other_qs.size() + 1)) + 1;
-    for (std::vector<Queue *>::iterator it = other_qs.begin(); it != other_qs.end(); ++it) {
+    //size_t q_sz = (q->size() / (other_qs.size() + 1)) + 1;
+    /*for (std::vector<Queue *>::iterator it = other_qs.begin(); it != other_qs.end(); ++it) {
         Queue *other_q = *it;
         q->move(other_q, q_sz);
-    }
+    }*/
+    size_t q_sz = (q->size() / 2) + 1;
+    Queue* other_q = new Queue();
+    //emptyQueues.fetch_add(-1, std::memory_order_release);
+    q->move(other_q, q_sz);
+    assert(other_q->size() > 0);
+    assert(other_q->size() < 1073741824);
+    assert(q->size() > 0);
+    assert(q->size() < 1073741824);
+    shared_q->enqueue(other_q);
     //shared_q_lk.unlock();
-    std::unique_lock<std::mutex> unique_inactive_thread_lk(inactive_thread_lk);
-    inactive_thread_cv.notify_all();
+    //std::unique_lock<std::mutex> unique_inactive_thread_lk(inactive_thread_lk);
+    //inactive_thread_cv.notify_all();
     //tree->wake_n_inactive(tree->num_inactive_threads());
     //for(unsigned short i = 0; i < tree->num_inactive_threads(); ++i)
     //    inactive_thread_cv.notify_one();
@@ -303,14 +313,10 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
     min_obj_lk.unlock();
 
     while ((tree->num_nodes() < max_num_nodes) && !q->empty()) {
-        // TODO: fix synchronization here
-        if (!shared_q->empty()) {
-            //shared_q_lk.lock();
-            if (!shared_q->empty() && q->size() > tree->num_threads()) {
-                split_work(tree, q, shared_q);
-            } /* else {
-                shared_q_lk.unlock();
-            }*/
+        // Need to ensure that queue has enough entries to split among threads
+        if (!q->empty() && emptyQueues.load(std::memory_order_acquire) > 0 && q->size() > 10) {
+            // TODO: split work, update mepty queues
+            split_work(tree, q, shared_q);
         }
         double t0 = logger->timestamp();
         //std::pair<InternalRoot*, tracking_vector<unsigned short, DataStruct::Tree> > node_ordered = q->select(tree, captured, thread_id);
@@ -353,6 +359,9 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
         }
         //delete iroot;
         logger->setQueueSize(q->size());
+        //if(q->empty()) {
+         //   emptyQueues.fetch_add(1, std::memory_order_release);
+        //}
         ++num_iter;
         if ((num_iter % 10000) == 0) {
             if (logger->getVerbosity() >= 10)
@@ -368,7 +377,8 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
         printf("THREAD %zu: iter: %zu, tree: %zu, queue: %zu, pmap: %zu, log10(remaining): %zu\n",
                thread_id, num_iter, tree->num_nodes(), q->size(), p->size(), logger->getLogRemainingSpaceSize());
     if (q->empty()) {
-        // printf("Exited because queue empty\n");
+        printf("Exited because queue empty\n");
+        emptyQueues.fetch_add(1, std::memory_order_release);
         return true;
     } else {
         if (logger->getVerbosity() > 0) {
@@ -378,8 +388,12 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
     }
 }
 
+/*
+ * Returns true if loop should continue, false if it's time to exit
+ */
 bool bbound_loop_cond(bool max_node_reached, SharedQueue *shared_q, CacheTree *tree) {
-    return !max_node_reached && shared_q->size() < tree->num_threads();
+    //return !max_node_reached && pendingQueues.load(std::memory_order_acquire) =
+    return !max_node_reached && shared_q->size_approx() < tree->num_threads();
 }
 
 /*
@@ -403,23 +417,61 @@ int bbound(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap *p,
     // 1. The max number of nodes specified by the user is reached
     // 2. There is no more work to do (all queues are empty == shared_q is full)
     // Encodes implicit invariant that queues must be empty to be on shared_q
-    shared_q_lk.lock();
-    while (bbound_loop_cond(max_node_reached, shared_q, tree)) {
-        shared_q_lk.unlock();
+//    while (bbound_loop_cond(max_node_reached, shared_q, tree)) {
+    while (true) {
         max_node_reached = !bbound_loop(tree, max_num_nodes, q, p, captured, not_captured, thread_id, shared_q, start);
-        std::unique_lock<std::mutex> unique_inactive_thread_lk(inactive_thread_lk);
-        shared_q_lk.lock();
-        shared_q->push(q);
-
-        while (q->empty() && bbound_loop_cond(max_node_reached, shared_q, tree)) {
-            shared_q_lk.unlock();
-            inactive_thread_cv.wait(unique_inactive_thread_lk);
-            shared_q_lk.lock();
+        if(max_node_reached) {
+            break;
+        }
+        if (q->empty() && emptyQueues.load(std::memory_order_acquire) < tree->num_threads()) {
+            // TODO: block
+            delete q;
+            q = (Queue*)0xDEADBEEF;
+            shared_q->wait_dequeue(q);
+            if (emptyQueues.load(std::memory_order_acquire) == tree->num_threads()) {
+                break;
+            }
+            emptyQueues.fetch_add(-1, std::memory_order_release);
+        } else if (q->empty() && emptyQueues.load(std::memory_order_acquire) == tree->num_threads()) {
+            // TODO: wake up all and exit
+            for(int i = 0; i < tree->num_threads() - 1; ++i) {
+                shared_q->enqueue(q);
+            }
+            break;
+        } else {
+            assert(false && "q should not be empty here");
         }
     }
-    shared_q_lk.unlock();
-    std::unique_lock<std::mutex> unique_inactive_thread_lk(inactive_thread_lk);
-    inactive_thread_cv.notify_all();
+
+/*    while (pendingQueueNodes.load(std::memory_order_acquire) != 0) {
+//      while (true) {
+        max_node_reached = !bbound_loop(tree, max_num_nodes, q, p, captured, not_captured, thread_id, shared_q, start);
+        if(max_node_reached) {
+            break;
+        }
+        if (pendingQueues.load(std::memory_order_acquire) == tree->num_threads()) {
+            break;
+        }
+        shared_q->wait_dequeue(&q);
+        if (pendingQueues.load(std::memory_order_acquire) == tree->num_threads()) {
+            break;
+        }
+        //std::unique_lock<std::mutex> unique_inactive_thread_lk(inactive_thread_lk);
+        //shared_q_lk.lock();
+        //shared_q->enqueue(q);
+
+        //while (q->empty() && bbound_loop_cond(max_node_reached, shared_q, tree)) {
+            //shared_q_lk.unlock();
+            //inactive_thread_cv.wait(unique_inactive_thread_lk);
+            //shared_q_lk.lock();
+        //}
+    }
+    // TODO: ensure shared_q releases
+    shared_q->enqueue(q);
+*/
+    //shared_q_lk.unlock();
+    //std::unique_lock<std::mutex> unique_inactive_thread_lk(inactive_thread_lk);
+    ////inactive_thread_cv.notify_all();
     // Print out queue
     /*ofstream f;
     if (print_queue) {

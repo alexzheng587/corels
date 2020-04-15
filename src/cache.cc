@@ -80,17 +80,22 @@ CacheTree::~CacheTree() {
     printf("CacheTree destructor\n");
 	if (t_)
         close_print_file();
-    std::vector<Node*> nodes;
+    /*std::vector<Node*> nodes;
     if (root_)
         nodes.push_back(root_);
+    size_t cur_depth = 0;
     while(!nodes.empty()) {
-        Node* node = nodes.back();
+        Node* node = nodes.front();
         nodes.pop_back();
+        if(cur_depth != node->depth()) {
+            cur_depth = node->depth();
+            printf("Moving to depth %d\n", cur_depth);
+        }
         for (std::map<unsigned short, Node*>::iterator it = node->children_begin(); it != node->children_end(); ++it) {
             nodes.push_back(it->second);
         }
         delete node;
-    }
+    }*/
 	//if (root_)
     //    delete_subtree(this, root_, true, false, 0);
 }

@@ -11,6 +11,8 @@ extern std::mutex min_obj_lk;
 
 class InternalRoot {
     public:
+        InternalRoot(InternalRoot const&)=delete;
+        InternalRoot(InternalRoot&&o):node_(o.node_){node_=nullptr;}
         InternalRoot() {
             node_ = NULL;
         }
@@ -21,13 +23,10 @@ class InternalRoot {
             node_ = node;
             rules_ = rules;
         }
-        ~InternalRoot() {
+        /*~InternalRoot() {
             //printf("delete iroot with node %p\n", node_);
             node_ = (Node*) 0xDEADBEEF;
-            /*if (node_ != NULL) {
-                delete node_;
-            }*/
-        }
+        }*/
         inline Node* node() { return node_; }
         inline tracking_vector<unsigned short, DataStruct::Tree> rules() { return rules_; }
     protected:
@@ -142,8 +141,7 @@ class Queue {
 
 
 #include "shared_queue.hh"
-extern int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
-    unsigned short thread_id, SharedQueue* shared_q);
+extern int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p, unsigned short thread_id, SharedQueue* shared_q);
 
 extern void bbound_init(CacheTree* tree);
 

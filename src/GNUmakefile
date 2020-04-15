@@ -1,6 +1,6 @@
 # IF DEBUGGING, CHANGE TO -O0
 # IF using valgrind, add -DVAL
-CFLAGS := -g -W -Wall -Wno-unused-parameter -I. -I../lib -O0 -DGMP -fno-omit-frame-pointer # @Cdefs @Pdefs
+CFLAGS := -g -W -Wall -Wno-unused-parameter -I. -I../lib -O3 -DGMP -fno-omit-frame-pointer # @Cdefs @Pdefs
 CXXFLAGS := $(CFLAGS) -std=c++11
 CFLAGS += -std=c99
 LIBS += -lpthread -lgmpxx -lgmp # -lprofiler -ltcmalloc

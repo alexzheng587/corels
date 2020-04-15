@@ -2,11 +2,12 @@
 
 #include "alloc.hh"
 #include "queue.hh"
+//#include "concurrentqueue.h"
+#include "blockingconcurrentqueue.h"
 #include <queue>
 #include <mutex>
-#include "concurrentqueue.h"
 
-typedef SharedQueue moodycamel::ConcurrentQueue<Queue*>;
+//typedef moodycamel::ConcurrentQueue<Queue*> SharedQueue;
 
 class CSharedQueue
 {
@@ -27,6 +28,14 @@ class CSharedQueue
         inline Queue* pop();
         inline void push(Queue* entry);
         inline size_t n_acc() const;
+        size_t size_approx() {
+            return size();
+        }
+        void wait_dequeue(Queue*&) {
+        }
+        void enqueue(Queue* q) {
+            push(q);
+        }
 };
 
 inline bool CSharedQueue::empty() {
@@ -51,7 +60,11 @@ inline Queue* CSharedQueue::pop() {
     return entry;
 }
 
+
 inline size_t CSharedQueue::n_acc() const {
     return accs_;
 }
-*
+
+
+typedef moodycamel::BlockingConcurrentQueue<Queue*> SharedQueue;
+//typedef CSharedQueue SharedQueue;

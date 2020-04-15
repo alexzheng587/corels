@@ -293,10 +293,11 @@ int main(int argc, char *argv[]) {
     logger->closeFile();
 
     printf("delete queue(s)\n");
-    for(size_t i = 0; i < num_threads; ++i) {
+    /*for(size_t i = 0; i < num_threads; ++i) {
         delete qs[i];
-    }
+    }*/
     printf("delete shared queue\n");
+    assert(shared_q->size_approx() == 0);
     delete shared_q;
     printf("delete permutation map\n");
     delete p;

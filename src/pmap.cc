@@ -140,7 +140,6 @@ void PrefixPermutationMap::remove_existing_node(CacheTree *tree, unsigned char *
     // If permutation is better than existing node
     Node *permuted_node;
     // Get existing node and garbage collect
-    tree->lock(thread_id);
     tracking_vector<unsigned short, DataStruct::Tree> permuted_prefix(prefix.size());
     for (unsigned char i = 0; i < indices[0]; ++i)
         permuted_prefix[i] = prefix[indices[i + 1]];
@@ -156,7 +155,6 @@ void PrefixPermutationMap::remove_existing_node(CacheTree *tree, unsigned char *
     } else {
         logger->incPmapNullNum();
     }
-    tree->unlock(thread_id);
 }
 
 Node *CapturedPermutationMap::insert(unsigned short new_rule, size_t nrules, bool prediction,

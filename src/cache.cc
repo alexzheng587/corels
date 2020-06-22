@@ -168,9 +168,13 @@ void CacheTree::insert(Node* node, unsigned short thread_id) {
         std::cout << "NULL NODE" << std::endl;
     }
     // TODO: clean up
+    unsigned short l1_rule = get_l1_rule_from_node(node);
+    // TODO: acquire l1 lock
+    // TODO: set l1 dirty
     node->child_lk_.lock();
     node->parent()->children_.insert(std::make_pair(node->id(), node));
     node->child_lk_.unlock();
+    // TODO: release l1 lock
     ++num_nodes_;
     logger->setTreeNumNodes(num_nodes_);
 }

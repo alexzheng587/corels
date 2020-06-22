@@ -294,6 +294,7 @@ tracking_vector<unsigned short, DataStruct::Tree> get_parent_prefix(CacheTree *t
                  captured, tree->rule(node->id()).truthtable,
                  tree->nsamples(), &cnt);
         prefix.push_back(node->id());
+        // TODO: add to hazard list
         node = node->parent();
     }
     std::reverse(prefix.begin(), prefix.end());
@@ -315,13 +316,13 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
     while ((tree->num_nodes() < max_num_nodes) && !q->empty()) {
         // Need to ensure that queue has enough entries to split among threads
         if (!q->empty() && emptyQueues.load(std::memory_order_acquire) > 0 && q->size() > 10) {
-            // TODO: split work, update mepty queues
             split_work(tree, q, shared_q);
         }
         double t0 = logger->timestamp();
         //std::pair<InternalRoot*, tracking_vector<unsigned short, DataStruct::Tree> > node_ordered = q->select(tree, captured, thread_id);
         InternalRoot *iroot = q->select();
         Node *current_node = iroot->node();
+        // TODO: Add to hazard list
         if (!is_valid_node(current_node, tree)) {
             continue;
         }

@@ -144,6 +144,7 @@ void PrefixPermutationMap::remove_existing_node(CacheTree *tree, unsigned char *
     for (unsigned char i = 0; i < indices[0]; ++i)
         permuted_prefix[i] = prefix[indices[i + 1]];
     if ((permuted_node = tree->check_prefix(permuted_prefix)) != NULL) {
+        // TODO: add to hazard list
         if (featureDecisions->do_garbage_collection()) {
             Node *permuted_parent = permuted_node->parent();
             permuted_parent->delete_child(permuted_node->id());

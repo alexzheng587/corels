@@ -3,7 +3,7 @@
 #include "alloc.hh"
 #include "queue.hh"
 //#include "concurrentqueue.h"
-#include "../lib/blockingconcurrentqueue.h"
+#include "blockingconcurrentqueue.h"
 #include <queue>
 #include <mutex>
 

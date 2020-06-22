@@ -1,6 +1,6 @@
 # IF DEBUGGING, CHANGE TO -O0
 # IF using valgrind, add -DVAL
-CFLAGS := -g -W -Wall -Wno-unused-parameter -I. -I../lib -O0 -DGMP -fno-omit-frame-pointer # @Cdefs @Pdefs
+CFLAGS := -g -W -Wall -Wno-unused-parameter -I. -I../lib -O3 -DGMP -fno-omit-frame-pointer # @Cdefs @Pdefs
 CXXFLAGS := $(CFLAGS) -std=c++11
 CFLAGS += -std=c99
 LIBS += -lpthread -lgmpxx -lgmp # -lprofiler -ltcmalloc
@@ -19,7 +19,7 @@ CLEAN = corels *~ *.o *.so
 
 all: corels
 
-corels: run.o main.o corels.o pmap.o cache.o rulelib.o utils.o
+corels: main.o corels.o pmap.o cache.o rulelib.o utils.o
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(LIBS)
 
 evaluate-test: evaluate-test.o evaluate.o corels.o pmap.o cache.o rulelib.o utils.o
@@ -48,9 +48,6 @@ evaluate-test.o: evaluate-test.cc $(DEPSDIR)/stamp
 
 evaluate.o: evaluate.cc $(DEPSDIR)/stamp
 	$(CXX) $(CFLAGS) $(DEPCFLAGS) -c $< -o $@
-
-run.o: run.cc $(DEPSDIR)/stamp
-	$(CXX) $(CXXFLAGS) $(DEPCFLAGS) -c $< -o $@
 
 acceptance:
 	cd ../tests_acceptance && ./test.sh

@@ -23,6 +23,7 @@ std::mutex shared_q_lk;
  * Logs statistics about the execution of the algorithm and dumps it to a file.
  * To turn off, pass verbosity <= 1
  */
+NullLogger* logger;
 
 FeatureToggle* featureDecisions;
 

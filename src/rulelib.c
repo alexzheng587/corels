@@ -1016,11 +1016,65 @@ rule_print_all(rule_t *rules, int nrules, int nsamples, int print_samples)
  * Return 0 if bit e is not set in vector v; return non-0 otherwise.
  */
 int
-rule_isset(VECTOR v, int e) {
+rule_isset(VECTOR v, int e, int n) {
 #ifdef GMP
 	return mpz_tstbit(v, e);
 #else
-	return ((v[e/BITS_PER_ENTRY] & (1 << (e % BITS_PER_ENTRY))) != 0);
+    e = -e + n - 1;
+    if(e >= n) {
+        return 0;
+    }
+
+    v_entry one = 1;
+    int shift = BITS_PER_ENTRY - (e % BITS_PER_ENTRY) - 1;
+/*    if(e / BITS_PER_ENTRY == ((n + BITS_PER_ENTRY - 1) / BITS_PER_ENTRY - 1) && (n % BITS_PER_ENTRY) != 0) {
+        shift -= BITS_PER_ENTRY - (n % BITS_PER_ENTRY);
+    }
+*/
+	return !!(v[e / BITS_PER_ENTRY] & (one << shift));
+#endif
+}
+
+void
+rule_set(VECTOR v, int e, int val, int n) {
+#ifdef GMP
+    if(val)
+        mpz_setbit(v, e);
+    else
+        mpz_clrbit(v, e);
+#else
+    e = -e + n - 1;
+    if(e >= n) {
+        return;
+    }
+
+    v_entry one = 1;
+    int shift = BITS_PER_ENTRY - (e % BITS_PER_ENTRY) - 1;
+    // Only needed if the last v_entry is not full and right-aligned
+/*    if(e / BITS_PER_ENTRY == ((n + BITS_PER_ENTRY - 1) / BITS_PER_ENTRY - 1) && (n % BITS_PER_ENTRY) != 0) {
+        shift -= BITS_PER_ENTRY - (n % BITS_PER_ENTRY);
+    }
+*/
+    if(val)
+        v[e / BITS_PER_ENTRY] |= (one << shift);
+    else
+	    v[e/BITS_PER_ENTRY] &= ((v_entry) -1) - (one << shift);
+#endif
+}
+
+int
+rule_vector_cmp(const VECTOR v1, const VECTOR v2, int len1, int len2) {
+#ifdef GMP
+    return mpz_cmp(v1, v2);
+#else
+    if (len1 != len2)
+        return 2 * (len1 > len2) - 1;
+    size_t nentries = (len1 + BITS_PER_ENTRY - 1)/BITS_PER_ENTRY;
+    for (size_t i = 0; i < nentries; i++) {
+        if (v1[i] != v2[i])
+            return 2 * (v1[i] > v2[i]) - 1;
+    }
+    return 0;
 #endif
 }
 

@@ -36,7 +36,7 @@ Node *PrefixPermutationMap::insert(unsigned short new_rule, size_t nrules, bool 
     logger->incPermMapInsertionNum();
 
     // Initialization of prefix_key permutation
-    std::pair<prefix_key *, unsigned char *> prefix_key_and_order = construct_prefix_key_from_prefix_vector(prefix, new_rule, len_prefix);
+    std::pair<prefix_key *, unsigned char *> prefix_key_and_order = construct_prefix_key_and_order_from_prefix_vector(prefix, new_rule, len_prefix);
     prefix_key *key = prefix_key_and_order.first;
     unsigned char *ordered = prefix_key_and_order.second;
     Node *child = NULL;
@@ -88,7 +88,13 @@ Node *PrefixPermutationMap::insert(unsigned short new_rule, size_t nrules, bool 
     return child;
 }
 
-std::pair<prefix_key *, unsigned char *> PrefixPermutationMap::construct_prefix_key_from_prefix_vector(tracking_vector<unsigned short, DataStruct::Tree> prefix,
+prefix_key* PrefixPermutationMap::construct_prefix_key_from_prefix_vector(tracking_vector<unsigned short, DataStruct::Tree> prefix) {
+    std::sort(prefix.begin(), prefix.end());
+    prefix_key *key = new prefix_key(prefix, prefix.size());
+    return key;
+}
+
+std::pair<prefix_key *, unsigned char *> PrefixPermutationMap::construct_prefix_key_and_order_from_prefix_vector(tracking_vector<unsigned short, DataStruct::Tree> prefix,
                                                                                                      unsigned short new_rule, int len_prefix) {
     // Initializing permutation constructs for purposes of comparison
     unsigned char *ordered = (unsigned char *)malloc(sizeof(unsigned char) * (len_prefix + 1));
@@ -100,8 +106,7 @@ std::pair<prefix_key *, unsigned char *> PrefixPermutationMap::construct_prefix_
     std::function<bool(int, int)> cmp = [&](int i, int j) { return prefix[i] < prefix[j]; };
     std::sort(&ordered[1], &ordered[len_prefix + 1], cmp);
 
-    std::sort(prefix.begin(), prefix.end());
-    prefix_key *key = new prefix_key(prefix, len_prefix);
+    prefix_key *key = construct_prefix_key_from_prefix_vector(prefix); 
 
     logger->addToMemory((len_prefix + 1) * (sizeof(unsigned char) + sizeof(unsigned short)), DataStruct::Pmap);
     return std::make_pair(key, ordered);
@@ -155,6 +160,21 @@ void PrefixPermutationMap::remove_existing_node(CacheTree *tree, unsigned char *
         logger->incPmapDiscardNum();
     } else {
         logger->incPmapNullNum();
+    }
+}
+
+bool PrefixPermutationMap::prefix_exists_and_is_worse(tracking_vector<unsigned short, DataStruct::Tree> prefix, double lb) {
+    prefix_key *key = construct_prefix_key_from_prefix_vector(prefix);
+    PrefixMap::iterator iter = find_prefix_key_in_pmap(key);
+    // TODO: fix this as prefixes of length 1 always seem to be found and exit
+    if (iter != pmap->end()) {
+        prefix_val *cur_val = iter->second;
+        double permuted_lower_bound = cur_val->lower_bound;
+        // prefix exists -- return whether lb is worse than existing
+        return permuted_lower_bound < lb;
+    } else {
+        // prefix doesn't exist
+        return false;
     }
 }
 

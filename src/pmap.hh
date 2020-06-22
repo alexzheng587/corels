@@ -127,11 +127,7 @@ public:
                          double objective, Node *parent, int num_not_captured, int nsamples, int len_prefix,
                          double c, double equivalent_minority, CacheTree *tree, VECTOR not_captured,
                          tracking_vector<unsigned short, DataStruct::Tree> prefix, unsigned short thread_id) { return NULL; }
-    Node *check_permutation_bound(unsigned short new_rule,
-                                  size_t nrules, bool prediction, bool default_prediction, double lower_bound,
-                                  double objective, Node *parent, int num_not_captured, int nsamples, int len_prefix,
-                                  double c, double equivalent_minority, CacheTree *tree, VECTOR not_captured,
-                                  tracking_vector<unsigned short, DataStruct::Tree> prefix);
+    virtual bool prefix_exists_and_is_worse(tracking_vector<unsigned short, DataStruct::Tree> prefix, double lb) { return false; }
 };
 
 class PrefixPermutationMap : public PermutationMap {
@@ -148,9 +144,11 @@ public:
                  bool default_prediction, double lower_bound, double objective, Node *parent,
                  int num_not_captured, int nsamples, int len_prefix, double c, double equivalent_minority,
                  CacheTree *tree, VECTOR not_captured, tracking_vector<unsigned short, DataStruct::Tree> prefix, unsigned short thread_id) override;
+    bool prefix_exists_and_is_worse(tracking_vector<unsigned short, DataStruct::Tree> prefix, double lb) override;
 
 private:
-    std::pair<prefix_key *, unsigned char *> construct_prefix_key_from_prefix_vector(tracking_vector<unsigned short, DataStruct::Tree> prefix,
+    prefix_key* construct_prefix_key_from_prefix_vector(tracking_vector<unsigned short, DataStruct::Tree> prefix);
+    std::pair<prefix_key *, unsigned char *> construct_prefix_key_and_order_from_prefix_vector(tracking_vector<unsigned short, DataStruct::Tree> prefix,
                                                                                    unsigned short new_rule, int len_prefix);
     PrefixMap::iterator find_prefix_key_in_pmap(prefix_key *key);
     void remove_existing_node(CacheTree *tree, unsigned char *indices, tracking_vector<unsigned short, DataStruct::Tree> prefix,
@@ -176,6 +174,8 @@ public:
                  double lower_bound, double objective, Node *parent, int num_not_captured, int nsamples,
                  int len_prefix, double c, double equivalent_minority, CacheTree *tree, VECTOR not_captured,
                  tracking_vector<unsigned short, DataStruct::Tree> prefix, unsigned short thread_id) override;
+    // TODO: implement this correctly
+    bool prefix_exists_and_is_worse(tracking_vector<unsigned short, DataStruct::Tree> prefix, double lb) override { return false; }
 
 private:
     CapturedMap *pmap;
@@ -195,4 +195,5 @@ public:
                                     lower_bound, objective, parent,
                                     num_not_captured, nsamples, len_prefix, c, equivalent_minority);
     }
+    bool prefix_exists_and_is_worse(tracking_vector<unsigned short, DataStruct::Tree> prefix, double lb) { return false; }
 };

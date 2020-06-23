@@ -434,12 +434,15 @@ int bbound(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap *p,
             emptyQueues.fetch_add(-1, std::memory_order_release);
         } else if (q->empty() && emptyQueues.load(std::memory_order_acquire) == tree->num_threads()) {
             // TODO: wake up all and exit
+            printf("enqueuing threads into shared_q\n");
             for(int i = 0; i < tree->num_threads() - 1; ++i) {
                 shared_q->enqueue(q);
             }
             break;
         } else {
+            printf("Reached else block: q should not be empty here\n");
             assert(false && "q should not be empty here");
+            break;
         }
     }
 

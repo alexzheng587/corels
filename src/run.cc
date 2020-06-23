@@ -25,7 +25,7 @@ double run_corels (double c, char* vstring, int curiosity_policy,
                    PermutationMap*& pmap, CacheTree*& tree, Queue*& queue, double& init,
                    int verbosity, int num_threads, int max_num_nodes, int nmeta, int random_seed,
                    std::vector<int>* rulelist, std::vector<int>* classes) {
-    char opt_fname[BUFSZ];
+    printf("log_fname=%s\n", log_fname);
     if (verbosity >= 10)
         print_machine_info();
 
@@ -36,6 +36,7 @@ double run_corels (double c, char* vstring, int curiosity_policy,
         printf("\nLabels (%d) for %d samples\n\n", nlabels, nsamples);
         rule_print_all(labels, nlabels, nsamples, 1);
     }
+
 
     if (verbosity > 1)
         logger = new Logger(c, nrules, verbosity, log_fname, freq);
@@ -103,6 +104,7 @@ double run_corels (double c, char* vstring, int curiosity_policy,
     SharedQueue* shared_q = new SharedQueue();
 
     // Let the threads loose
+    printf("num_threads=%d", num_threads);
     for(size_t i = 0; i < num_threads; ++i) {
         threads[i] = std::thread(bbound, tree, max_num_nodes, qs[i], p, i, shared_q);
     }
@@ -125,7 +127,7 @@ double run_corels (double c, char* vstring, int curiosity_policy,
     printf("final accuracy: %1.5f\n",
            accuracy);
     print_final_rulelist(tree->opt_rulelist(), tree->opt_predictions(),
-                         0, rules, labels, opt_fname);
+                         0, rules, labels, log_fname);
 
     for(size_t i = 0; i < tree->opt_rulelist().size(); i++) {
         rulelist->push_back(tree->opt_rulelist()[i]);
@@ -140,9 +142,9 @@ double run_corels (double c, char* vstring, int curiosity_policy,
     logger->closeFile();
 
     printf("delete queue(s)\n");
-    /*for(size_t i = 0; i < num_threads; ++i) {
-        delete qs[i];
-    }*/
+//    for(size_t i = 0; i < num_threads; ++i) {
+//        delete qs[i];
+//    }
     printf("delete shared queue\n");
     assert(shared_q->size_approx() == 0);
     delete shared_q;
@@ -161,6 +163,10 @@ double run_corels (double c, char* vstring, int curiosity_policy,
     rules_free(rules, nrules, 1);
     printf("delete labels\n");
     rules_free(labels, nlabels, 0);
+
+    tree = nullptr;
+    queue = nullptr;
+    pmap = nullptr;
 
     return accuracy;
 }

@@ -183,8 +183,11 @@ protected:
 class Logger : public NullLogger {
 public:
     void closeFile() override {
-        if (_f.is_open())
+        if (_f.is_open()) {
+            printf("Closing file\n");
             _f.close();
+        }
+
     }
     Logger(double c, size_t nrules, int verbosity, char *log_fname, int freq);
     ~Logger() {

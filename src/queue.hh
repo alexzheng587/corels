@@ -16,12 +16,10 @@ class InternalRoot {
         InternalRoot() {
             node_ = NULL;
         }
-        InternalRoot(Node* node) {
-            node_ = node;
-        }
-        InternalRoot(Node* node, tracking_vector<unsigned short, DataStruct::Tree> rules) {
+        InternalRoot(Node* node, tracking_vector<unsigned short, DataStruct::Tree> rules, double lower_bound) {
             node_ = node;
             rules_ = rules;
+            lower_bound_ = lower_bound;
         }
         /*~InternalRoot() {
             //printf("delete iroot with node %p\n", node_);
@@ -29,8 +27,10 @@ class InternalRoot {
         }*/
         inline Node* node() { return node_; }
         inline tracking_vector<unsigned short, DataStruct::Tree> rules() { return rules_; }
+        inline double lower_bound() { return lower_bound_; }
     protected:
         Node* node_;
+        double lower_bound_;
         tracking_vector<unsigned short, DataStruct::Tree> rules_;
 };
 
@@ -141,7 +141,7 @@ class Queue {
 
 
 #include "shared_queue.hh"
-extern int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p, unsigned short thread_id, SharedQueue* shared_q);
+extern int bbound(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p, unsigned short thread_id, SharedQueue* shared_q, tracking_vector<unsigned short, DataStruct::Tree> initialization_rules);
 
 extern void bbound_init(CacheTree* tree);
 
@@ -150,11 +150,12 @@ extern void evaluate_children(CacheTree* tree, Node* parent,
     VECTOR parent_not_captured, std::vector<unsigned short> rules, Queue* q,
     PermutationMap* p, unsigned short thread_id);
 
-extern bool is_valid_node(Node* node, CacheTree* tree);
+extern bool is_valid_leaf(InternalRoot* leaf, CacheTree* tree, PermutationMap* pmap);
 extern tracking_vector<unsigned short, DataStruct::Tree> get_parent_prefix(CacheTree* tree, Node* node, VECTOR captured);
 
 extern bool bbound_loop(CacheTree* tree, size_t max_num_nodes, Queue* q, PermutationMap* p,
-    VECTOR captured, VECTOR not_captured, unsigned short thread_id, SharedQueue *shared_q);
+    VECTOR captured, VECTOR not_captured, unsigned short thread_id, SharedQueue *shared_q, double start,
+    tracking_vector<unsigned short, DataStruct::Tree> initialization_rules);
 
 
 bool bbound_loop_cond(bool max_node_reached, SharedQueue* shared_q, CacheTree* tree);

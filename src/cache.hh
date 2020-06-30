@@ -14,6 +14,7 @@
 #include <numeric>
 #include <thread>
 #include <stdlib.h>
+#include <unordered_map>
 #include <vector>
 
 extern std::mutex min_obj_lk;
@@ -154,8 +155,8 @@ class CacheTree {
     void play_with_rules();
     Node* check_prefix(tracking_vector<unsigned short, DataStruct::Tree>& prefix);
 
-    inline void lock(unsigned short thread_id);
-    inline void unlock(unsigned short thread_id);
+    inline void lock(unsigned short l1_rule);
+    inline void unlock(unsigned short l1_rule);
 
 
     inline unsigned short num_inactive_threads() const;
@@ -166,10 +167,6 @@ class CacheTree {
 
     inline bool done() const;
     inline void set_done(bool is_done);
-
-    /*inline void thread_wait(std::unique_lock<std::mutex> unique_lk);
-    inline void wake_all_inactive();
-    inline void wake_n_inactive(size_t n);*/
 
   protected:
     std::ofstream t_;
@@ -189,6 +186,9 @@ class CacheTree {
     tracking_vector<unsigned short, DataStruct::Tree> rule_perm_;
     tracking_vector<pair<unsigned short, unsigned short>, DataStruct::Tree> ranges_;
 
+    std::unordered_map<unsigned short, bool> dirty_subtrees_;
+    std::vector<std::mutex> tree_lks_;
+
     rule_t *rules_;
     rule_t *labels_;
     rule_t *minority_;
@@ -201,7 +201,6 @@ class CacheTree {
 
     char const *type_;
     void gc_helper(Node* node, unsigned short thread_id);
-    std::vector<std::mutex> tree_lks_;
 };
 
 inline unsigned short Node::id() const {
@@ -514,12 +513,12 @@ inline void CacheTree::decrement_num_nodes() {
     logger->setTreeNumNodes(num_nodes_);
 }
 
-inline void CacheTree::lock(unsigned short thread_id) {
-  tree_lks_[thread_id].lock();
+inline void CacheTree::lock(unsigned short l1_rule) {
+  tree_lks_[l1_rule].lock();
 }
 
-inline void CacheTree::unlock(unsigned short thread_id) {
-  tree_lks_[thread_id].unlock();
+inline void CacheTree::unlock(unsigned short l1_rule) {
+  tree_lks_[l1_rule].unlock();
 }
 
 inline unsigned short CacheTree::num_inactive_threads() const {

@@ -45,7 +45,7 @@ CacheTree::CacheTree(size_t nsamples, size_t nrules, double c, size_t nthreads,
     std::iota(rule_perm_.begin(), rule_perm_.end(), 1);
     std::random_shuffle(rule_perm_.begin(), rule_perm_.end());
 
-    tree_lks_ = std::vector<std::mutex> (nthreads);
+    tree_lks_ = std::vector<std::mutex> (nrules);
 
     unsigned short rules_per_thread = (nrules-1) / nthreads;
     unsigned short inc = (nrules - 1) - (rules_per_thread * nthreads);
@@ -168,20 +168,13 @@ void CacheTree::insert(Node* node, unsigned short thread_id) {
         std::cout << "NULL NODE" << std::endl;
     }
     // TODO: clean up
-    /* if (node->parent() == root_) {
-    } else {
-        tree_lks_[thread_id].lock();
-    } */
-    // root_lk_.lock();
+    //unsigned short l1_rule = get_l1_rule_from_node(node);
+    // TODO: acquire l1 lock
+    // TODO: set l1 dirty
     node->child_lk_.lock();
     node->parent()->children_.insert(std::make_pair(node->id(), node));
     node->child_lk_.unlock();
-    // root_lk_.unlock();
-    /* if (node->parent() == root_) {
-        root_lk_.unlock();
-    } else {
-        tree_lks_[thread_id].unlock();
-    } */
+    // TODO: release l1 lock
     ++num_nodes_;
     logger->setTreeNumNodes(num_nodes_);
 }
@@ -264,13 +257,17 @@ void CacheTree::garbage_collect(unsigned short thread_id) {
     if (calculate_size_)
         logger->clearRemainingSpaceSize();
 
-    tracking_vector<unsigned short, DataStruct::Tree> subrange = get_subrange(thread_id);
+    // For each L1 subtree, check if dirty
+    // If dirty, acquire lock, check if still dirty
+    // If still dirty, run garbage collection on L1 subtree
+    // If not dirty, move on
+    /*tracking_vector<unsigned short, DataStruct::Tree> subrange = get_subrange(thread_id);
     for (typename tracking_vector<unsigned short, DataStruct::Tree>::iterator rit = subrange.begin();
         rit != subrange.end(); rit++) {
             Node* cur_child = root_->child(*rit);
             if (cur_child != NULL)
                 gc_helper(root_->child(*rit), thread_id);
-    }
+    }*/
 }
 
 /*
@@ -304,10 +301,8 @@ void delete_subtree(CacheTree* tree, Node* node, bool destructive,
             node->unlock();
         } else {
             logger->removeFromMemory(sizeof(*node), DataStruct::Tree);
-            tree->lock(thread_id);
             node->clear_children();
             delete node;
-            tree->unlock(thread_id);
             tree->decrement_num_nodes(); 
         }
         //node->set_deleted();
@@ -322,10 +317,8 @@ void delete_subtree(CacheTree* tree, Node* node, bool destructive,
             //std::cout << "DELETE LEAF " << node->id() << std::endl;
             logger->removeFromMemory(sizeof(*node), DataStruct::Tree);
             tree->decrement_num_nodes();
-            tree->lock(thread_id);
             node->clear_children();
             delete node;
-            tree->unlock(thread_id);
         } else {
             //std::cout << "DELETE ELSE " << node->id() << std::endl;
             logger->decPrefixLen(node->depth());

@@ -163,7 +163,9 @@ void evaluate_children(CacheTree *tree, Node *parent,
                 n->lock();
                 n->set_in_queue(true);
                 n->unlock();
-                InternalRoot *iroot = new InternalRoot(n);
+                tracking_vector<unsigned short, DataStruct::Tree> child_prefix(parent_prefix);
+                child_prefix.push_back((unsigned short)i);
+                InternalRoot *iroot = new InternalRoot(n, child_prefix, lower_bound);
                 q->push(iroot);
                 logger->setQueueSize(q->size());
                 if (tree->calculate_size())
@@ -248,22 +250,43 @@ void split_work(CacheTree *tree, Queue *q, SharedQueue *shared_q) {
     return;
 }
 
-bool is_valid_node(Node *node, CacheTree *tree) {
-    bool valid;
+bool is_valid_leaf(InternalRoot *leaf, CacheTree *tree, PermutationMap* pmap) {
     double lb;
     // We can arrive at a situation where a thread is slow to start
     // and therefore the root hasn't been popped off for the last thread
     // and it already has children -- this is not an error and we shouldn't fail the assert
-    // TODO: selected_node can't have children in your split
-    //if (selected_node != tree->root())
-    //    assert (selected_node->num_children() == 0);
     if (tree->ablation() != 2)
-        lb = node->lower_bound() + tree->c();
+        lb = leaf->lower_bound() + tree->c();
     else
-        lb = node->lower_bound();
+        lb = leaf->lower_bound();
     logger->setCurrentLowerBound(lb);
+    min_obj_lk.lock();
+    if (lb >= tree->min_objective()) {
+        min_obj_lk.unlock();
+        // TODO: delete logic
+        // if (featureDecisions->do_garbage_collection()) {
+        return false;
+    }
+    min_obj_lk.unlock();
 
-    node->lock();
+    tracking_vector<unsigned short, DataStruct::Tree> prefix = leaf->rules();
+    if (pmap->prefix_exists_and_is_worse(prefix, lb)) {
+        // delete logic
+        return false;
+    }
+
+    tracking_vector<unsigned short, DataStruct::Tree> parent_prefix(prefix);
+    // Node might be root
+    if (parent_prefix.size() > 0) {
+        parent_prefix.pop_back();
+        if (pmap->prefix_exists_and_is_worse(parent_prefix, lb)) {
+            // delete logic
+            return true;
+        }
+    }
+    
+
+    /*node->lock();
     node->set_in_queue(false);
     // delete leaf nodes that were lazily marked
     min_obj_lk.lock();
@@ -280,8 +303,10 @@ bool is_valid_node(Node *node, CacheTree *tree) {
         min_obj_lk.unlock();
         node->unlock();
         valid = true;
-    }
-    return valid;
+    }*/
+    if (leaf->node() != tree->root())
+        assert (leaf->node()->num_children() == 0);
+    return true;
 }
 
 tracking_vector<unsigned short, DataStruct::Tree> get_parent_prefix(CacheTree *tree, Node *node, VECTOR captured) {
@@ -294,6 +319,7 @@ tracking_vector<unsigned short, DataStruct::Tree> get_parent_prefix(CacheTree *t
                  captured, tree->rule(node->id()).truthtable,
                  tree->nsamples(), &cnt);
         prefix.push_back(node->id());
+        // TODO: add to hazard list
         node = node->parent();
     }
     std::reverse(prefix.begin(), prefix.end());
@@ -304,7 +330,8 @@ tracking_vector<unsigned short, DataStruct::Tree> get_parent_prefix(CacheTree *t
  * Returns true if exiting because queue is empty, false if num_nodes reached
  */
 bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap *p,
-                 VECTOR captured, VECTOR not_captured, unsigned short thread_id, SharedQueue *shared_q, double start) {
+                 VECTOR captured, VECTOR not_captured, unsigned short thread_id, SharedQueue *shared_q, double start,
+                 tracking_vector<unsigned short, DataStruct::Tree> initialization_rules) {
     size_t num_iter = 0;
     // Not used anywhere
     int cnt;
@@ -315,23 +342,22 @@ bool bbound_loop(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap
     while ((tree->num_nodes() < max_num_nodes) && !q->empty()) {
         // Need to ensure that queue has enough entries to split among threads
         if (!q->empty() && emptyQueues.load(std::memory_order_acquire) > 0 && q->size() > 10) {
-            // TODO: split work, update mepty queues
             split_work(tree, q, shared_q);
         }
         double t0 = logger->timestamp();
         //std::pair<InternalRoot*, tracking_vector<unsigned short, DataStruct::Tree> > node_ordered = q->select(tree, captured, thread_id);
         InternalRoot *iroot = q->select();
-        Node *current_node = iroot->node();
-        if (!is_valid_node(current_node, tree)) {
+        if (!is_valid_leaf(iroot, tree, p)) {
             continue;
         }
+        Node* current_node = iroot->node();
         tracking_vector<unsigned short, DataStruct::Tree> parent_prefix = get_parent_prefix(tree, current_node, captured);
         logger->addToNodeSelectTime(logger->time_diff(t0));
         logger->incNodeSelectNum();
 
         // not_captured = default rule truthtable & ~ captured
         rule_vandnot(not_captured, tree->rule(0).truthtable, captured, tree->nsamples(), &cnt);
-        tracking_vector<unsigned short, DataStruct::Tree> initialization_rules = iroot->rules();
+        //tracking_vector<unsigned short, DataStruct::Tree> initialization_rules = iroot->rules();
         if (initialization_rules.empty()) {
             initialization_rules = tree->rule_perm();
         }
@@ -401,7 +427,7 @@ bool bbound_loop_cond(bool max_node_reached, SharedQueue *shared_q, CacheTree *t
  * The queue can be ordered by DFS, BFS, or an alternative priority metric (e.g. lower bound).
  */
 int bbound(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap *p,
-           unsigned short thread_id, SharedQueue *shared_q) {
+           unsigned short thread_id, SharedQueue *shared_q, tracking_vector<unsigned short, DataStruct::Tree> initialization_rules) {
     int cnt;
     // These are initialized in q->select
     VECTOR captured, not_captured;
@@ -419,7 +445,8 @@ int bbound(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap *p,
     // Encodes implicit invariant that queues must be empty to be on shared_q
 //    while (bbound_loop_cond(max_node_reached, shared_q, tree)) {
     while (true) {
-        max_node_reached = !bbound_loop(tree, max_num_nodes, q, p, captured, not_captured, thread_id, shared_q, start);
+        max_node_reached = !bbound_loop(tree, max_num_nodes, q, p, captured, not_captured, thread_id, shared_q, start, initialization_rules);
+        tracking_vector<unsigned short, DataStruct::Tree> initialization_rules;
         if(max_node_reached) {
             break;
         }

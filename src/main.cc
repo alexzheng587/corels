@@ -254,8 +254,8 @@ int main(int argc, char *argv[]) {
     Queue* qs[num_threads];
     for(size_t i = 0; i < num_threads; ++i) {
         qs[i] = new Queue(cmp, run_type);
-        tracking_vector<unsigned short, DataStruct::Tree> init_rules = tree->get_subrange(i);
-        InternalRoot* iroot = new InternalRoot(tree->root(), init_rules);
+        tracking_vector<unsigned short, DataStruct::Tree> prefix;
+        InternalRoot* iroot = new InternalRoot(tree->root(), prefix, tree->root()->lower_bound());
         qs[i]->push(iroot);
     }
 
@@ -263,7 +263,8 @@ int main(int argc, char *argv[]) {
 
 	// Let the threads loose
 	for(size_t i = 0; i < num_threads; ++i) {
-	    threads[i] = std::thread(bbound, tree, max_num_nodes, qs[i], p, i, shared_q);
+        tracking_vector<unsigned short, DataStruct::Tree> init_rules = tree->get_subrange(i);
+	    threads[i] = std::thread(bbound, tree, max_num_nodes, qs[i], p, i, shared_q, init_rules);
 	}
 
 	for(size_t i = 0; i < num_threads; ++i) {

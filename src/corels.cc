@@ -442,7 +442,6 @@ int bbound(CacheTree *tree, size_t max_num_nodes, Queue *q, PermutationMap *p,
         } else {
             printf("Reached else block: q should not be empty here\n");
             assert(false && "q should not be empty here");
-            break;
         }
     }
 

@@ -13,6 +13,7 @@ std::mutex log_lk;
 std::mutex min_obj_lk;
 std::mutex inactive_thread_lk;
 std::mutex shared_q_lk;
+extern std::atomic<int> emptyQueues;
 
 NullLogger* logger;
 FeatureToggle* featureDecisions;
@@ -104,6 +105,7 @@ double run_corels (double c, char* vstring, int curiosity_policy,
     SharedQueue* shared_q = new SharedQueue();
 
     // Let the threads loose
+    emptyQueues = 0;
     printf("num_threads=%d", num_threads);
     for(size_t i = 0; i < num_threads; ++i) {
         threads[i] = std::thread(bbound, tree, max_num_nodes, qs[i], p, i, shared_q);

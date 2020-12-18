@@ -1,72 +1,100 @@
 #include <stdio.h>
 #include <iostream>
 #include <set>
+#include <string.h>
 
+#include "loss.hh"
 #include "queue.hh"
 #include "run.hh"
-#include "features.hh"
-#include "logger.hh"
 
 #define BUFSZ 512
 
-std::mutex log_lk;
-std::mutex min_obj_lk;
-std::mutex inactive_thread_lk;
-std::mutex shared_q_lk;
-extern std::atomic<int> emptyQueues;
-
 NullLogger* logger;
-FeatureToggle* featureDecisions;
 
 extern "C" {
 
-double run_corels (double c, char* vstring, int curiosity_policy,
-                   int map_type, int ablation, int calculate_size, int nrules, int nlabels,
-                   int nsamples, rule_t* rules, rule_t* labels, rule_t* meta, int freq, char* log_fname,
+double run_corels (double c, char* vstring, char* loss_type_str, int curiosity_policy,
+                   int map_type, int ablation, int calculate_size, int latex_out, int nrules, int nlabels,
+                   int nsamples, rule_t* rules, rule_t* labels, rule_t* meta, minority_class_t* minority_class, int freq, char* log_fname,
                    PermutationMap*& pmap, CacheTree*& tree, Queue*& queue, double& init,
                    int verbosity, int num_threads, int max_num_nodes, int nmeta, int random_seed,
-                   std::vector<int>* rulelist, std::vector<int>* classes) {
-    printf("log_fname=%s\n", log_fname);
-    if (verbosity >= 10)
-        print_machine_info();
+                   std::vector<int>* rulelist, std::vector<int>* classes, double weight) {
 
-    if (verbosity >= 1000) {
-        printf("\n%d rules %d samples\n\n", nrules, nsamples);
-        rule_print_all(rules, nrules, nsamples, 1);
+    std::set<std::string> verbosity_set;
+    char opt_fname[BUFSZ];
+    const char *voptions = "rule|rulelist|label|samples|progress|log|silent";
 
-        printf("\nLabels (%d) for %d samples\n\n", nlabels, nsamples);
-        rule_print_all(labels, nlabels, nsamples, 1);
+    char *vopt = NULL;
+    char *vcopy = strdup(vstring);
+    while ((vopt = strsep(&vcopy, ",")) != NULL) {
+        if (!strstr(voptions, vopt)) {
+            fprintf(stderr, "verbosity options must be one or more of (%s), separated with commas (i.e. -v progress,log)\n", voptions);
+            return -1.0;
+        }
+        verbosity_set.insert(vopt);
+    }
+    free(vcopy);
+
+    if (verbosity_set.count("samples") && !(verbosity_set.count("rule") || verbosity_set.count("label"))) {
+        fprintf(stderr, "verbosity 'samples' option must be combined with at least one of (rule|label)\n");
+        return -1.0;
+    }
+    if (verbosity_set.size() > 2 && verbosity_set.count("silent")) {
+        fprintf(stderr, "verbosity 'silent' option must be passed without any additional verbosity parameters\n");
+        return -1.0;
     }
 
+    if (verbosity_set.size() == 0) {
+        verbosity_set.insert("progress");
+    }
 
-    if (verbosity > 1)
-        logger = new Logger(c, nrules, verbosity, log_fname, freq);
-    else
+    if (verbosity_set.count("silent")) {
+        verbosity_set.clear();
+    }
+
+    if (verbosity_set.count("log"))
+        print_machine_info();
+
+    if (verbosity_set.count("rule")) {
+        printf("%d rules %d samples\n\n", nrules, nsamples);
+        rule_print_all(rules, nrules, nsamples, (verbosity_set.count("samples")));
+        printf("\n\n");
+    }
+
+    if (verbosity_set.count("label")) {
+        printf("Labels (%d) for %d samples\n\n", nlabels, nsamples);
+        rule_print_all(labels, nlabels, nsamples, (verbosity_set.count("samples")));
+        printf("\n\n");
+    }
+
+    if (verbosity_set.count("log")) {
+        logger = new Logger(c, nrules, verbosity_set, log_fname, freq);
+    } else {
         logger = new NullLogger();
+        logger->setVerbosity(verbosity_set);
+    }
 
-    featureDecisions = new FeatureToggle(false);
-
-    init = get_timestamp();
+    init = timestamp();
     char run_type[BUFSZ];
+    Queue* q;
     strcpy(run_type, "LEARNING RULE LIST via ");
     char const *type = "node";
-    std::function<bool(EntryType, EntryType)> cmp;
     if (curiosity_policy == 1) {
         strcat(run_type, "CURIOUS");
-        cmp = curious_cmp;
+        q = new Queue(curious_cmp, run_type);
         type = "curious";
     } else if (curiosity_policy == 2) {
         strcat(run_type, "LOWER BOUND");
-        cmp = lb_cmp;
+        q = new Queue(lb_cmp, run_type);
     } else if (curiosity_policy == 3) {
         strcat(run_type, "OBJECTIVE");
-        cmp = objective_cmp;
+        q = new Queue(objective_cmp, run_type);
     } else if (curiosity_policy == 4) {
         strcat(run_type, "DFS");
-        cmp = dfs_cmp;
+        q = new Queue(dfs_cmp, run_type);
     } else {
         strcat(run_type, "BFS");
-        cmp = base_cmp;
+        q = new Queue(base_cmp, run_type);
     }
 
     PermutationMap* p;
@@ -84,91 +112,78 @@ double run_corels (double c, char* vstring, int curiosity_policy,
         p = (PermutationMap*) null_pmap;
     }
 
-    tree = new CacheTree(nsamples, nrules, c, num_threads,
-            rules, labels, meta, ablation, calculate_size, type, random_seed);
-    printf("%s", run_type);
+    // this is a provisional solution using fixed loss type
+    strcat(run_type, " and loss function type ");
+    strcat(run_type, loss_type_str);
+    strcat(run_type, "\n");
 
-    // Initialize logger
-    bbound_init(tree);
-
-    // Set up per-thread queues
-    std::thread threads[num_threads];
-
-    Queue* qs[num_threads];
-    for(size_t i = 0; i < num_threads; ++i) {
-        qs[i] = new Queue(cmp, run_type);
-        tracking_vector<unsigned short, DataStruct::Tree> init_rules = tree->get_subrange(i);
-        InternalRoot* iroot = new InternalRoot(tree->root(), init_rules);
-        qs[i]->push(iroot);
+    Loss* loss;
+    if (strcmp(loss_type_str, "bacc") == 0) {
+        loss = new BalancedAccuracy();
+    } else if (strcmp(loss_type_str, "wacc") == 0) {
+        loss = new WeightedAccuracy(weight);
+    } else if (strcmp(loss_type_str, "auc") == 0) {
+        loss = new AUCLoss();
+        delete p;
+        p = static_cast<PermutationMap*>(new AUCPermutationMap());
+    } else if (strcmp(loss_type_str, "fscore") == 0) {
+        loss = new FScore(weight);
+        delete p;
+        p = static_cast<PermutationMap*>(new FScorePermutationMap());
+    } else {
+        loss = new Accuracy();
     }
+    //printf("tree address before cachetree is: %p\n", tree);
+    tree = new CacheTree(loss, nsamples, nrules, c, 1, rules, labels, meta, minority_class, 0, ablation, calculate_size, type);
+    if (verbosity_set.count("progress"))
+        printf("%s", run_type);
+    // runs our algorithm
+    bbound(tree, max_num_nodes, q, p, 1.0);
 
-    SharedQueue* shared_q = new SharedQueue();
+    const tracking_vector<unsigned short, DataStruct::Tree>& r_list = tree->opt_rulelist();
 
-    // Let the threads loose
-    emptyQueues = 0;
-    printf("num_threads=%d", num_threads);
-    for(size_t i = 0; i < num_threads; ++i) {
-        threads[i] = std::thread(bbound, tree, max_num_nodes, qs[i], p, i, shared_q);
-    }
+    double accuracy = 1.0 - tree->min_objective() + c*r_list.size();
 
-    for(size_t i = 0; i < num_threads; ++i) {
-        threads[i].join();
-    }
-
-    size_t tree_mem = logger->getTreeMemory();
-    size_t pmap_mem = logger->getPmapMemory();
-    size_t queue_mem = logger->getQueueMemory();
-    printf("TREE mem usage: %zu\n", tree_mem);
-    printf("PMAP mem usage: %zu\n", pmap_mem);
-    printf("QUEUE mem usage: %zu\n", queue_mem);
-
-    printf("final num_nodes: %zu\n", tree->num_nodes());
-    printf("final num_evaluated: %zu\n", logger->getTreeNumEvaluated());
-    printf("final min_objective: %1.5f\n", tree->min_objective());
-    double accuracy = 1 - tree->min_objective() + c*tree->opt_rulelist().size();
-    printf("final accuracy: %1.5f\n",
-           accuracy);
-    print_final_rulelist(tree->opt_rulelist(), tree->opt_predictions(),
-                         0, rules, labels, log_fname);
+    if (verbosity_set.count("progress")) {
+        printf("final num_nodes: %zu\n", tree->num_nodes());
+        printf("final num_evaluated: %zu\n", tree->num_evaluated());
+        printf("final min_objective: %1.5f\n", tree->min_objective());
+        printf("final accuracy: %1.5f\n", accuracy);
+   }
 
     for(size_t i = 0; i < tree->opt_rulelist().size(); i++) {
         rulelist->push_back(tree->opt_rulelist()[i]);
         classes->push_back(tree->opt_predictions()[i]);
     }
     classes->push_back(tree->opt_predictions().back());
+    print_final_rulelist(r_list, tree->opt_predictions(),
+                     latex_out, rules, labels, opt_fname, verbosity_set.count("progress"));
 
-    printf("final total time: %f\n", get_time_diff(init));
-    printf("Number of tree acquisitions: %zu\n", tree->n_acc());
+    if (verbosity_set.count("progress"))
+        printf("final total time: %f\n", time_diff(init));
 
     logger->dumpState();
     logger->closeFile();
-
-    printf("delete queue(s)\n");
-//    for(size_t i = 0; i < num_threads; ++i) {
-//        delete qs[i];
-//    }
-    printf("delete shared queue\n");
-    assert(shared_q->size_approx() == 0);
-    delete shared_q;
-    printf("delete permutation map\n");
-    delete p;
-    printf("tree destructors\n");
-    // TODO: maybe deadlocking here?
-    delete tree;
-    delete featureDecisions;
-    delete logger;
-    if (meta) {
-        printf("\ndelete identical points indicator");
-        rules_free(meta, nmeta, 0);
+    if (verbosity_set.count("progress")) {
+        printf("\ndelete tree\n");
     }
-    printf("\ndelete rules\n");
-    rules_free(rules, nrules, 1);
-    printf("delete labels\n");
-    rules_free(labels, nlabels, 0);
+    delete tree;
+    if (verbosity_set.count("progress")) {
+        printf("\ndelete symmetry-aware map\n");
+    }
+    delete p;
+    if (verbosity_set.count("progress")) {
+        printf("\ndelete priority queue\n");
+    }
+    delete q;
 
     tree = nullptr;
     queue = nullptr;
     pmap = nullptr;
+    /*if (verbosity.count("progress")) {
+        printf("\ndelete logger\n");
+    }
+    delete logger;*/
 
     return accuracy;
 }

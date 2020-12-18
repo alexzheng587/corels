@@ -90,6 +90,13 @@ typedef struct rule {
 	VECTOR truthtable;		/* Truth table; one bit per sample. */
 } rule_t;
 
+typedef struct minority_class {
+	char *features;
+	int npos;				/* Number of positives in this equivalent class*/
+	int nneg;				/* Number of negatives in this equivalent class*/
+	VECTOR truthtable;		/* Truth table; one bit per sample. */
+} minority_class_t;
+
 typedef struct ruleset_entry {
 	unsigned rule_id;
 	int ncaptured;			/* Number of 1's in bit vector. */
@@ -155,7 +162,7 @@ void rule_print_all(rule_t *, int, int, int);
 void rule_vector_print(VECTOR, int);
 void rule_copy(VECTOR, VECTOR, int);
 
-int rule_isset(VECTOR, int, int);
+int rule_isset(VECTOR, int);
 void rule_set(VECTOR, int, int, int);
 int rule_vinit(int, VECTOR *);
 int rule_veq(VECTOR src1, VECTOR src2, int nsamples);

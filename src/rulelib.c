@@ -69,114 +69,228 @@ int
 rules_init(const char *infile, int *nrules,
     int *nsamples, rule_t **rules_ret, int add_default_rule)
 {
-	FILE *fi;
-	char *features, *line;
-	char *rulestr;
-	int rule_cnt, sample_cnt, rsize;
-	int ones, ret;
-	rule_t *rules=NULL;
-	ssize_t len;
-    	size_t linelen, rulelen;
+    FILE *fi;
+    char *features, *line;
+    char *rulestr;
+    int rule_cnt, sample_cnt, rsize;
+    int ones, ret;
+    rule_t *rules=NULL;
+    ssize_t len;
+	size_t linelen, rulelen;
 
-	sample_cnt = rsize = 0;
+    sample_cnt = rsize = 0;
 
-	if ((fi = fopen(infile, "r")) == NULL)
+    if ((fi = fopen(infile, "r")) == NULL)
         return (errno);
 
-	/*
-	 * Leave a space for the 0th (default) rule, which we'll add at
-	 * the end.
-	 */
-	rule_cnt = add_default_rule != 0 ? 1 : 0;
+    /*
+     * Leave a space for the 0th (default) rule, which we'll add at
+     * the end.
+     */
+    rule_cnt = add_default_rule != 0 ? 1 : 0;
 
-	/*
-	 * line and linelen are managed by getline. If getline needs to
-	 * reallocate the buffer, it will do so using realloc (line) and
-	 * then updating linelen to reflect the size of the buffer allocated.
-	 * Since we do not perform these allocations, we shoul never change
-	 * them, but should simpy free them when we are done with them.
-	 */
-	line = NULL;
-	linelen = 0;
-	while ((len = getline(&line, &linelen, fi)) > 0) {
-		if (rule_cnt >= rsize) {
-			rsize += RULE_INC;
-                	rules = realloc(rules, rsize * sizeof(rule_t));
-			if (rules == NULL)
-				goto err;
-		}
-
-		/* Get the rule string in line; features will contain the bits. */
-		features = line;
-		if ((rulestr = strsep(&features, " ")) == NULL)
-			goto err;
-
-		rulelen = strlen(line) + 1;
-		len -= rulelen;
-
-
-		//if ((rules[rule_cnt].features = strdup(line)) == NULL)
-		//	goto err;
-
-		rules[rule_cnt].features = malloc(rulelen);
-		char* err = strcpy(rules[rule_cnt].features, line);
-		//if (err != 0)
-		//	goto err;
-
-		/*
-		 * At this point features is (probably) a line terminated by a
-		 * newline at features[len-1]; if it is newline-terminated,
-		 * then let's make it NUL-terminated and shorten the line
-		 * length by one.
-		 */
-		if (features[len-1] == '\n') {
-			features[len-1] = '\0';
-			len--;
-		}
-
-		if (ascii_to_vector(features, len, &sample_cnt, &ones,
-		    &rules[rule_cnt].truthtable) != 0)
-		    	goto err;
-		rules[rule_cnt].support = ones;
-
-		/* Now compute the number of clauses in the rule. */
-		rules[rule_cnt].cardinality = 1;
-		for (char *cp = line; *cp != '\0'; cp++)
-			if (*cp == ',')
-				rules[rule_cnt].cardinality++;
-		rule_cnt++;
+    /*
+     * line and linelen are managed by getline. If getline needs to
+     * reallocate the buffer, it will do so using realloc (line) and
+     * then updating linelen to reflect the size of the buffer allocated.
+     * Since we do not perform these allocations, we shoul never change
+     * them, but should simpy free them when we are done with them.
+     */
+    line = NULL;
+    linelen = 0;
+    while ((len = getline(&line, &linelen, fi)) > 0) {
+	if (rule_cnt >= rsize) {
+	    rsize += RULE_INC;
+		    rules = realloc(rules, rsize * sizeof(rule_t));
+	    if (rules == NULL)
+		goto err;
 	}
+
+	/* Get the rule string in line; features will contain the bits. */
+	features = line;
+	if ((rulestr = strsep(&features, " ")) == NULL)
+	    goto err;
+
+	rulelen = strlen(line) + 1;
+	len -= rulelen;
+
+
+	//if ((rules[rule_cnt].features = strdup(line)) == NULL)
+	//	goto err;
+
+	rules[rule_cnt].features = malloc(rulelen);
+	char* err = strcpy(rules[rule_cnt].features, line);
+	//if (err != 0)
+	//	goto err;
+
+	/*
+	 * At this point features is (probably) a line terminated by a
+	 * newline at features[len-1]; if it is newline-terminated,
+	 * then let's make it NUL-terminated and shorten the line
+	 * length by one.
+	 */
+	if (features[len-1] == '\n') {
+	    features[len-1] = '\0';
+	    len--;
+	}
+
+	if (ascii_to_vector(features, len, &sample_cnt, &ones,
+	    &rules[rule_cnt].truthtable) != 0)
+		goto err;
+	rules[rule_cnt].support = ones;
+
+	/* Now compute the number of clauses in the rule. */
+	rules[rule_cnt].cardinality = 1;
+	for (char *cp = line; *cp != '\0'; cp++)
+	    if (*cp == ',')
+		rules[rule_cnt].cardinality++;
+	rule_cnt++;
+    }
 
         free(line);
         line = NULL;
-	
-	/* All done! */
-	fclose(fi);
 
-	/* Now create the 0'th (default) rule. */
-	if (add_default_rule) {
-		rules[0].support = sample_cnt;
-		rules[0].features = "default";
-		rules[0].cardinality = 0;
-		if (make_default(&rules[0].truthtable, sample_cnt) != 0)
-		    goto err;
+    /* All done! */
+    fclose(fi);
+
+    /* Now create the 0'th (default) rule. */
+    if (add_default_rule) {
+	rules[0].support = sample_cnt;
+	rules[0].features = "default";
+	rules[0].cardinality = 0;
+	if (make_default(&rules[0].truthtable, sample_cnt) != 0)
+	    goto err;
+    }
+
+    *nsamples = sample_cnt;
+    *nrules = rule_cnt;
+    *rules_ret = rules;
+
+    return (0);
+
+err:
+    ret = errno;
+
+    /* Reclaim space. */
+    rules_free(rules, rule_cnt, add_default_rule);
+    if (line != NULL)
+	free(line);
+    (void)fclose(fi);
+    return (ret);
+}
+
+void
+minority_free(minority_class_t *rules, const int nrules, int add_default) {
+	int start;
+
+	/* Cannot free features for default rule. */
+	start = 0;
+	if (add_default) {
+		rule_vfree(&rules[0].truthtable);
+		start = 1;
 	}
+
+	for (int i = start; i < nrules; i++) {
+		rule_vfree(&rules[i].truthtable);
+		free(rules[i].features);
+	}
+	free(rules);
+}
+
+int
+auc_rules_init(const char *infile, int *nrules,
+    int *nsamples, minority_class_t **rules_ret, int add_default_rule)
+{
+	FILE *fi;
+    char *features, *line;
+    char *rulestr;
+    int rule_cnt, sample_cnt, rsize;
+    int ones, ret;
+    minority_class_t *minority=NULL;
+    ssize_t len;
+	size_t linelen, countlen;
+
+	sample_cnt = rsize = 0;
+
+	rule_cnt = 0;
+
+    if ((fi = fopen(infile, "r")) == NULL)
+        return (errno);
+
+    /*
+     * Leave a space for the 0th (default) rule, which we'll add at
+     * the end.
+     */
+
+    /*
+     * line and linelen are managed by getline. If getline needs to
+     * reallocate the buffer, it will do so using realloc (line) and
+     * then updating linelen to reflect the size of the buffer allocated.
+     * Since we do not perform these allocations, we shoul never change
+     * them, but should simpy free them when we are done with them.
+     */
+    line = NULL;
+    linelen = 0;
+    while ((len = getline(&line, &linelen, fi)) > 0) {
+	if (rule_cnt >= rsize) {
+	    rsize += RULE_INC;
+		    minority = realloc(minority, rsize * sizeof(minority_class_t));
+	    if (minority == NULL)
+		goto err;
+	}
+
+	/* Get the feature vector in line; features will contain the counts. */
+	features = line;
+	if ((rulestr = strsep(&features, " ")) == NULL)
+	    goto err;
+
+	char* npos = strsep(&features, " ");
+	minority[rule_cnt].nneg = atoi(npos);
+	minority[rule_cnt].npos = atoi(features);
+	countlen = strlen(features) + strlen(npos) + 1;
+	int linelen = strlen(line);
+	len -= countlen;
+
+	minority[rule_cnt].features = malloc(len);
+	char* err = strcpy(minority[rule_cnt].features, line);
+
+	/*
+	 * At this point features is (probably) a line terminated by a
+	 * newline at features[len-1]; if it is newline-terminated,
+	 * then let's make it NUL-terminated and shorten the line
+	 * length by one.
+	 */
+	if (rulestr[len-1] != '\0') {
+	    rulestr[len-1] = '\0';
+	    len--;
+	}
+
+	if (ascii_to_vector(rulestr, len, &sample_cnt, &ones,
+	    &minority[rule_cnt].truthtable) != 0)
+		goto err;
+
+	rule_cnt++;
+	}
+
+	free(line);
+    line = NULL;
+	fclose(fi);
 
 	*nsamples = sample_cnt;
 	*nrules = rule_cnt;
-	*rules_ret = rules;
+	*rules_ret = minority;
 
 	return (0);
 
 err:
-	ret = errno;
+    ret = errno;
 
-	/* Reclaim space. */
-	rules_free(rules, rule_cnt, add_default_rule);
-	if (line != NULL)
-		free(line);
-	(void)fclose(fi);
-	return (ret);
+    /* Reclaim space. */
+    minority_free(minority, rule_cnt, add_default_rule);
+    if (line != NULL)
+	free(line);
+    (void)fclose(fi);
+    return (ret);
 }
 
 void
@@ -886,7 +1000,7 @@ rule_not(VECTOR dest, VECTOR src, int nsamples, int *ret_cnt)
 
 /*
  * Compare two vectors for equality.
- * Return 0 for equal; -1 for less than (mpz only); 1 for greater 
+ * Return 0 for equal; -1 for less than (mpz only); 1 for greater
  * than (mpz) or not equal (default)
  */
 int
@@ -1016,22 +1130,11 @@ rule_print_all(rule_t *rules, int nrules, int nsamples, int print_samples)
  * Return 0 if bit e is not set in vector v; return non-0 otherwise.
  */
 int
-rule_isset(VECTOR v, int e, int n) {
+rule_isset(VECTOR v, int e) {
 #ifdef GMP
 	return mpz_tstbit(v, e);
 #else
-    e = -e + n - 1;
-    if(e >= n) {
-        return 0;
-    }
-
-    v_entry one = 1;
-    int shift = BITS_PER_ENTRY - (e % BITS_PER_ENTRY) - 1;
-/*    if(e / BITS_PER_ENTRY == ((n + BITS_PER_ENTRY - 1) / BITS_PER_ENTRY - 1) && (n % BITS_PER_ENTRY) != 0) {
-        shift -= BITS_PER_ENTRY - (n % BITS_PER_ENTRY);
-    }
-*/
-	return !!(v[e / BITS_PER_ENTRY] & (one << shift));
+	return ((v[e/BITS_PER_ENTRY] & (1 << (e % BITS_PER_ENTRY))) != 0);
 #endif
 }
 

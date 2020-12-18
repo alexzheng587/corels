@@ -1,16 +1,10 @@
-# ifdef VAL
-#include "common.hh"
-# endif
 #include "utils.hh"
 #include <stdio.h>
 #include <assert.h>
 #include <sys/utsname.h>
-#include <thread>
-#include <mutex>
 
-extern std::mutex log_lk;
 
-Logger::Logger(double c, size_t nrules, int verbosity, char* log_fname, int freq) {
+Logger::Logger(double c, size_t nrules, std::set<std::string> verbosity, char* log_fname, int freq) {
       _c = c;
       _nrules = nrules - 1;
       _v = verbosity;
@@ -23,12 +17,12 @@ Logger::Logger(double c, size_t nrules, int verbosity, char* log_fname, int freq
  * Sets the logger file name and writes the header line to the file.
  */
 void Logger::setLogFileName(char *fname) {
-    if (_v < 1) return;
+    if (!_v.count("log")) return;
 
     printf("writing logs to: %s\n\n", fname);
     _f.open(fname, ios::out | ios::trunc);
 
-    _f << "thread_id,total_time,evaluate_children_time,node_select_time,"
+    _f << "total_time,evaluate_children_time,node_select_time,"
        << "rule_evaluation_time,lower_bound_time,lower_bound_num,"
        << "objective_time,objective_num,"
        << "tree_insertion_time,tree_insertion_num,queue_insertion_time,evaluate_children_num,"
@@ -44,14 +38,12 @@ void Logger::setLogFileName(char *fname) {
  * Writes current stats about the execution to the log file.
  */
 void Logger::dumpState() {
-    if (_v < 1) return;
+    if (!_v.count("log")) return;
 
-    log_lk.lock();
     // update timestamp here
-    setTotalTime(get_time_diff(_state.initial_time));
+    setTotalTime(time_diff(_state.initial_time));
 
-    _f << std::this_thread::get_id() << ","
-       << _state.total_time << ","
+    _f << _state.total_time << ","
        << _state.evaluate_children_time << ","
        << _state.node_select_time << ","
        << _state.rule_evaluation_time << ","
@@ -80,7 +72,6 @@ void Logger::dumpState() {
        << _state.pmap_discard_num << ","
        << getLogRemainingSpaceSize() << ","
        << dumpPrefixLens().c_str() << endl;
-    log_lk.unlock();
 }
 
 /*
@@ -117,7 +108,8 @@ void print_final_rulelist(const tracking_vector<unsigned short, DataStruct::Tree
                           const bool latex_out,
                           const rule_t rules[],
                           const rule_t labels[],
-                          char fname[]) {
+                          char fname[],
+                          int print_progress) {
     assert(rulelist.size() == preds.size() - 1);
 
     printf("\nOPTIMAL RULE LIST\n");
@@ -156,7 +148,8 @@ void print_final_rulelist(const tracking_vector<unsigned short, DataStruct::Tree
     }
 
     ofstream f;
-    printf("writing optimal rule list to: %s\n\n", fname);
+    if(print_progress)
+        printf("writing optimal rule list to: %s\n\n", fname);
     f.open(fname, ios::out | ios::trunc);
     for(size_t i = 0; i < rulelist.size(); ++i) {
         f << rules[rulelist[i]].features << "~"
@@ -183,22 +176,3 @@ void print_machine_info() {
                buffer.machine);
     }
 }
-
-# ifdef VAL
-void* execute_native_thread_routine(void* __p)
-{
-    thread::_State_ptr __t{ static_cast<thread::_State*>(__p) };
-    __t->_M_run();
-    return nullptr;
-}
-
-void thread::_M_start_thread(_State_ptr state, void (*)())
-{
-    const int err = __gthread_create(&_M_id._M_thread,
-                     &execute_native_thread_routine,
-                     state.get());
-    if (err)
-      __throw_system_error(err);
-    state.release();
-}
-# endif

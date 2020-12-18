@@ -1,61 +1,56 @@
-# ifdef VAL
-#include "common.hh"
-# endif
-#include "features.hh"
 #include "queue.hh"
+#include "loss.hh"
 #include <iostream>
-#include <mutex>
-#include <string>
-#include <thread>
+#include <stdio.h>
 #include <getopt.h>
 #include <unistd.h>
-#include <pthread.h>
-#include <stdio.h>
+#include <string>
 
 #define BUFSZ 512
 
-std::mutex log_lk;
-std::mutex min_obj_lk;
-std::mutex inactive_thread_lk;
-std::mutex shared_q_lk;
-
 /*
  * Logs statistics about the execution of the algorithm and dumps it to a file.
- * To turn off, pass verbosity <= 1
+ * To turn off, do not pass "log" as verbosity parameter
  */
-
-FeatureToggle* featureDecisions;
+NullLogger* logger;
 
 int main(int argc, char *argv[]) {
-    const char usage[] = "USAGE: %s [-b] [-t num_threads]"
-        "[-n max_num_nodes] [-r regularization] [-v verbosity] "
-        "-c (1|2|3|4) -p (0|1|2) [-f logging_frequency]"
-        "-a (0|1|2) [-L latex_out] [-k random_seed]"
-        "data.out data.label\n\n"
+    const char usage[] = "USAGE: %s [-b] "
+        "[-l (acc|bacc|wacc|fscore)] [-w weight] "
+        "[-n max_num_nodes] [-r regularization] [-v (rule|label|samples|progress|log|silent)] "
+        "-c (1|2|3|4) -p (0|1|2) [-k rulelist_save_number] [-f logging_frequency] "
+        "-a (0|1|2) [-s] [-L latex_out] "
+        "data.out data.label [data.minor]\n\n"
         "%s\n";
 
     extern char *optarg;
+    std::string loss_type_str = "acc";
+    double weight = 1.0;
     bool run_bfs = false;
     bool run_curiosity = false;
     int curiosity_policy = 0;
     bool latex_out = false;
     bool use_prefix_perm_map = false;
     bool use_captured_sym_map = false;
-    int verbosity = 0;
+    char *vopt, *verb_trim;
+    std::set<std::string> verbosity;
+    bool verr = false;
+    const char *vstr = "rule|label|samples|progress|log|silent";
     int map_type = 0;
     int max_num_nodes = 100000;
     double c = 0.01;
+    int k = 1;
     char ch;
     bool error = false;
     char error_txt[BUFSZ];
     int freq = 1000;
-    size_t num_threads = 1;
     int ablation = 0;
+    double min_obj = 1.0;
     bool calculate_size = false;
+    char verbstr[BUFSZ];
     int iterno = 0;
-    size_t random_seed = 89;
     /* only parsing happens here */
-    while ((ch = getopt(argc, argv, "bsLc:p:v:n:r:f:a:t:i:k:")) != -1) {
+    while ((ch = getopt(argc, argv, "bsLc:k:p:v:n:r:f:a:u:i:l:w:")) != -1) {
         switch (ch) {
         case 'b':
             run_bfs = true;
@@ -76,7 +71,16 @@ int main(int argc, char *argv[]) {
             use_captured_sym_map = map_type == 2;
             break;
         case 'v':
-            verbosity = atoi(optarg);
+            verb_trim = strtok(optarg, " ");
+            strcpy(verbstr, verb_trim);
+            vopt = strtok(verb_trim, ",");
+            while (vopt != NULL) {
+                if (!strstr(vstr, vopt)) {
+                    verr = true;
+                }
+                verbosity.insert(vopt);
+                vopt = strtok(NULL, ",");
+            }
             break;
         case 'n':
             max_num_nodes = atoi(optarg);
@@ -90,19 +94,35 @@ int main(int argc, char *argv[]) {
         case 'a':
             ablation = atoi(optarg);
             break;
-        case 't':
-            num_threads = atoi(optarg);
+        case 'k':
+            k = atoi(optarg);
+        case 'u':
+            min_obj = atof(optarg);
             break;
         case 'i':
             iterno = atoi(optarg);
             break;
-        case 'k':
-            random_seed = atoi(optarg);
+        case 'l':
+            loss_type_str = optarg;
+            break;
+        case 'w':
+            weight = atof(optarg);
             break;
         default:
             error = true;
             snprintf(error_txt, BUFSZ, "unknown option: %c", ch);
         }
+    }
+    argc -= optind;
+    argv += optind;
+    if (loss_type_str != "acc" && loss_type_str != "bacc" && loss_type_str != "wacc" &&
+    loss_type_str != "auc" && loss_type_str != "fscore") {
+        error = true;
+        snprintf(error_txt, BUFSZ, "loss type must be one of (acc|bacc|wacc|auc|fscore)");
+    }
+    if (weight < 0) {
+        error = true;
+        snprintf(error_txt, BUFSZ, "weight must be positive");
     }
     if (max_num_nodes < 0) {
         error = true;
@@ -112,6 +132,10 @@ int main(int argc, char *argv[]) {
         error = true;
         snprintf(error_txt, BUFSZ, "regularization constant must be postitive");
     }
+    if (k < 1) {
+        error = true;
+        snprintf(error_txt, BUFSZ, "number of rulelists to save must be greater than 0");
+    }
     if (map_type > 2 || map_type < 0) {
         error = true;
         snprintf(error_txt, BUFSZ, "symmetry-aware map must be (0|1|2)");
@@ -119,31 +143,52 @@ int main(int argc, char *argv[]) {
     if ((run_bfs + run_curiosity) != 1) {
         error = true;
         snprintf(error_txt, BUFSZ,
-                "you must use at least and at most one of (-b | -c)");
+                "you must use exactly one of (-b | -c)");
+    }
+    if (argc < 2) {
+        error = true;
+        snprintf(error_txt, BUFSZ,
+                "you must specify data files for rules and labels");
+    }
+    if (access(argv[0], R_OK) < 0 || access(argv[1], R_OK) < 0) {
+        error = true;
+        snprintf(error_txt, BUFSZ,
+                "specified data files for rules and/or labels do not exist");
     }
     if (run_curiosity && !((curiosity_policy >= 1) && (curiosity_policy <= 4))) {
         error = true;
         snprintf(error_txt, BUFSZ,
                 "you must specify a curiosity type (1|2|3|4)");
     }
-    if (argc < 2 + optind) {
+    if (verr) {
         error = true;
         snprintf(error_txt, BUFSZ,
-                "you must specify data files for rules and labels");
+                 "verbosity options must be one or more of (rule|label|samples|progress|log|silent), separated with commas (i.e. -v progress,log)");
     }
-
-    argc -= optind;
-    char* exec_name = argv[0];
-    argv += optind;
-
-    if (access(argv[0], R_OK) < 0 || access(argv[1], R_OK) < 0) {
+    if (verbosity.count("samples") && !(verbosity.count("rule") || verbosity.count("label"))) {
         error = true;
         snprintf(error_txt, BUFSZ,
-                "specified data files for rules (%s) and/or labels (%s) do not exist", argv[0], argv[1]);
+                 "verbosity 'samples' option must be combined with at least one of (rule|label)");
     }
+    if (verbosity.size() > 2 && verbosity.count("silent")) {
+        snprintf(error_txt, BUFSZ,
+                 "verbosity 'silent' option must be passed without any additional verbosity parameters");
+    }
+
+    char* progname = argv[0];
+
     if (error) {
-        fprintf(stderr, usage, exec_name, error_txt);
+        fprintf(stderr, usage, progname, error_txt);
         exit(1);
+    }
+
+    // default: show progress
+    if (verbosity.size() == 0) {
+        verbosity.insert("progress");
+    }
+
+    if (verbosity.count("silent")) {
+        verbosity.clear();
     }
 
     std::map<int, std::string> curiosity_map;
@@ -152,166 +197,172 @@ int main(int argc, char *argv[]) {
     curiosity_map[3] = "curious_obj";
     curiosity_map[4] = "dfs";
 
-    int nrules, nsamples, nlabels, nsamples_chk, errno;
+    int nrules, nsamples, nlabels, nsamples_chk;
     rule_t *rules, *labels;
-    errno = rules_init(argv[0], &nrules, &nsamples, &rules, 1);
-    printf("Rules ERRNO: %d\n", errno);
-    errno = rules_init(argv[1], &nlabels, &nsamples_chk, &labels, 0);
-    printf("Labels ERRNO: %d\n", errno);
+    rules_init(argv[0], &nrules, &nsamples, &rules, 1);
+    rules_init(argv[1], &nlabels, &nsamples_chk, &labels, 0);
 
     int nmeta, nsamples_check;
     // Equivalent points information is precomputed, read in from file, and stored in meta
     rule_t *meta;
-    if (argc == 3)
-        rules_init(argv[2], &nmeta, &nsamples_check, &meta, 0);
-    else
-        meta = NULL;
+    // If the objective is auc, then we expect the equivalent points file to contain all
+    // classes and their number positives and negatives
+    int nclasses, nclass_samples;
+    minority_class_t *minor_class;
+    if (loss_type_str != "auc") {
+        if (argc == 3)
+            rules_init(argv[2], &nmeta, &nsamples_check, &meta, 0);
+        else
+            meta = NULL;
+    } else {
+        if (argc == 3)
+            auc_rules_init(argv[2], &nclasses, &nclass_samples, &minor_class, 0);
+        else
+            minor_class = NULL;
+    }
 
-    if (verbosity >= 10)
+    if (verbosity.count("log"))
         print_machine_info();
     char froot[BUFSZ];
     char log_fname[BUFSZ];
     char opt_fname[BUFSZ];
     const char* pch = strrchr(argv[0], '/');
-    snprintf(froot, BUFSZ, "../logs/for-%s-%s%s-%s-%s-removed=%s-t=%lu-max_num_nodes=%d-c=%.7f-v=%d-f=%d-i=%d",
+    snprintf(froot, BUFSZ, "../logs/for-%s-%s%s-%s-%s-%s-removed=%s-max_num_nodes=%d-c=%.7f-v=%s-f=%d-i=%d",
             pch ? pch + 1 : "",
             run_bfs ? "bfs" : "",
             run_curiosity ? curiosity_map[curiosity_policy].c_str() : "",
             use_prefix_perm_map ? "with_prefix_perm_map" :
                 (use_captured_sym_map ? "with_captured_symmetry_map" : "no_pmap"),
+             loss_type_str.c_str(),
             meta ? "minor" : "no_minor",
             ablation ? ((ablation == 1) ? "support" : "lookahead") : "none",
-            num_threads, max_num_nodes, c, verbosity, freq, iterno);
+             max_num_nodes, c, verbstr, freq, iterno);
     snprintf(log_fname, BUFSZ, "%s.txt", froot);
-    snprintf(opt_fname, BUFSZ, "%s-opt.txt", froot);
 
-    if (verbosity >= 1000) {
+    if (verbosity.count("rule")) {
         printf("\n%d rules %d samples\n\n", nrules, nsamples);
-        rule_print_all(rules, nrules, nsamples, 1);
-
-        printf("\nLabels (%d) for %d samples\n\n", nlabels, nsamples);
-        rule_print_all(labels, nlabels, nsamples, 1);
+        rule_print_all(rules, nrules, nsamples, (verbosity.count("samples")));
     }
 
-    if (verbosity > 1)
+    if (verbosity.count("label")) {
+        printf("\nLabels (%d) for %d samples\n\n", nlabels, nsamples);
+        rule_print_all(labels, nlabels, nsamples, (verbosity.count("samples")));
+    }
+
+    if (verbosity.count("log")) {
         logger = new Logger(c, nrules, verbosity, log_fname, freq);
-    else
+    } else {
         logger = new NullLogger();
-
-    // TOOD: use cmd line params to initialize features
-    featureDecisions = new FeatureToggle(false);
-
-    double init = get_timestamp();
+        logger->setVerbosity(verbosity);
+    }
+    double init = timestamp();
     char run_type[BUFSZ];
-
+    Queue* q;
     strcpy(run_type, "LEARNING RULE LIST via ");
     char const *type = "node";
-    std::function<bool(EntryType, EntryType)> cmp;
     if (curiosity_policy == 1) {
         strcat(run_type, "CURIOUS");
-        cmp = curious_cmp;
+        q = new Queue(curious_cmp, run_type);
         type = "curious";
     } else if (curiosity_policy == 2) {
         strcat(run_type, "LOWER BOUND");
-        cmp = lb_cmp;
+        q = new Queue(lb_cmp, run_type);
     } else if (curiosity_policy == 3) {
         strcat(run_type, "OBJECTIVE");
-        cmp = objective_cmp;
+        q = new Queue(objective_cmp, run_type);
     } else if (curiosity_policy == 4) {
         strcat(run_type, "DFS");
-        cmp = dfs_cmp;
+        q = new Queue(dfs_cmp, run_type);
     } else {
         strcat(run_type, "BFS");
-        cmp = base_cmp;
+        q = new Queue(base_cmp, run_type);
     }
 
-    // Create permutation map and synchronization primitives for it.
     PermutationMap* p;
     if (use_prefix_perm_map) {
-        strcat(run_type, " Prefix Map\n");
+        strcat(run_type, " Prefix Map");
         PrefixPermutationMap* prefix_pmap = new PrefixPermutationMap;
         p = (PermutationMap*) prefix_pmap;
     } else if (use_captured_sym_map) {
-        strcat(run_type, " Captured Symmetry Map\n");
+        strcat(run_type, " Captured Symmetry Map");
         CapturedPermutationMap* cap_pmap = new CapturedPermutationMap;
         p = (PermutationMap*) cap_pmap;
     } else {
-        strcat(run_type, " No Permutation Map\n");
+        strcat(run_type, " No Permutation Map");
         NullPermutationMap* null_pmap = new NullPermutationMap;
         p = (PermutationMap*) null_pmap;
     }
 
-    CacheTree* tree = new CacheTree(nsamples, nrules, c, num_threads,
-        rules, labels, meta, ablation, calculate_size, type, random_seed);
-    printf("%s", run_type);
+    strcat(run_type, " and loss function type ");
+    strcat(run_type, loss_type_str.c_str());
+    strcat(run_type, "\n");
 
-    // Initialize logger
-    bbound_init(tree);
-
-    // Set up per-thread queues
-    std::thread threads[num_threads];
-
-    Queue* qs[num_threads];
-    for(size_t i = 0; i < num_threads; ++i) {
-        qs[i] = new Queue(cmp, run_type);
-        tracking_vector<unsigned short, DataStruct::Tree> init_rules = tree->get_subrange(i);
-        InternalRoot* iroot = new InternalRoot(tree->root(), init_rules);
-        qs[i]->push(iroot);
+    Loss* loss;
+    if (loss_type_str == "bacc") {
+        loss = new BalancedAccuracy();
+    } else if (loss_type_str == "wacc") {
+        loss = new WeightedAccuracy(weight);
+    } else if (loss_type_str == "auc") {
+        loss = new AUCLoss();
+        delete p;
+        p = static_cast<PermutationMap*>(new AUCPermutationMap());
+    } else if (loss_type_str == "fscore") {
+        loss = new FScore(weight);
+        delete p;
+        p = static_cast<PermutationMap*>(new FScorePermutationMap());
+    } else {
+        loss = new Accuracy();
     }
 
-    SharedQueue* shared_q = new SharedQueue();
+    CacheTree* tree = new CacheTree(loss, nsamples, nrules, c, k, rules, labels, meta, minor_class, nclasses, ablation, calculate_size, type);
+    if (verbosity.count("progress"))
+        printf("%s", run_type);
+    // runs our algorithm
+    bbound(tree, max_num_nodes, q, p, min_obj);
 
-	// Let the threads loose
-	for(size_t i = 0; i < num_threads; ++i) {
-	    threads[i] = std::thread(bbound, tree, max_num_nodes, qs[i], p, i, shared_q);
-	}
+    for(int i = (tree->nrulelists() - 1); i > -1; i--) {
+        const tracking_vector<unsigned short, DataStruct::Tree>& r_list = tree->opt_rulelist(i);
 
-	for(size_t i = 0; i < num_threads; ++i) {
-	    threads[i].join();
-	}
+        // don't save default rule
+        if(r_list.size() == 0)
+            continue;
 
-    size_t tree_mem = logger->getTreeMemory();
-    size_t pmap_mem = logger->getPmapMemory();
-    size_t queue_mem = logger->getQueueMemory();
-    printf("TREE mem usage: %zu\n", tree_mem);
-    printf("PMAP mem usage: %zu\n", pmap_mem);
-    printf("QUEUE mem usage: %zu\n", queue_mem);
+        snprintf(opt_fname, BUFSZ, "%s-%d-opt.txt", froot, i);
 
-    printf("final num_nodes: %zu\n", tree->num_nodes());
-    printf("final num_evaluated: %zu\n", logger->getTreeNumEvaluated());
-    printf("final min_objective: %1.5f\n", tree->min_objective());
-    printf("final accuracy: %1.5f\n",
-           1 - tree->min_objective() + c*tree->opt_rulelist().size());
-    print_final_rulelist(tree->opt_rulelist(), tree->opt_predictions(),
-                         latex_out, rules, labels, opt_fname);
+        print_final_rulelist(r_list, tree->opt_predictions(i),
+                     latex_out, rules, labels, opt_fname, verbosity.count("progress"));
 
-    printf("final total time: %f\n", get_time_diff(init));
-    printf("Number of tree acquisitions: %zu\n", tree->n_acc());
+        printf("Rulelist #%d min_objective: %1.5f\n", i, tree->min_objective(i));
+        printf("Rulelist #%d accuracy: %1.5f\n",
+            i, 1 - tree->min_objective(i) + c*r_list.size());
+    }
+
+    if (verbosity.count("progress")) {
+        printf("\nfinal num_nodes: %zu\n", tree->num_nodes());
+        printf("final num_evaluated: %zu\n", tree->num_evaluated());
+        printf("final min_objective: %1.5f\n", tree->min_objective());
+        printf("final accuracy: %1.5f\n",
+            1 - tree->min_objective() + c*tree->opt_rulelist().size());
+    }
+
+    if (verbosity.count("progress"))
+        printf("final total time: %f\n", time_diff(init));
 
     logger->dumpState();
     logger->closeFile();
 
-    printf("delete queue(s)\n");
-    /*for(size_t i = 0; i < num_threads; ++i) {
-        delete qs[i];
-    }*/
-    printf("delete shared queue\n");
-    assert(shared_q->size_approx() == 0);
-    delete shared_q;
-    printf("delete permutation map\n");
-    delete p;
-    printf("tree destructors\n");
-    // TODO: maybe deadlocking here?
-    delete tree;
-    delete featureDecisions;
-    delete logger;
     if (meta) {
-        printf("\ndelete identical points indicator");
+        if (verbosity.count("progress"))
+            printf("\ndelete identical points indicator");
         rules_free(meta, nmeta, 0);
     }
-    printf("\ndelete rules\n");
+    if (verbosity.count("progress"))
+        printf("\ndelete rules\n");
     rules_free(rules, nrules, 1);
-    printf("delete labels\n");
+    if (verbosity.count("progress"))
+        printf("delete labels\n");
     rules_free(labels, nlabels, 0);
+    if (verbosity.count("progress"))
+        printf("tree destructors\n");
     return 0;
 }

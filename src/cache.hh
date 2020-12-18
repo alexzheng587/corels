@@ -1,69 +1,85 @@
 #pragma once
 
+#include "loss.hh"
 #include "utils.hh"
 #include "alloc.hh"
 #include "rule.h"
-#include <atomic>
-#include <condition_variable>
-#include <fstream>
-#include <iostream>
+#include "problemState.hh"
 #include <iterator>
 #include <map>
-#include <memory>
-#include <mutex>
-#include <numeric>
-#include <thread>
-#include <stdlib.h>
 #include <vector>
+#include <stdlib.h>
+#include <memory>
 
-extern std::mutex min_obj_lk;
+class Loss; // forward declare because of circular dependency
 
 class Node {
-  public:
-    Node(size_t nrules, bool default_prediction, double objective, double equivalent_minority);
+public:
+    Node(bool default_prediction, double objective, double equivalent_minority);
 
-    Node(unsigned short id, size_t nrules, bool prediction, bool default_prediction,
-         double lower_bound, double objective, Node* parent,
-         size_t num_captured, double equivalent_minority);
+    Node(unsigned short id, bool prediction, bool default_prediction, double lower_bound, double objective,
+         Node* parent, size_t num_captured, double equivalent_minority);
 
     virtual ~Node() {}
 
     inline unsigned short id() const;
+
     inline bool prediction() const;
+
     inline bool default_prediction() const;
+
     inline double lower_bound() const;
+
     inline double objective() const;
+
     inline bool done() const;
+
     inline void set_done();
+
     inline bool deleted() const;
+
     inline void set_deleted();
-    inline void lock();
-    inline void unlock();
+
     inline bool in_queue() const;
+
     inline void set_in_queue(bool new_val);
 
     // Returns pair of prefixes and predictions for the path from this node to the root
     inline std::pair<tracking_vector<unsigned short, DataStruct::Tree>, tracking_vector<bool, DataStruct::Tree> >
-      get_prefix_and_predictions();
+    get_prefix_and_predictions();
 
     inline size_t depth() const;
+
     inline Node* child(unsigned short idx);
+
     inline Node* parent() const;
+
     inline void delete_child(unsigned short idx);
+
     inline void clear_children();
+
     inline size_t num_children() const;
+
     inline size_t live_children();
 
     inline size_t num_captured() const;
+
     inline double equivalent_minority() const;
 
     inline typename std::map<unsigned short, Node*>::iterator children_begin();
+
     inline typename std::map<unsigned short, Node*>::iterator children_end();
+
     virtual inline double get_curiosity() {
         return 0.0;
     }
 
-  protected:
+    inline virtual Node* construct_child(unsigned short new_rule, ProblemState* state) {
+        return new Node(new_rule, state->rule_prediction, state->default_prediction, state->rule_lower_bound,
+                        state->objective, this, state->n_captured, state->equivalent_points_loss);
+    }
+
+protected:
     std::map<unsigned short, Node*, std::less<unsigned short>, track_alloc<std::pair<const unsigned short, Node*>, DataStruct::Tree> > children_;
     Node* parent_;
     double lower_bound_;
@@ -77,131 +93,260 @@ class Node {
     bool done_;
     bool deleted_;
     bool in_queue_;
-    // TODO: think if we can remove
-    std::mutex child_lk_;
 
     friend class CacheTree;
 };
 
-class CuriousNode: public Node {
-    public:
-        CuriousNode(unsigned short id, size_t nrules, bool prediction, bool default_prediction,
-             double lower_bound, double objective, double curiosity, CuriousNode* parent,
-             size_t num_captured, double equivalent_minority) : Node(id, nrules, prediction, default_prediction,
-                 lower_bound, objective, (Node*) parent, num_captured, equivalent_minority) {
-            curiosity_ = curiosity;
-        }
+class CuriousNode : public Node {
+public:
+    CuriousNode(unsigned short id, bool prediction, bool default_prediction, double lower_bound, double objective,
+                double curiosity, CuriousNode* parent, size_t num_captured, double equivalent_minority) :
+            Node(id, prediction, default_prediction, lower_bound, objective, (Node*) parent, num_captured,
+                 equivalent_minority) {
+        curiosity_ = curiosity;
+    }
 
-        inline double get_curiosity() override;
-    protected:
-        double curiosity_;
+    inline Node* construct_child(unsigned short new_rule, ProblemState* state) override {
+        double lower_bound = state->rule_lower_bound;
+        double equivalent_points_loss = state->equivalent_points_loss;
+        int num_captured = state->n_captured;
+        int nsamples = num_captured + state->n_not_captured;
+        double curiosity = (lower_bound - equivalent_points_loss) * nsamples / static_cast<double>(num_captured);
+        return (Node*) new CuriousNode(new_rule, state->rule_prediction, state->default_prediction,
+                                       lower_bound, state->objective, curiosity, this, num_captured,
+                                       equivalent_points_loss);
+    }
+
+    inline double get_curiosity() override;
+
+protected:
+    double curiosity_;
 };
 
-size_t nn_helper(Node* node);
+class AUCNode : public Node {
+public:
+    // constructor for root
+    AUCNode(bool default_prediction, double objective, double equivalent_minority, int nclasses, minority_class_t* minor_class,
+            int npos, int nneg)
+            : Node(default_prediction, objective, equivalent_minority) {
+                npos_ = npos;
+                nneg_ = nneg;
+                minority_classes_ = minor_class;
+                for (int i = 0; i < nclasses; i++) {
+                    class_idx_.push_back(i);
+                }
+        }
+
+    AUCNode(unsigned short id, bool prediction, bool default_prediction, double lower_bound,
+                double objective, size_t npos, size_t nneg,  AUCNode* parent, size_t num_captured,
+                double equivalent_minority, minority_class_t* minority, std::vector<int> class_idx) :
+            Node(id, prediction, default_prediction, lower_bound, objective, (Node*) parent, num_captured,
+                 equivalent_minority) {
+                    npos_ = npos;
+                    nneg_ = nneg;
+                    minority_classes_ = minority;
+                    class_idx_ = class_idx;
+        }
+
+        inline int get_npos() {
+            return npos_;
+        };
+
+        inline int get_nneg() {
+            return nneg_;
+        };
+
+        // Return the minority class
+        inline minority_class_t minority_classes(unsigned short idx) const {
+            int index = class_idx_[idx];
+            return minority_classes_[index];
+        }
+
+        inline minority_class_t* get_minority_pointer() {
+            return minority_classes_;
+        }
+
+        inline int get_nclasses() const {
+            return class_idx_.size();
+        }
+
+        inline void delete_minority_class(int idx) {
+            class_idx_.erase(class_idx_.begin() + idx);
+        }
+
+        inline Node* construct_child(unsigned short new_rule, ProblemState* state) override {
+        Node* child = (Node*) (new AUCNode(new_rule, state->rule_prediction, state->default_prediction,
+                                          state->rule_lower_bound, state->objective,
+                                          state->n_ones_captured, state->n_zeros_captured, this, state->n_captured,
+                                          state->equivalent_points_loss, state->class_pointer, state->class_idx_list));
+        return child;
+    }
+
+protected:
+    int npos_;
+    int nneg_;
+    minority_class_t* minority_classes_;    // Pointer to the minority class of the entire tree, only allocated once
+    std::vector<int> class_idx_;             // Keeps track of the index of the minority classes this node still has
+};
+
+class F1Node : public Node {
+public:
+    // Constructor for root
+    F1Node(bool default_prediction, double objective, double equivalent_minority)
+            : Node(default_prediction, objective, equivalent_minority) {
+        // Set to 0 in order to accumulate false negatives and false positives as we construct the rule list.
+        // If we included the default rule's points, then it would become more difficult to compute bounds
+        // before doing all the necessary bitvector operations.
+        fns_ = 0;
+        fps_ = 0;
+    }
+
+    F1Node(unsigned short id, bool prediction, bool default_prediction, double lower_bound, double objective,
+           size_t false_positives, size_t false_negatives, F1Node* parent, size_t num_captured,
+           double equivalent_minority) :
+            Node(id, prediction, default_prediction, lower_bound, objective, (Node*) parent, num_captured,
+                 equivalent_minority) {
+        fns_ = false_negatives;
+        fps_ = false_positives;
+    }
+
+    inline size_t get_false_negatives() const { return fns_; }
+
+    inline size_t get_false_positives() const { return fps_; }
+
+    inline Node* construct_child(unsigned short new_rule, ProblemState* state) override {
+        Node* child = (Node*) (new F1Node(new_rule, state->rule_prediction, state->default_prediction,
+                                          state->rule_lower_bound, state->objective,
+                                          state->false_positives, state->false_negatives, this, state->n_captured,
+                                          state->equivalent_points_loss));
+        return child;
+    }
+
+protected:
+    size_t fns_; // Cumulative false negatives
+    size_t fps_; // Cumulative false positives
+};
+
+
 
 class CacheTree {
-  public:
-    CacheTree() {};
-    CacheTree(size_t nsamples, size_t nrules, double c, size_t nthreads,
-        rule_t *rules, rule_t *labels, rule_t *minority, int ablation,
-	bool calculate_size, char const *type, size_t random_seed);
+public:
+    CacheTree(Loss* loss, size_t nsamples, size_t nrules, double c, size_t k, rule_t* rules, rule_t* labels,
+              rule_t* minority, minority_class_t* minority_class, size_t nclasses, int ablation, bool calculate_size, char const* node_type);
+
     ~CacheTree();
 
-    Node* construct_node(unsigned short new_rule, size_t nrules,
-           bool prediction, bool default_prediction,
-           double lower_bound, double objective,
-           Node* parent, int num_not_captured,
-           int nsamples, int len_prefix, double c, double equivalent_minority);
+    // Node*
+    // construct_node(unsigned short new_rule, size_t nrules, bool prediction, bool default_prediction, double lower_bound,
+    //                double objective, Node* parent, int num_not_captured, int nsamples, double equivalent_minority);
 
-    inline double min_objective() const;
-    inline tracking_vector<unsigned short, DataStruct::Tree> opt_rulelist() const;
-    inline tracking_vector<bool, DataStruct::Tree> opt_predictions() const;
+    // Node*
+    // construct_auc_node(unsigned short new_rule, size_t nrules, bool prediction, bool default_prediction, double lower_bound,
+    //                double objective, Node* parent, int num_not_captured, int nsamples, double equivalent_minority,
+    //                minority_class_t* minority_class, int npos_captured, int nneg_captured);
+
+    inline double min_objective(int idx) const;
+
+    inline tracking_vector<unsigned short, DataStruct::Tree> opt_rulelist(int idx) const;
+
+    inline tracking_vector<bool, DataStruct::Tree> opt_predictions(int idx) const;
+
+    inline Loss* loss() const;
 
     inline size_t num_nodes() const;
-    inline size_t num_nodes(unsigned short thread_id);
-    inline size_t num_threads() const;
+
+    inline size_t num_evaluated() const;
+
     inline rule_t rule(unsigned short idx) const;
+
     inline char* rule_features(unsigned short idx) const;
+
     inline rule_t label(unsigned short idx) const;
+
     inline rule_t minority(unsigned short idx) const;
+
     inline bool has_minority() const;
+
     inline size_t nsamples() const;
+
+    inline size_t nneg() const;
+
+    inline size_t npos() const;
+
     inline size_t nrules() const;
+
     inline double c() const;
+
+    inline size_t k() const;
+
+    inline size_t nrulelists() const;
+
     inline Node* root() const;
 
-    bool update_obj_and_list(double objective, tracking_vector<unsigned short, DataStruct::Tree>& parent_prefix,
-                                unsigned short new_rule_id,
-                                Node* parent, bool new_pred, bool new_default_pred);
-    void update_opt_rulelist(tracking_vector<unsigned short, DataStruct::Tree>& parent_prefix,
-                             unsigned short new_rule_id);
-    void update_opt_predictions(Node* parent, bool new_pred, bool new_default_pred);
+    inline ProblemState* threadState(int thread_index) const;
+
+    void update_opt_rulelist(double objective, tracking_vector<unsigned short, DataStruct::Tree>& parent_prefix,
+                             unsigned short new_rule_id, Node* parent, bool new_pred, bool new_default_pred);
+
+    inline void increment_num_evaluated();
 
     inline void decrement_num_nodes();
+
     inline int ablation() const;
+
     inline bool calculate_size() const;
-    inline tracking_vector<unsigned short, DataStruct::Tree> get_subrange(size_t i);
-    inline tracking_vector<unsigned short, DataStruct::Tree> rule_perm();
-    inline std::vector<tracking_vector<unsigned short, DataStruct::Tree>* > split_rules(size_t n);
 
     void insert_root();
-    void insert(Node* node, unsigned short thread_id);
+
+    void insert(Node* node);
+
     void prune_up(Node* node);
-    void garbage_collect(unsigned short thread_id);
-    void print_tree();
-    void close_print_file();
-    void open_print_file(size_t thread_num, size_t num_threads);
+
+    void garbage_collect();
+
     void play_with_rules();
+
     Node* check_prefix(tracking_vector<unsigned short, DataStruct::Tree>& prefix);
 
-    inline void lock(unsigned short thread_id);
-    inline void unlock(unsigned short thread_id);
+    bool support_bound_enabled() const;
 
+    bool lookahead_bound_enabled() const;
 
-    inline unsigned short num_inactive_threads() const;
-    inline void increment_num_inactive_threads();
-    inline void decrement_num_inactive_threads();
-    inline void inc_n_acc();
-    inline size_t n_acc() const;
-
-    inline bool done() const;
-    inline void set_done(bool is_done);
-
-    /*inline void thread_wait(std::unique_lock<std::mutex> unique_lk);
-    inline void wake_all_inactive();
-    inline void wake_n_inactive(size_t n);*/
-
-  protected:
-    std::ofstream t_;
+protected:
+    Loss* loss_;
     Node* root_;
+    vector<unique_ptr<ProblemState>> thread_states_;
     size_t nsamples_;
+    size_t npos_;
+    size_t nneg_;
     size_t nrules_;
-    size_t nthreads_;
+    size_t nclasses_;
     double c_;
+    size_t k_;
 
-    std::atomic<size_t> num_nodes_;
+    size_t num_nodes_;
+    size_t num_evaluated_;
     int ablation_; // Used to remove support (1) or lookahead (2) bounds
     bool calculate_size_;
 
-    std::atomic<double> min_objective_;
-    tracking_vector<unsigned short, DataStruct::Tree> opt_rulelist_;
-    tracking_vector<bool, DataStruct::Tree> opt_predictions_;
-    tracking_vector<unsigned short, DataStruct::Tree> rule_perm_;
-    tracking_vector<pair<unsigned short, unsigned short>, DataStruct::Tree> ranges_;
+    struct optimal_rule {
+        double min_objective_;
+        tracking_vector<unsigned short, DataStruct::Tree> opt_rulelist_;
+        std::vector<bool, track_alloc<bool, DataStruct::Tree> > opt_predictions_;
+    };
 
-    rule_t *rules_;
-    rule_t *labels_;
-    rule_t *minority_;
+    tracking_vector<optimal_rule, DataStruct::Tree> optimal_rules; // Ordered from most to least, i.e. the first element is the most optimal
 
-    unsigned short inactive_threads_;
-    size_t n_acc_; 
-    std::atomic<bool> done_;
+    rule_t* rules_;
+    rule_t* labels_;
+    rule_t* minority_;
+    minority_class_t* minor_class_;
 
-    std::mutex root_lk_;
+    char const* node_type_;
 
-    char const *type_;
-    void gc_helper(Node* node, unsigned short thread_id);
-    std::vector<std::mutex> tree_lks_;
+protected:
+
+    void gc_helper(Node* node);
 };
 
 inline unsigned short Node::id() const {
@@ -224,7 +369,7 @@ inline double Node::objective() const {
     return objective_;
 }
 
-inline bool Node::done() const{
+inline bool Node::done() const {
     return done_;
 }
 
@@ -232,20 +377,12 @@ inline void Node::set_done() {
     done_ = 1;
 }
 
-inline bool Node::deleted() const{
+inline bool Node::deleted() const {
     return deleted_;
 }
 
 inline void Node::set_deleted() {
     deleted_ = 1;
-}
-
-inline void Node::lock() {
-    child_lk_.lock();
-}
-
-inline void Node::unlock() {
-    child_lk_.unlock();
 }
 
 inline bool Node::in_queue() const {
@@ -257,13 +394,13 @@ inline void Node::set_in_queue(bool new_val) {
 }
 
 inline std::pair<tracking_vector<unsigned short, DataStruct::Tree>, tracking_vector<bool, DataStruct::Tree> >
-    Node::get_prefix_and_predictions() {
+Node::get_prefix_and_predictions() {
     tracking_vector<unsigned short, DataStruct::Tree> prefix;
     tracking_vector<bool, DataStruct::Tree> predictions;
     tracking_vector<unsigned short, DataStruct::Tree>::iterator it1 = prefix.begin();
     tracking_vector<bool, DataStruct::Tree>::iterator it2 = predictions.begin();
     Node* node = this;
-    for(size_t i = depth_; i > 0; --i) {
+    for (size_t i = depth_; i > 0; --i) {
         it1 = prefix.insert(it1, node->id());
         it2 = predictions.insert(it2, node->prediction());
         node = node->parent();
@@ -276,7 +413,8 @@ inline size_t Node::depth() const {
 }
 
 inline Node* Node::child(unsigned short idx) {
-    typename std::map<unsigned short, Node*>::iterator iter = children_.find(idx);
+    typename std::map<unsigned short, Node*>::iterator iter;
+    iter = children_.find(idx);
     if (iter == children_.end())
         return NULL;
     else
@@ -287,6 +425,7 @@ inline void Node::delete_child(unsigned short idx) {
     children_.erase(idx);
 }
 
+
 inline void Node::clear_children() {
     children_.clear();
 }
@@ -295,12 +434,13 @@ inline size_t Node::num_children() const {
     return children_.size();
 }
 
+
 inline size_t Node::live_children() {
     if (children_.size() == 0) {
         return 0;
     }
     size_t nchildren = 0;
-    for(auto child_it = children_begin(); child_it != children_end(); ++child_it) {
+    for (auto child_it = children_begin(); child_it != children_end(); ++child_it) {
         Node* child = child_it->second;
         if (!child->deleted_ && !child->done_) {
             nchildren += 1;
@@ -333,49 +473,43 @@ inline double CuriousNode::get_curiosity() {
     return curiosity_;
 }
 
-inline double CacheTree::min_objective() const {
-    return min_objective_;
+inline double CacheTree::min_objective(int idx = 0) const {
+    return optimal_rules[idx].min_objective_;
 }
 
-inline tracking_vector<unsigned short, DataStruct::Tree> CacheTree::opt_rulelist() const {
-    return opt_rulelist_;
+inline tracking_vector<unsigned short, DataStruct::Tree> CacheTree::opt_rulelist(int idx = 0) const {
+    return optimal_rules[idx].opt_rulelist_;
 }
 
-inline tracking_vector<bool, DataStruct::Tree> CacheTree::opt_predictions() const {
-    return opt_predictions_;
+inline tracking_vector<bool, DataStruct::Tree> CacheTree::opt_predictions(int idx = 0) const {
+    return optimal_rules[idx].opt_predictions_;
+}
+
+inline Loss* CacheTree::loss() const {
+    return loss_;
 }
 
 inline size_t CacheTree::num_nodes() const {
     return num_nodes_;
 }
 
-inline size_t CacheTree::num_nodes(unsigned short thread_id) {
-    tracking_vector<unsigned short, DataStruct::Tree> range = get_subrange(thread_id);
-    size_t ret = 1;
-    for (tracking_vector<unsigned short, DataStruct::Tree>::iterator it = range.begin(); it != range.end(); ++it) {
-        //std::cout << *it << std::endl;
-        ret += nn_helper(root_->child(*it));
-    }
-    return ret;
+inline size_t CacheTree::num_evaluated() const {
+    return num_evaluated_;
 }
 
-inline size_t CacheTree::num_threads() const {
-    return nthreads_;
-}
-
-inline rule_t CacheTree::rule(unsigned short idx) const{
+inline rule_t CacheTree::rule(unsigned short idx) const {
     return rules_[idx];
 }
 
-inline char* CacheTree::rule_features(unsigned short idx) const{
+inline char* CacheTree::rule_features(unsigned short idx) const {
     return rules_[idx].features;
 }
 
-inline rule_t CacheTree::label(unsigned short idx) const{
+inline rule_t CacheTree::label(unsigned short idx) const {
     return labels_[idx];
 }
 
-inline rule_t CacheTree::minority(unsigned short idx) const{
+inline rule_t CacheTree::minority(unsigned short idx) const {
     return minority_[idx];
 }
 
@@ -387,12 +521,28 @@ inline size_t CacheTree::nsamples() const {
     return nsamples_;
 }
 
+inline size_t CacheTree::npos() const {
+    return npos_;
+}
+
+inline size_t CacheTree::nneg() const {
+    return nneg_;
+}
+
 inline size_t CacheTree::nrules() const {
     return nrules_;
 }
 
 inline double CacheTree::c() const {
     return c_;
+}
+
+inline size_t CacheTree::k() const {
+    return k_;
+}
+
+inline size_t CacheTree::nrulelists() const {
+    return optimal_rules.size();
 }
 
 inline Node* CacheTree::root() const {
@@ -407,104 +557,42 @@ inline bool CacheTree::calculate_size() const {
     return calculate_size_;
 }
 
-inline bool
-CacheTree::update_obj_and_list(double objective, tracking_vector<unsigned short, DataStruct::Tree>& parent_prefix,
-                                unsigned short new_rule_id,
-                                Node* parent, bool new_pred, bool new_default_pred) {
-  min_obj_lk.lock();
-  if (objective >= min_objective_) {
-    min_obj_lk.unlock();
-    return false;
-  } else {
-    min_objective_ = objective;
-    logger->setTreeMinObj(objective);
-    this->update_opt_rulelist(parent_prefix, new_rule_id);
-    this->update_opt_predictions(parent, new_pred, new_default_pred);
-  }
-  min_obj_lk.unlock();
-  return true;
-}
-
-/*
- * Update the minimum objective of the tree.
- */
-/*inline void CacheTree::update_min_objective(double objective) {
-    min_objective_ = objective;
-    logger->setTreeMinObj(objective);
-}*/
-
 /*
  * Update the optimal rulelist of the tree.
  */
 inline void
-CacheTree::update_opt_rulelist(tracking_vector<unsigned short, DataStruct::Tree>& parent_prefix,
-                                  unsigned short new_rule_id) {
-    opt_rulelist_.assign(parent_prefix.begin(), parent_prefix.end());
-    opt_rulelist_.push_back(new_rule_id);
-    logger->setTreePrefixLen(opt_rulelist_.size());
-}
+CacheTree::update_opt_rulelist(double objective, tracking_vector<unsigned short, DataStruct::Tree>& parent_prefix,
+                               unsigned short new_rule_id, Node* parent, bool new_pred, bool new_default_pred) {
+    optimal_rules.insert(optimal_rules.begin(), optimal_rule());
+    if (optimal_rules.size() > k_)
+        optimal_rules.erase(optimal_rules.begin() + k_, optimal_rules.end());
 
-/*
- * Update the optimal rulelist predictions of the tree.
- */
-inline void
-CacheTree::update_opt_predictions(Node* parent, bool new_pred, bool new_default_pred) {
+    optimal_rules[0].min_objective_ = objective;
+
+    optimal_rules[0].opt_rulelist_.assign(parent_prefix.begin(), parent_prefix.end());
+    optimal_rules[0].opt_rulelist_.push_back(new_rule_id);
+    logger->setTreePrefixLen(optimal_rules[0].opt_rulelist_.size());
+
     tracking_vector<bool, DataStruct::Tree> predictions;
     Node* node = parent;
-    for(size_t i = parent->depth(); i > 0; --i) {
+    for (size_t i = parent->depth(); i > 0; --i) {
         predictions.push_back(node->prediction());
         node = node->parent();
     }
     std::reverse(predictions.begin(), predictions.end());
-    opt_predictions_.assign(predictions.begin(), predictions.end());
-    opt_predictions_.push_back(new_pred);
-    opt_predictions_.push_back(new_default_pred);
+    optimal_rules[0].opt_predictions_.assign(predictions.begin(), predictions.end());
+    optimal_rules[0].opt_predictions_.push_back(new_pred);
+    optimal_rules[0].opt_predictions_.push_back(new_default_pred);
 }
 
-inline tracking_vector<unsigned short, DataStruct::Tree> CacheTree::get_subrange(size_t i) {
-	size_t start, end;
-	start = ranges_[i].first;
-	end = ranges_[i].second;
-	tracking_vector<unsigned short, DataStruct::Tree> subrange;// = new tracking_vector<unsigned short, DataStruct::Tree>;
-    subrange.assign(rule_perm_.begin() + start,rule_perm_.begin() + end);
-    return subrange;
+/*
+ * Increment number of nodes evaluated after performing incremental computation
+ * in evaluate_children.
+ */
+inline void CacheTree::increment_num_evaluated() {
+    ++num_evaluated_;
+    logger->setTreeNumEvaluated(num_evaluated_);
 }
-
-inline tracking_vector<unsigned short, DataStruct::Tree> CacheTree::rule_perm() {
-    return rule_perm_;
-}
-
-
-inline std::vector<tracking_vector<unsigned short, DataStruct::Tree>* > CacheTree::split_rules(size_t n) {
-    std::vector<tracking_vector<unsigned short, DataStruct::Tree>* > splits;
-    /*size_t nrules = rule_perm_.size();
-    size_t split_size = (nrules + n - 1) / n;
-    for(size_t i = 0; i < n; ++i){
-        tracking_vector<unsigned short, DataStruct::Tree> split(rule_perm_.begin() + split_size * i, rule_perm_.begin() + split_size * (i + 1));
-        splits.push_back(split);
-    }
-    return splits;*/
-
-    tracking_vector<unsigned short, DataStruct::Tree> rule_perm = rule_perm_;
-    std::iota(rule_perm.begin(), rule_perm.end(), 1);
-    std::random_shuffle(rule_perm.begin(), rule_perm.end());
-
-    unsigned short rules_per_thread = (nrules_-1) / n;
-    unsigned short inc = (nrules_ - 1) - (rules_per_thread * n);
-    unsigned short sIdx = 0;
-
-    for(size_t i = 0; i < n; ++i) {
-        unsigned short eIdx = sIdx + rules_per_thread + (i < inc ? 1 : 0);
-        // printf("START INDEX: %zu, END INDEX: %zu\n", sIdx, eIdx);
-        tracking_vector<unsigned short, DataStruct::Tree>* split = new tracking_vector<unsigned short, DataStruct::Tree>;
-        split->assign(rule_perm.begin() + sIdx, rule_perm.begin() + eIdx);
-        splits.push_back(split);
-        sIdx = eIdx;
-    }
-    return splits;
-}
-
-
 
 /*
  * Called whenever a node is deleted from the tree.
@@ -514,42 +602,17 @@ inline void CacheTree::decrement_num_nodes() {
     logger->setTreeNumNodes(num_nodes_);
 }
 
-inline void CacheTree::lock(unsigned short thread_id) {
-  tree_lks_[thread_id].lock();
+inline bool CacheTree::support_bound_enabled() const {
+    return ablation_ != 1;
 }
 
-inline void CacheTree::unlock(unsigned short thread_id) {
-  tree_lks_[thread_id].unlock();
+inline bool CacheTree::lookahead_bound_enabled() const {
+    return ablation_ != 2;
 }
 
-inline unsigned short CacheTree::num_inactive_threads() const {
-    return inactive_threads_;
-}
-
-inline void CacheTree::increment_num_inactive_threads() {
-    inactive_threads_++;
-}
-
-inline void CacheTree::decrement_num_inactive_threads() {
-    inactive_threads_--;
-}
-
-inline bool CacheTree::done() const {
-    return done_;
-}
-
-inline void CacheTree::set_done(bool is_done) {
-    done_ = is_done;
-}
-
-inline void CacheTree::inc_n_acc() {
-    n_acc_++;
-}
-
-inline size_t CacheTree::n_acc() const {
-    return n_acc_;
+ProblemState* CacheTree::threadState(int thread_index) const {
+    return thread_states_[thread_index].get();
 }
 
 
-void delete_interior(CacheTree* tree, Node* node, bool destructive, bool update_remaining_state_space);
-void delete_subtree(CacheTree* tree, Node* node, bool destructive, bool update_remaining_state_space, unsigned short thread_id);
+void delete_subtree(CacheTree* tree, Node* node, bool destructive, bool update_remaining_state_space);

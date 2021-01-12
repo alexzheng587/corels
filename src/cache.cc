@@ -131,12 +131,12 @@ void CacheTree::insert_root() {
         case F_SCORE:
             root_ = new F1Node(default_prediction, objective, equivalent_minority);
             break;
-        case ACCURACY: // Fall through
-        case BALANCED_ACCURACY: // Fall through
-        case WEIGHTED_ACCURACY: // Fall through
         case AUC:
             root_ = new AUCNode(default_prediction, objective, equivalent_minority, nclasses_, minor_class_, npos_, nneg_);
             break;
+        case ACCURACY: // Fall through
+        case BALANCED_ACCURACY: // Fall through
+        case WEIGHTED_ACCURACY: // Fall through
         default:
             root_ = new Node(default_prediction, objective, equivalent_minority);
             break;

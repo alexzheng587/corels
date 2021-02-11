@@ -85,6 +85,7 @@ begin:
                 if (node->deleted() || (lb >= tree->min_objective())) {
                     tree->decrement_num_nodes();
                     logger->removeFromMemory(sizeof(*node), DataStruct::Tree);
+                    node->set_deleted();
                     delete node;
                     valid = false;
                 } else {

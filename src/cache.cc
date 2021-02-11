@@ -280,7 +280,9 @@ void delete_subtree(CacheTree* tree, Node* node, bool destructive,
             logger->removeFromMemory(sizeof(*node), DataStruct::Tree);
             tree->decrement_num_nodes();
             node->clear_children();
-            delete node;
+            if (!node->deleted()) {
+                delete node;
+            }
         } else {
             //std::cout << "DELETE ELSE " << node->id() << std::endl;
             logger->decPrefixLen(node->depth());
